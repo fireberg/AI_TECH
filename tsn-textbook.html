@@ -614,6 +614,191 @@ p { margin-bottom: 16px; }
   display: block;
 }
 
+/* Architecture overview */
+.arch-container {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 20px 0;
+}
+.arch-svg { width: 100%; display: block; }
+.arch-block {
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.arch-block:hover { filter: brightness(0.92); }
+.arch-block.active rect, .arch-block.active path {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px rgba(26,115,232,0.4));
+}
+.arch-info-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 16px;
+  min-height: 120px;
+  animation: fadeIn 0.3s ease;
+}
+.arch-info-panel h4 { margin-top: 0; color: var(--primary); }
+
+/* Protocol detail cards */
+.proto-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 16px 0;
+  border-left: 4px solid var(--primary);
+  transition: all 0.2s;
+}
+.proto-card:hover { box-shadow: var(--shadow); }
+.proto-card.red { border-left-color: var(--ts-red); }
+.proto-card.green { border-left-color: var(--success); }
+.proto-card.orange { border-left-color: var(--accent); }
+.proto-card.purple { border-left-color: #7c3aed; }
+.proto-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.proto-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #fff;
+}
+.proto-badge.ts { background: var(--ts-red); }
+.proto-badge.sync { background: var(--primary); }
+.proto-badge.rel { background: var(--success); }
+.proto-badge.mgmt { background: #7c3aed; }
+.proto-badge.shape { background: var(--accent); }
+.proto-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.proto-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* Layer indicator */
+.layer-bar {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 10px;
+  margin: 8px 0 16px;
+}
+.layer-seg {
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+}
+.layer-seg::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+/* Quiz / interactive elements */
+.quiz-box {
+  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin: 16px 0;
+}
+.quiz-box h5 {
+  font-size: 14px;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.quiz-opt {
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.quiz-opt:hover { border-color: var(--primary); background: #f0f7ff; }
+.quiz-opt.correct { border-color: var(--success); background: #d1fae5; }
+.quiz-opt.wrong { border-color: var(--ts-red); background: #fef2f2; }
+.quiz-feedback {
+  margin-top: 10px;
+  font-size: 13px;
+  min-height: 20px;
+}
+
+/* Packet anatomy */
+.pkt-anatomy {
+  display: flex;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 12px 0;
+  font-size: 11px;
+}
+.pkt-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  border-right: 1px solid var(--border);
+  text-align: center;
+  min-height: 56px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pkt-field:last-child { border-right: none; }
+.pkt-field:hover { background: #eff6ff; }
+.pkt-field .pkt-name { font-weight: 700; margin-bottom: 2px; }
+.pkt-field .pkt-size { color: var(--text-secondary); font-size: 10px; }
+
+/* Comparison table */
+.cmp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 12px 0;
+}
+.cmp-table th, .cmp-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.cmp-table th {
+  background: var(--sidebar-bg);
+  color: #f1f5f9;
+  font-weight: 600;
+}
+.cmp-table tr:nth-child(even) { background: #f8fafc; }
+.cmp-table td:first-child { text-align: left; font-weight: 600; }
+
+/* Animated highlight */
+@keyframes pulseHighlight {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.pulse-anim { animation: pulseHighlight 1.5s infinite; }
+
 /* Responsive */
 @media (max-width: 900px) {
   .sidebar { transform: translateX(-100%); }
@@ -653,7 +838,10 @@ html { scroll-behavior: smooth; }
   </div>
   <nav>
     <ul>
-      <li><a href="#part1" class="active" data-section="part1">一、TSN 产生的原因</a></li>
+      <li><a href="#arch-overview" class="active" data-section="arch-overview">TSN 协议总览</a></li>
+      <li><a href="#arch-map" class="sub" data-section="arch-map">架构全景图</a></li>
+      <li><a href="#arch-protocols" class="sub" data-section="arch-protocols">协议逐层解读</a></li>
+      <li><a href="#part1" data-section="part1">一、TSN 产生的原因</a></li>
       <li><a href="#part1-limitation" class="sub" data-section="part1-limitation">传统以太网的局限</a></li>
       <li><a href="#part1-demand" class="sub" data-section="part1-demand">确定性通信需求</a></li>
       <li><a href="#part1-timeline" class="sub" data-section="part1-timeline">标准演进时间线</a></li>
@@ -681,6 +869,461 @@ html { scroll-behavior: smooth; }
 <div class="content">
 
 <!-- ============================================================ -->
+<!-- ARCHITECTURE OVERVIEW -->
+<!-- ============================================================ -->
+<section class="section" id="arch-overview">
+  <h2 class="section-title">TSN 协议族总览</h2>
+  <p class="section-desc">
+    在深入各章节之前，先通过一张交互式架构全景图，鸟瞰 TSN 标准族的整体结构。TSN 并非单一协议，而是由 <strong>IEEE 802.1 工作组</strong>制定的一组相互协作的标准集合，共同将标准以太网改造为具有<strong>确定性时延、高可靠性、精确时间同步</strong>的实时网络。点击下图中的任意协议模块，查看其在体系中的定位与核心功能。
+  </p>
+
+  <div id="arch-map">
+    <h3>架构全景图</h3>
+    <p>TSN 标准族按功能划分为四大支柱：<span class="tag tag-blue">时间同步</span> <span class="tag tag-red">流量调度</span> <span class="tag tag-green">可靠性</span> <span class="tag tag-orange">网络管理</span>。点击任意模块查看详情：</p>
+    
+    <div class="arch-container">
+      <svg class="arch-svg" viewBox="0 0 840 520" xmlns="http://www.w3.org/2000/svg" id="archSvg">
+        <!-- Background grid -->
+        <defs>
+          <linearGradient id="gSync" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#dbeafe"/>
+            <stop offset="100%" stop-color="#eff6ff"/>
+          </linearGradient>
+          <linearGradient id="gSched" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fee2e2"/>
+            <stop offset="100%" stop-color="#fef2f2"/>
+          </linearGradient>
+          <linearGradient id="gRel" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#d1fae5"/>
+            <stop offset="100%" stop-color="#ecfdf5"/>
+          </linearGradient>
+          <linearGradient id="gMgmt" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffedd5"/>
+            <stop offset="100%" stop-color="#fff7ed"/>
+          </linearGradient>
+          <filter id="shadow1">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
+          </filter>
+        </defs>
+
+        <!-- Title bar -->
+        <rect x="0" y="0" width="840" height="44" rx="8" fill="#1e293b"/>
+        <text x="420" y="28" text-anchor="middle" font-size="16" font-weight="800" fill="#f1f5f9">IEEE 802.1 TSN 标准族架构</text>
+
+        <!-- Application layer -->
+        <rect x="20" y="56" width="800" height="38" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+        <text x="420" y="80" text-anchor="middle" font-size="12" font-weight="600" fill="#64748b">应用层：OPC UA · AVTP (IEEE 1722) · IEC 61850 · SOME/IP · DDS</text>
+
+        <!-- Column headers -->
+        <!-- Sync column -->
+        <rect x="20" y="106" width="196" height="30" rx="5" fill="#1a73e8"/>
+        <text x="118" y="125" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">时间同步</text>
+
+        <!-- Scheduling column -->
+        <rect x="226" y="106" width="280" height="30" rx="5" fill="#d32f2f"/>
+        <text x="366" y="125" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">流量调度与整形</text>
+
+        <!-- Reliability column -->
+        <rect x="516" y="106" width="144" height="30" rx="5" fill="#2e7d32"/>
+        <text x="588" y="125" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">可靠性与冗余</text>
+
+        <!-- Management column -->
+        <rect x="670" y="106" width="150" height="30" rx="5" fill="#ff6d00"/>
+        <text x="745" y="125" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">资源管理</text>
+
+        <!-- ===== Protocol blocks ===== -->
+        
+        <!-- 802.1AS -->
+        <g class="arch-block" data-proto="as" onclick="showArchProto('as')">
+          <rect x="20" y="148" width="196" height="76" rx="8" fill="url(#gSync)" stroke="#1a73e8" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="118" y="172" text-anchor="middle" font-size="14" font-weight="800" fill="#1a73e8">802.1AS</text>
+          <text x="118" y="190" text-anchor="middle" font-size="11" font-weight="600" fill="#1e40af">gPTP 精确时间协议</text>
+          <text x="118" y="208" text-anchor="middle" font-size="10" fill="#64748b">全网时钟同步 ±1μs</text>
+        </g>
+
+        <!-- 802.1Qbv -->
+        <g class="arch-block" data-proto="qbv" onclick="showArchProto('qbv')">
+          <rect x="226" y="148" width="134" height="76" rx="8" fill="url(#gSched)" stroke="#d32f2f" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="293" y="172" text-anchor="middle" font-size="14" font-weight="800" fill="#d32f2f">802.1Qbv</text>
+          <text x="293" y="190" text-anchor="middle" font-size="11" font-weight="600" fill="#991b1b">时间感知整形 TAS</text>
+          <text x="293" y="208" text-anchor="middle" font-size="10" fill="#64748b">门控调度列表 GCL</text>
+        </g>
+
+        <!-- 802.1Qav -->
+        <g class="arch-block" data-proto="qav" onclick="showArchProto('qav')">
+          <rect x="370" y="148" width="136" height="76" rx="8" fill="url(#gSched)" stroke="#d32f2f" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="438" y="172" text-anchor="middle" font-size="14" font-weight="800" fill="#d32f2f">802.1Qav</text>
+          <text x="438" y="190" text-anchor="middle" font-size="11" font-weight="600" fill="#991b1b">信用量整形 CBS</text>
+          <text x="438" y="208" text-anchor="middle" font-size="10" fill="#64748b">AVB 带宽预留</text>
+        </g>
+
+        <!-- 802.1CB -->
+        <g class="arch-block" data-proto="cb" onclick="showArchProto('cb')">
+          <rect x="516" y="148" width="144" height="76" rx="8" fill="url(#gRel)" stroke="#2e7d32" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="588" y="172" text-anchor="middle" font-size="14" font-weight="800" fill="#2e7d32">802.1CB</text>
+          <text x="588" y="190" text-anchor="middle" font-size="11" font-weight="600" fill="#166534">帧复制与消除</text>
+          <text x="588" y="208" text-anchor="middle" font-size="10" fill="#64748b">FRER 零切换冗余</text>
+        </g>
+
+        <!-- 802.1Qcc -->
+        <g class="arch-block" data-proto="qcc" onclick="showArchProto('qcc')">
+          <rect x="670" y="148" width="150" height="76" rx="8" fill="url(#gMgmt)" stroke="#ff6d00" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="745" y="172" text-anchor="middle" font-size="14" font-weight="800" fill="#ff6d00">802.1Qcc</text>
+          <text x="745" y="190" text-anchor="middle" font-size="11" font-weight="600" fill="#c2410c">流预留增强</text>
+          <text x="745" y="208" text-anchor="middle" font-size="10" fill="#64748b">CNC/CUC 配置</text>
+        </g>
+
+        <!-- 802.1Qbu -->
+        <g class="arch-block" data-proto="qbu" onclick="showArchProto('qbu')">
+          <rect x="226" y="236" width="134" height="76" rx="8" fill="url(#gSched)" stroke="#d32f2f" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="293" y="260" text-anchor="middle" font-size="14" font-weight="800" fill="#d32f2f">802.1Qbu</text>
+          <text x="293" y="278" text-anchor="middle" font-size="11" font-weight="600" fill="#991b1b">帧抢占</text>
+          <text x="293" y="296" text-anchor="middle" font-size="10" fill="#64748b">802.3br MAC 层配合</text>
+        </g>
+
+        <!-- 802.1Qci -->
+        <g class="arch-block" data-proto="qci" onclick="showArchProto('qci')">
+          <rect x="370" y="236" width="136" height="76" rx="8" fill="url(#gSched)" stroke="#d32f2f" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="438" y="260" text-anchor="middle" font-size="14" font-weight="800" fill="#d32f2f">802.1Qci</text>
+          <text x="438" y="278" text-anchor="middle" font-size="11" font-weight="600" fill="#991b1b">流过滤与策略</text>
+          <text x="438" y="296" text-anchor="middle" font-size="10" fill="#64748b">PSFP 入口保护</text>
+        </g>
+
+        <!-- 802.1Qcr -->
+        <g class="arch-block" data-proto="qcr" onclick="showArchProto('qcr')">
+          <rect x="516" y="236" width="144" height="76" rx="8" fill="url(#gRel)" stroke="#2e7d32" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="588" y="260" text-anchor="middle" font-size="14" font-weight="800" fill="#2e7d32">802.1Qcr</text>
+          <text x="588" y="278" text-anchor="middle" font-size="11" font-weight="600" fill="#166534">异步流量整形</text>
+          <text x="588" y="296" text-anchor="middle" font-size="10" fill="#64748b">ATS 令牌桶</text>
+        </g>
+
+        <!-- 802.1Qat -->
+        <g class="arch-block" data-proto="qat" onclick="showArchProto('qat')">
+          <rect x="670" y="236" width="150" height="76" rx="8" fill="url(#gMgmt)" stroke="#ff6d00" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="745" y="260" text-anchor="middle" font-size="14" font-weight="800" fill="#ff6d00">802.1Qat</text>
+          <text x="745" y="278" text-anchor="middle" font-size="11" font-weight="600" fill="#c2410c">SRP 流预留</text>
+          <text x="745" y="296" text-anchor="middle" font-size="10" fill="#64748b">MSRP/MMRP/MVRP</text>
+        </g>
+
+        <!-- ASrev (below AS) -->
+        <g class="arch-block" data-proto="asrev" onclick="showArchProto('asrev')">
+          <rect x="20" y="236" width="196" height="76" rx="8" fill="url(#gSync)" stroke="#1a73e8" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="118" y="260" text-anchor="middle" font-size="14" font-weight="800" fill="#1a73e8">802.1AS-Rev</text>
+          <text x="118" y="278" text-anchor="middle" font-size="11" font-weight="600" fill="#1e40af">gPTP 增强版</text>
+          <text x="118" y="296" text-anchor="middle" font-size="10" fill="#64748b">热备份 GM · 多域</text>
+        </g>
+
+        <!-- Bottom: Ethernet base layer -->
+        <rect x="20" y="330" width="800" height="50" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="420" y="350" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">IEEE 802.3 标准以太网 (100 Mbps / 1000 Mbps)</text>
+        <text x="420" y="368" text-anchor="middle" font-size="10" fill="#94a3b8">物理层 + MAC 层 · VLAN 802.1Q · 优先级 802.1p (PCP 0-7)</text>
+
+        <!-- Dependency arrows -->
+        <defs>
+          <marker id="arrowBlue" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a73e8"/>
+          </marker>
+          <marker id="arrowRed" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#d32f2f"/>
+          </marker>
+        </defs>
+        <!-- AS → Qbv (time sync is foundation for TAS) -->
+        <line x1="216" y1="186" x2="226" y2="186" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowRed)"/>
+        <!-- AS → CB (time sync supports FRER sequencing) -->
+        <path d="M 216 200 Q 370 240 516 186" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3"/>
+
+        <!-- Interaction hint -->
+        <text x="420" y="410" text-anchor="middle" font-size="12" fill="#94a3b8" font-style="italic">↑ 点击任意协议模块查看详细说明 ↑</text>
+
+        <!-- Legend -->
+        <rect x="20" y="430" width="800" height="80" rx="8" fill="#fff" stroke="#e2e8f0"/>
+        <text x="40" y="452" font-size="12" font-weight="700" fill="#334155">四大功能支柱：</text>
+        <rect x="40" y="460" width="16" height="16" rx="3" fill="#1a73e8"/>
+        <text x="62" y="473" font-size="11" fill="#334155"><tspan font-weight="700">时间同步</tspan> — 所有机制的基石，提供全网统一时钟</text>
+        <rect x="310" y="460" width="16" height="16" rx="3" fill="#d32f2f"/>
+        <text x="332" y="473" font-size="11" fill="#334155"><tspan font-weight="700">流量调度</tspan> — 控制"何时发、怎么发"，实现确定性</text>
+        <rect x="40" y="486" width="16" height="16" rx="3" fill="#2e7d32"/>
+        <text x="62" y="499" font-size="11" fill="#334155"><tspan font-weight="700">可靠性</tspan> — 帧冗余与过滤，保障传输不中断</text>
+        <rect x="310" y="486" width="16" height="16" rx="3" fill="#ff6d00"/>
+        <text x="332" y="499" font-size="11" fill="#334155"><tspan font-weight="700">资源管理</tspan> — 配置、预留、监控网络资源</text>
+      </svg>
+
+      <div class="arch-info-panel" id="archInfoPanel">
+        <h4 id="archInfoTitle">👆 点击上方协议模块</h4>
+        <p id="archInfoBody" style="font-size:14px;line-height:1.8;">
+          选择架构图中的任意协议模块，此处将显示该协议的<strong>核心功能</strong>、<strong>解决的问题</strong>、<strong>与其他协议的关系</strong>，以及<strong>关键技术参数</strong>（基于 100 Mbps 和 1000 Mbps）。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="arch-protocols">
+    <h3>协议逐层解读</h3>
+    <p>以下按照功能支柱分组，逐个介绍 TSN 核心协议。每个协议配有帧结构解析、关键参数计算和趣味问答。</p>
+
+    <!-- ====== 时间同步 ====== -->
+    <div class="proto-card">
+      <div class="proto-header">
+        <span class="proto-badge sync">同步</span>
+        <div>
+          <div class="proto-title">IEEE 802.1AS — 广义精确时间协议 (gPTP)</div>
+          <div class="proto-subtitle">Generalized Precision Time Protocol · TSN 的时钟基石</div>
+        </div>
+      </div>
+      <p>802.1AS 是 IEEE 1588 PTPv2 的一个受限 Profile，专为桥接局域网设计。它通过逐跳的 <strong>Peer Delay 测量</strong>和 <strong>Sync 消息级联</strong>，将网络中每台设备的时钟同步到同一个 <strong>Grandmaster (GM)</strong> 时钟源。</p>
+      <h4>gPTP 同步消息序列</h4>
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+sequenceDiagram
+    participant GM as Grandmaster
+    participant SW as TSN 交换机
+    participant EP as 终端设备
+    Note over GM,EP: 步骤1: Peer Delay 测量 (逐段链路)
+    SW->>EP: Pdelay_Req (t1)
+    EP->>SW: Pdelay_Resp (t2, t3)
+    EP->>SW: Pdelay_Resp_Follow_Up (t4)
+    Note over SW,EP: 计算链路延迟 = [(t4-t1)-(t3-t2)]/2
+    Note over GM,EP: 步骤2: 时间同步 (从GM逐跳传递)
+    GM->>SW: Sync (发送时间戳)
+    GM->>SW: Follow_Up (精确时间戳 t₀)
+    SW->>EP: Sync (t₀ + 链路延迟 + 驻留时间)
+    SW->>EP: Follow_Up
+    Note over EP: 终端校准本地时钟 → 同步精度 ±100ns~±1μs
+        </div>
+      </div>
+      <h4>关键参数 @ 双速率</h4>
+      <table class="cmp-table">
+        <tr><th>参数</th><th>100 Mbps</th><th>1000 Mbps</th></tr>
+        <tr><td>Sync 帧大小 (含以太网头)</td><td>~86 字节</td><td>~86 字节</td></tr>
+        <tr><td>Sync 帧传输时间</td><td>6.88 μs</td><td>0.688 μs</td></tr>
+        <tr><td>典型 Sync 间隔</td><td>125 ms</td><td>125 ms</td></tr>
+        <tr><td>Sync 带宽开销</td><td>~0.006%</td><td>~0.0006%</td></tr>
+        <tr><td>典型每跳同步精度</td><td>±30 ns (硬件时间戳)</td><td>±10 ns (硬件时间戳)</td></tr>
+        <tr><td>7 跳累计最大误差</td><td>±210 ns</td><td>±70 ns</td></tr>
+      </table>
+      <div class="quiz-box">
+        <h5>🧠 趣味问答</h5>
+        <p style="font-size:13px;">在一个 7 跳 TSN 网络中，如果所有交换机都使用<strong>软件时间戳</strong>（精度约 ±50μs/跳），最坏情况下时间同步误差是多少？这能满足 802.1Qbv 门控调度的要求吗？</p>
+        <div class="quiz-options" id="quiz-as">
+          <div class="quiz-opt" onclick="checkQuiz('quiz-as', this, false)">A. ±50 μs，完全满足</div>
+          <div class="quiz-opt" onclick="checkQuiz('quiz-as', this, false)">B. ±100 μs，勉强满足</div>
+          <div class="quiz-opt" onclick="checkQuiz('quiz-as', this, true)">C. ±350 μs，无法满足 — GCL 窗口通常仅几十到几百 μs</div>
+          <div class="quiz-opt" onclick="checkQuiz('quiz-as', this, false)">D. ±7 μs，完全满足</div>
+        </div>
+        <div class="quiz-feedback" id="quiz-as-fb"></div>
+      </div>
+    </div>
+
+    <!-- ====== 流量调度 ====== -->
+    <div class="proto-card red">
+      <div class="proto-header">
+        <span class="proto-badge ts">调度</span>
+        <div>
+          <div class="proto-title">IEEE 802.1Qbv — 时间感知整形器 (TAS)</div>
+          <div class="proto-subtitle">Time-Aware Shaper · 门控调度列表 GCL · TSN 确定性的核心</div>
+        </div>
+      </div>
+      <p>Qbv 在交换机每个出端口为 8 个优先级队列（Q0~Q7）设置独立的<strong>传输门</strong>。通过一个预先计算好的<strong>门控调度列表 (GCL)</strong>，按精确的时间表周期性地打开/关闭各队列的门。门打开时帧可以出队发送；门关闭则阻塞。这确保了时间敏感帧独占传输窗口，不受其他流量干扰。</p>
+      
+      <h4>GCL 门控原理示意</h4>
+      <p style="font-size:13px;color:var(--text-secondary);">下图展示一个调度周期内 8 个队列门的状态。<span style="color:var(--ts-red);font-weight:600;">红色</span>为 Scheduled Traffic 独占窗口，<span style="color:var(--be-gray);font-weight:600;">灰色</span>为 Best-Effort 窗口，<span style="color:#fbbf24;font-weight:600;">黄色</span>为保护带：</p>
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:16px;overflow-x:auto;">
+        <canvas id="gclMiniCanvas" width="760" height="160"></canvas>
+      </div>
+
+      <h4>帧传输时间与窗口容量</h4>
+      <table class="cmp-table">
+        <tr><th>参数</th><th>100 Mbps</th><th>1000 Mbps</th></tr>
+        <tr><td>最大帧 (1538 B) 传输时间</td><td>123.04 μs</td><td>12.304 μs</td></tr>
+        <tr><td>最小帧 (64 B) 传输时间</td><td>5.12 μs</td><td>0.512 μs</td></tr>
+        <tr><td>100μs 窗口可传最大帧数</td><td>0 帧 (不足一帧!)</td><td>8 帧</td></tr>
+        <tr><td>250μs 窗口可传最大帧数</td><td>2 帧</td><td>20 帧</td></tr>
+        <tr><td>建议最小保护带</td><td>≥ 5.12 μs (含帧抢占)</td><td>≥ 0.512 μs (含帧抢占)</td></tr>
+        <tr><td>无帧抢占时建议保护带</td><td>≥ 123.04 μs</td><td>≥ 12.304 μs</td></tr>
+      </table>
+      <div class="info-box warning">
+        <strong>关键洞察：</strong>在 100 Mbps 链路上，一个 100μs 的 GCL 窗口甚至无法传输一个最大帧（需要 123μs）！因此 100M 场景下的调度周期通常设计为 ≥ 500μs。而 1000 Mbps 链路上同样 100μs 窗口可传 8 个最大帧，灵活性显著提高。
+      </div>
+
+      <div class="quiz-box">
+        <h5>🧠 趣味问答</h5>
+        <p style="font-size:13px;">在 1000 Mbps 链路上，调度周期 500μs，分配给 Scheduled Traffic 的窗口为 100μs。如果所有控制报文为 128 字节，该窗口最多能发送多少个控制报文？</p>
+        <div class="quiz-options" id="quiz-qbv">
+          <div class="quiz-opt" onclick="checkQuiz('quiz-qbv', this, false)">A. 8 个</div>
+          <div class="quiz-opt" onclick="checkQuiz('quiz-qbv', this, false)">B. 50 个</div>
+          <div class="quiz-opt" onclick="checkQuiz('quiz-qbv', this, true)">C. 约 75 个 — 148B(含开销)×8bit÷1000Mbps=1.184μs/帧, 100÷1.184≈84, 减去保护带开销约75</div>
+          <div class="quiz-opt" onclick="checkQuiz('quiz-qbv', this, false)">D. 100 个</div>
+        </div>
+        <div class="quiz-feedback" id="quiz-qbv-fb"></div>
+      </div>
+    </div>
+
+    <div class="proto-card red">
+      <div class="proto-header">
+        <span class="proto-badge shape">整形</span>
+        <div>
+          <div class="proto-title">IEEE 802.1Qav — 信用量整形 (CBS)</div>
+          <div class="proto-subtitle">Credit-Based Shaper · 源自 AVB · 带宽预留与突发限制</div>
+        </div>
+      </div>
+      <p>CBS 通过<strong>信用量（credit）</strong>机制控制每个 SR Class 流量的发送速率。信用量 ≥ 0 允许发送，发送期间以 <strong>sendSlope</strong>（负值）下降，空闲时以 <strong>idleSlope</strong>（正值）恢复。这确保了流量的平均速率不超过预留值，同时限制了突发。</p>
+      
+      <h4>CBS 信用量变化过程</h4>
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:16px;overflow-x:auto;">
+        <canvas id="cbsCreditCanvas" width="760" height="200"></canvas>
+      </div>
+      
+      <h4>CBS 参数对比</h4>
+      <table class="cmp-table">
+        <tr><th>参数</th><th>100 Mbps (25% 预留)</th><th>1000 Mbps (25% 预留)</th></tr>
+        <tr><td>idleSlope</td><td>25 Mbps</td><td>250 Mbps</td></tr>
+        <tr><td>sendSlope</td><td>-75 Mbps</td><td>-750 Mbps</td></tr>
+        <tr><td>最大帧传输时间</td><td>121.76 μs</td><td>12.176 μs</td></tr>
+        <tr><td>帧间恢复时间</td><td>365.28 μs</td><td>36.53 μs</td></tr>
+        <tr><td>SR Class A 最大延迟 (7跳)</td><td>2 ms</td><td>2 ms</td></tr>
+        <tr><td>SR Class B 最大延迟 (7跳)</td><td>50 ms</td><td>50 ms</td></tr>
+      </table>
+    </div>
+
+    <div class="proto-card red">
+      <div class="proto-header">
+        <span class="proto-badge ts">调度</span>
+        <div>
+          <div class="proto-title">IEEE 802.1Qbu / 802.3br — 帧抢占</div>
+          <div class="proto-subtitle">Frame Preemption · Express vs Preemptable · 缩减保护带</div>
+        </div>
+      </div>
+      <p>帧抢占允许高优先级<strong>快速帧 (express)</strong> 中断正在传输的低优先级<strong>可抢占帧 (preemptable)</strong>。被中断的帧按 <strong>mPacket</strong> 规则拆分为片段，高优先级帧传完后继续传输并在接收端重组。</p>
+      
+      <h4>帧抢占效果对比</h4>
+      <div style="font-size:13px;">
+        <p>假设一个最大以太网帧 (1538 B = 12304 bit) 正在传输中，此时一个高优先级帧需要抢占：</p>
+      </div>
+      <table class="cmp-table">
+        <tr><th>指标</th><th>100 Mbps</th><th>1000 Mbps</th></tr>
+        <tr><td>无抢占：最坏等待时间</td><td style="color:var(--ts-red);font-weight:700;">123.04 μs</td><td style="color:var(--ts-red);font-weight:700;">12.304 μs</td></tr>
+        <tr><td>有抢占：最坏等待时间</td><td style="color:var(--success);font-weight:700;">5.12 μs</td><td style="color:var(--success);font-weight:700;">0.512 μs</td></tr>
+        <tr><td>保护带缩减比例</td><td style="font-weight:700;">95.8%</td><td style="font-weight:700;">95.8%</td></tr>
+        <tr><td>抢占节省的绝对时间</td><td>117.92 μs</td><td>11.792 μs</td></tr>
+      </table>
+      <div class="info-box">
+        <strong>实际意义：</strong>在 100 Mbps 链路上，帧抢占将保护带从 123μs 降至 5μs，对于 500μs 调度周期来说，节省了 23.6% 的可用时间！在 1000 Mbps 链路上绝对收益较小（~12μs），但对于极短周期调度（如 31.25μs）仍然关键。
+      </div>
+    </div>
+
+    <div class="proto-card red">
+      <div class="proto-header">
+        <span class="proto-badge ts">过滤</span>
+        <div>
+          <div class="proto-title">IEEE 802.1Qci — 流过滤与策略 (PSFP)</div>
+          <div class="proto-subtitle">Per-Stream Filtering and Policing · 入口流量防护</div>
+        </div>
+      </div>
+      <p>Qci 在交换机<strong>入口方向</strong>对每条流进行实时检查：验证帧是否在预期的时间窗口到达（<strong>流门控</strong>）、帧大小是否合规（<strong>流过滤</strong>）、流量速率是否超标（<strong>流计量</strong>）。不合规的帧可被丢弃、标记或重定向。这是 TSN 域的"边界卫士"。</p>
+      <table class="cmp-table">
+        <tr><th>检查维度</th><th>规则示例</th><th>违规处置</th></tr>
+        <tr><td>到达时间窗口</td><td>仅允许帧在 GCL 窗口 [t₀, t₀+100μs] 到达</td><td>丢弃 + 告警</td></tr>
+        <tr><td>帧大小</td><td>控制帧必须 ≤ 256 字节</td><td>丢弃</td></tr>
+        <tr><td>流量速率</td><td>@ 1000M: 该流 ≤ 50 Mbps; @ 100M: ≤ 5 Mbps</td><td>超额帧降级为 BE</td></tr>
+        <tr><td>VLAN / PCP 匹配</td><td>必须属于 VLAN 100, PCP = 7</td><td>丢弃</td></tr>
+      </table>
+    </div>
+
+    <!-- ====== 可靠性 ====== -->
+    <div class="proto-card green">
+      <div class="proto-header">
+        <span class="proto-badge rel">冗余</span>
+        <div>
+          <div class="proto-title">IEEE 802.1CB — 帧复制与消除 (FRER)</div>
+          <div class="proto-subtitle">Frame Replication and Elimination for Reliability · 零切换冗余</div>
+        </div>
+      </div>
+      <p>FRER 在<strong>发送端</strong>将每个帧复制为两份（或多份），沿不同网络路径传输。<strong>接收端</strong>通过 R-TAG 中的序列号识别并消除重复帧，仅保留最先到达的副本。即使一条路径完全故障，另一条路径的帧仍能到达——应用层完全无感知。</p>
+      
+      <h4>R-TAG 帧结构</h4>
+      <div class="pkt-anatomy" id="pktFrer">
+        <div class="pkt-field" style="flex:1.5;background:#dbeafe;" title="目标MAC地址">
+          <span class="pkt-name">Dst MAC</span>
+          <span class="pkt-size">6 B</span>
+        </div>
+        <div class="pkt-field" style="flex:1.5;background:#dbeafe;" title="源MAC地址">
+          <span class="pkt-name">Src MAC</span>
+          <span class="pkt-size">6 B</span>
+        </div>
+        <div class="pkt-field" style="flex:1.2;background:#d1fae5;" title="R-TAG EtherType = 0xF1C1">
+          <span class="pkt-name">R-TAG</span>
+          <span class="pkt-size">2 B</span>
+        </div>
+        <div class="pkt-field" style="flex:1.2;background:#d1fae5;" title="序列号：16位，范围0~65535，用于重复帧检测">
+          <span class="pkt-name" style="color:var(--success);font-weight:800;">SeqNr</span>
+          <span class="pkt-size">2 B</span>
+        </div>
+        <div class="pkt-field" style="flex:1;background:#fef3c7;" title="VLAN Tag (可选)">
+          <span class="pkt-name">VLAN</span>
+          <span class="pkt-size">4 B</span>
+        </div>
+        <div class="pkt-field" style="flex:3;background:#f1f5f9;" title="有效载荷">
+          <span class="pkt-name">Payload</span>
+          <span class="pkt-size">46~1500 B</span>
+        </div>
+        <div class="pkt-field" style="flex:1;background:#e2e8f0;" title="帧校验序列">
+          <span class="pkt-name">FCS</span>
+          <span class="pkt-size">4 B</span>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-secondary);">R-TAG 仅增加 <strong>4 字节</strong>开销（EtherType + SeqNr）。@ 1000 Mbps 额外传输时间仅 0.032μs，@ 100 Mbps 为 0.32μs——冗余的带宽代价极低。</p>
+
+      <div class="quiz-box">
+        <h5>🧠 趣味问答</h5>
+        <p style="font-size:13px;">FRER 的序列号为 16 位（0~65535）。如果一个 TSN 流的发送周期为 250μs，序列号大约多久会回绕（wrap around）一次？</p>
+        <div class="quiz-options" id="quiz-cb">
+          <div class="quiz-opt" onclick="checkQuiz('quiz-cb', this, false)">A. 约 0.16 秒</div>
+          <div class="quiz-opt" onclick="checkQuiz('quiz-cb', this, true)">B. 约 16.4 秒 — 65536 × 250μs ≈ 16.384s</div>
+          <div class="quiz-opt" onclick="checkQuiz('quiz-cb', this, false)">C. 约 164 秒</div>
+          <div class="quiz-opt" onclick="checkQuiz('quiz-cb', this, false)">D. 永远不会回绕</div>
+        </div>
+        <div class="quiz-feedback" id="quiz-cb-fb"></div>
+      </div>
+    </div>
+
+    <!-- ====== 资源管理 ====== -->
+    <div class="proto-card orange">
+      <div class="proto-header">
+        <span class="proto-badge mgmt">管理</span>
+        <div>
+          <div class="proto-title">IEEE 802.1Qcc — 流预留协议增强 (SRP Enhancements)</div>
+          <div class="proto-subtitle">CNC + CUC 集中式管理 · NETCONF/YANG · 三种配置模型</div>
+        </div>
+      </div>
+      <p>Qcc 定义了 TSN 网络的<strong>配置与管理架构</strong>。核心引入两个管理实体：<strong>CNC（集中式网络配置器）</strong>负责计算和下发全局最优的 GCL 调度、路径选择和带宽分配；<strong>CUC（集中式用户配置器）</strong>作为终端设备的代理收集流需求。CNC 通过 <strong>NETCONF/YANG</strong> 协议配置交换机。</p>
+      <table class="cmp-table">
+        <tr><th>配置模型</th><th>特点</th><th>适用场景</th></tr>
+        <tr><td style="color:var(--primary);font-weight:700;">完全集中式</td><td>CNC+CUC 统一管理，全局最优调度</td><td>大型工业网络、汽车骨干</td></tr>
+        <tr><td style="color:var(--accent);font-weight:700;">混合式</td><td>CNC 配置网络，终端用 SRP 自主注册</td><td>AVB 音视频、中等规模网络</td></tr>
+        <tr><td style="color:var(--be-gray);font-weight:700;">完全分布式</td><td>无集中控制器，SRP 逐跳决策</td><td>小型 AVB 网络</td></tr>
+      </table>
+    </div>
+
+    <div class="proto-card orange">
+      <div class="proto-header">
+        <span class="proto-badge mgmt">管理</span>
+        <div>
+          <div class="proto-title">IEEE 802.1Qat — 流预留协议 (SRP / MSRP)</div>
+          <div class="proto-subtitle">Stream Reservation Protocol · 分布式流声明与带宽预留</div>
+        </div>
+      </div>
+      <p>SRP（特别是其核心组件 MSRP）允许终端设备（Talker/Listener）向网络<strong>声明和预留</strong>流资源。Talker 声明一条流的带宽需求、优先级和目的地；每个交换机检查本地资源后逐跳转发或拒绝；Listener 注册确认后，端到端的带宽预留建立完成。</p>
+      <table class="cmp-table">
+        <tr><th>参数</th><th>100 Mbps</th><th>1000 Mbps</th></tr>
+        <tr><td>CBS 可预留的最大带宽 (SR Class A+B)</td><td>75 Mbps (75%)</td><td>750 Mbps (75%)</td></tr>
+        <tr><td>单流最大带宽</td><td>由 idleSlope 配置决定</td><td>由 idleSlope 配置决定</td></tr>
+        <tr><td>SRP 声明消息开销</td><td>~100 字节/流，极低</td><td>~100 字节/流，极低</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
 <!-- PART 1: TSN 产生的原因 -->
 <!-- ============================================================ -->
 <section class="section" id="part1">
@@ -696,7 +1339,7 @@ html { scroll-behavior: smooth; }
     </p>
     <div class="card">
       <div class="card-title"><span class="icon">⚠️</span>传统以太网的核心问题</div>
-      <p><strong>不确定的时延：</strong>当网络负载增大时，数据帧可能因队列拥塞而经历不可预测的排队延迟。在最坏情况下，一个关键控制消息的传输延迟可能从微秒级飙升到毫秒级甚至更高。</p>
+      <p><strong>不确定的时延：</strong>当网络负载增大时，数据帧可能因队列拥塞而经历不可预测的排队延迟。在最坏情况下，一个关键控制消息的传输延迟可能从微秒级飙升到毫秒级甚至更高。以一个 8 队列交换机的出端口为例：若 7 个其他队列各有一个最大帧（1538 字节）排队，则 @ 100 Mbps 最坏等待 = 7 × 123 μs ≈ <strong>861 μs</strong>；@ 1000 Mbps 最坏等待 = 7 × 12.3 μs ≈ <strong>86 μs</strong>。如果多个交换机级联，此延迟逐跳累积。</p>
       <p><strong>抖动（Jitter）无法控制：</strong>即使平均时延较低，不同数据帧之间的到达时间差异（抖动）可能非常大。对于运动控制、音视频同步等应用，抖动是致命问题。</p>
       <p><strong>缺乏流量隔离：</strong>关键任务流量与普通 IT 数据流量共享相同的队列和带宽，一个突发的文件传输就可能阻塞控制信号的及时送达。</p>
       <p><strong>无原生冗余机制：</strong>标准以太网依赖 STP（生成树协议）进行冗余切换，故障恢复时间通常在秒级，远不能满足工业控制 &lt;10ms 的要求。</p>
@@ -853,7 +1496,7 @@ graph LR
         <h4>数据流特征</h4>
         <div class="info-box">
           <strong>时间敏感流量（Scheduled Traffic）</strong>
-          PLC → TSN 交换机 → 远程 I/O / 驱动器：周期性控制命令与反馈，周期 250μs~1ms，优先级最高，使用 802.1Qbv 门控调度保证其独占时间窗口。
+          PLC → TSN 交换机 → 远程 I/O / 驱动器：周期性控制命令与反馈，周期 250μs~1ms，优先级最高，使用 802.1Qbv 门控调度保证其独占时间窗口。典型控制报文为 64~256 字节，@ 1000 Mbps 传输时间仅 0.5~2 μs，@ 100 Mbps 为 5~20 μs，均可在一个调度窗口内完成。
         </div>
         <div class="info-box">
           <strong>尽力而为流量（Best-Effort Traffic）</strong>
@@ -926,7 +1569,7 @@ graph TB
         </div>
         <div class="info-box">
           <strong>高带宽传感器数据</strong>
-          摄像头、LiDAR 原始数据流 — 带宽需求高（单路摄像头可达 1~4 Gbps），使用 802.1Qbv 为其分配固定带宽窗口。
+          摄像头、LiDAR 原始数据流 — 带宽需求高（单路 200 万像素摄像头 @30fps 原始数据约 1 Gbps）。在 1000 Mbps TSN 骨干链路上，一路摄像头即可占满全部带宽，因此多传感器融合场景通常需要多条千兆链路或聚合链路，并使用 802.1Qbv 为其分配固定带宽窗口。在 100 Mbps 端口上仅可承载压缩后的传感器数据（如 H.264 编码视频约 8~20 Mbps/路）。
         </div>
       </div>
     </div>
@@ -1040,7 +1683,8 @@ graph LR
         </div>
         <div class="info-box">
           <strong>带宽保障与同步</strong>
-          802.1Qav 的信用量整形（CBS）为每条音视频流预留固定带宽，确保流量不突发。802.1AS gPTP 为所有设备提供统一时钟，使调音台可以将来自不同交换机上的 64 路麦克风信号精确对齐到同一采样时刻。
+          802.1Qav 的信用量整形（CBS）为每条音视频流预留固定带宽，确保流量不突发。802.1AS gPTP 为所有设备提供统一时钟，使调音台可以将来自不同交换机上的 64 路麦克风信号精确对齐到同一采样时刻。<br><br>
+          <strong>带宽计算参考：</strong>单路 48kHz/24bit 无压缩音频 ≈ 1.152 Mbps，64 路 ≈ 73.7 Mbps — 一条 100 Mbps 链路可承载（使用 CBS 预留 75%）。单路 1080p@30fps 无压缩视频 ≈ 1.49 Gbps，需要至少 1000 Mbps 链路（实际需多链路聚合或压缩传输）。
         </div>
       </div>
     </div>
@@ -1198,6 +1842,14 @@ graph LR
           <p style="font-size:13px;color:var(--text-secondary);">拖动下方滑块调整保护带（Guard Band）大小，观察其对时间槽利用率和潜在冲突的影响：</p>
           
           <div class="slider-group">
+            <label>链路速率：</label>
+            <select id="linkSpeedSelect" onchange="updateGCL()" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:600;background:#fff;cursor:pointer;">
+              <option value="1000">1000 Mbps (1 Gbps)</option>
+              <option value="100">100 Mbps</option>
+            </select>
+            <span class="val" id="linkSpeedInfo" style="min-width:80px;"></span>
+          </div>
+          <div class="slider-group">
             <label>保护带宽度：</label>
             <input type="range" id="guardBandSlider" min="0" max="50" value="10" oninput="updateGCL()">
             <span class="val" id="guardBandVal">10μs</span>
@@ -1226,6 +1878,12 @@ graph LR
           <div class="tree-leaf">
             CBS 适用于对延迟有一定要求但不需要严格确定性的流量（如音视频流），通常分配给 SR Class A（最大延迟 2ms/7跳）和 SR Class B（最大延迟 50ms/7跳）。
           </div>
+          <div class="tree-leaf" style="background:#eff6ff;">
+            <strong>CBS 带宽计算示例 @ 100 Mbps：</strong>若为 SR Class A 预留 idleSlope = 25 Mbps（25% 带宽），则 sendSlope = -(100 - 25) = -75 Mbps。发送一个 1522 字节帧耗时 121.76 μs，信用量减少 121.76 × 75 = 9132 credit；空闲恢复需 9132 / 25 = 365.28 μs。因此两帧之间最小间隔约 487 μs，最大突发被有效限制。
+          </div>
+          <div class="tree-leaf" style="background:#f0fdf4;">
+            <strong>CBS 带宽计算示例 @ 1000 Mbps：</strong>同样预留 idleSlope = 250 Mbps（25%），sendSlope = -750 Mbps。发送同一帧耗时仅 12.176 μs，信用量减少 12.176 × 750 = 9132 credit；空闲恢复需 9132 / 250 = 36.53 μs。两帧最小间隔约 48.7 μs — 千兆链路上 CBS 的整形粒度提高了约 10 倍。
+          </div>
         </div>
       </li>
       <li class="tree-item">
@@ -1237,7 +1895,16 @@ graph LR
             <strong>帧抢占（Frame Preemption）</strong>允许高优先级的"快速帧"（express frame）中断正在传输中的低优先级"可抢占帧"（preemptable frame）。被中断的低优先级帧分成多个片段（fragment），在高优先级帧传输完成后继续传输并在接收端重组。
           </div>
           <div class="tree-leaf">
-            帧抢占将最坏情况下的高优先级等待时间从一个最大帧传输时间（1518字节 ≈ 123μs @100Mbps）降低到一个最小片段大小（64字节 ≈ 5.12μs @100Mbps），显著减小了保护带需求，提高了带宽利用率。帧抢占通常与 802.1Qbv 配合使用。
+            帧抢占的效果取决于链路速率。以最大以太网帧（1518 字节 + 前导与 IFG 共 20 字节 = 1538 字节 = 12304 bit）和最小片段（64 字节 = 512 bit）为例：
+          </div>
+          <div class="tree-leaf" style="background:#eff6ff;">
+            <strong>@ 100 Mbps：</strong>最大帧传输时间 = 12304 bit ÷ 100 Mbit/s = <strong>123.04 μs</strong>；最小片段传输时间 = 512 bit ÷ 100 Mbit/s = <strong>5.12 μs</strong>。启用帧抢占后，高优先级帧的最坏等待从 ~123 μs 降至 ~5 μs，保护带缩减约 96%。
+          </div>
+          <div class="tree-leaf" style="background:#f0fdf4;">
+            <strong>@ 1000 Mbps：</strong>最大帧传输时间 = 12304 bit ÷ 1000 Mbit/s = <strong>12.304 μs</strong>；最小片段传输时间 = 512 bit ÷ 1000 Mbit/s = <strong>0.512 μs</strong>。千兆链路上即使不使用帧抢占，最坏等待仅 ~12 μs，抢占后降至亚微秒级。
+          </div>
+          <div class="tree-leaf">
+            因此，帧抢占在 <strong>100 Mbps</strong> 链路上收益最为显著，而在 <strong>1000 Mbps</strong> 链路上帧传输时间本身已很短，改善相对较小但对极端确定性场景仍有价值。帧抢占通常与 802.1Qbv 配合使用。
           </div>
         </div>
       </li>
@@ -1571,6 +2238,8 @@ document.addEventListener('DOMContentLoaded', function() {
   initFRERCanvas();
   drawVennDiagram();
   initSidebarScroll();
+  drawGCLMini();
+  drawCBSCredit();
   
   // Initialize Mermaid
   if (typeof mermaid !== 'undefined') {
@@ -1724,16 +2393,16 @@ function initRadarChart() {
       eth: '传统以太网 (20/100): Best-Effort 转发，无任何确定性保证，受队列拥塞影响严重。'
     },
     '低时延': {
-      tsn: 'TSN (92/100): 通过时间感知整形和帧抢占，端到端时延可控制在微秒级，7跳网络 <100μs。',
-      eth: '传统以太网 (45/100): 平均时延尚可，但最坏情况时延不可预测，可能达到毫秒级。'
+      tsn: 'TSN (92/100): 通过时间感知整形和帧抢占，@ 1000Mbps 7跳网络端到端时延可控制在 <100μs；@ 100Mbps 约 <500μs（每跳最大帧传输 123μs，但门控调度可将其降至个位数μs）。',
+      eth: '传统以太网 (45/100): @ 1000Mbps 单跳最坏等待约 86μs（7队列×12.3μs）；@ 100Mbps 约 861μs（7×123μs）。多跳累积后最坏时延不可预测，可达数毫秒。'
     },
     '低抖动': {
       tsn: 'TSN (95/100): 门控调度使同一流量的帧在每个周期中的发送时刻固定，抖动可控制在 ±1μs 以内。',
       eth: '传统以太网 (25/100): 抖动随网络负载波动巨大，无法满足运动控制和音视频同步要求。'
     },
     '带宽利用率': {
-      tsn: 'TSN (85/100): 时间敏感流量独占窗口外的时间段可用于 Best-Effort 流量，综合利用率高。但保护带会损失少量带宽。',
-      eth: '传统以太网 (70/100): 统计复用带宽利用率较好，但无法为关键流量保证带宽。'
+      tsn: 'TSN (85/100): @ 1000Mbps 保护带仅需约 0.5μs（最小片段），对 500μs 周期仅损失 0.1% 带宽；@ 100Mbps 保护带约 5μs，损失约 1%。综合利用率高于专有实时以太网。',
+      eth: '传统以太网 (70/100): 统计复用在高负载下利用率可达 90%+，但无法为关键流量保证带宽。@ 100Mbps 仅 100 Mbit/s 总带宽，多流竞争时关键流量易被挤占；@ 1000Mbps 带宽裕量更大但仍无隔离保证。'
     },
     '冗余能力': {
       tsn: 'TSN (90/100): 802.1CB FRER 实现零切换冗余，无中断帧复制消除。',
@@ -1861,9 +2530,17 @@ function updateGCL() {
   const ctx = canvas.getContext('2d');
   const guardBand = parseInt(document.getElementById('guardBandSlider').value);
   const cycleTime = parseInt(document.getElementById('cycleSlider').value);
+  const linkSpeed = parseInt(document.getElementById('linkSpeedSelect').value);
   
   document.getElementById('guardBandVal').textContent = guardBand + 'μs';
   document.getElementById('cycleVal').textContent = cycleTime + 'μs';
+  
+  const maxFrameBits = 12304;
+  const minFragBits = 512;
+  const maxFrameTime = (maxFrameBits / linkSpeed).toFixed(2);
+  const minFragTime = (minFragBits / linkSpeed).toFixed(2);
+  const bytesPerUs = linkSpeed / 8;
+  document.getElementById('linkSpeedInfo').innerHTML = maxFrameTime + 'μs/帧<sub>max</sub>';
   
   const W = canvas.width;
   const H = canvas.height;
@@ -1892,7 +2569,7 @@ function updateGCL() {
   // Title
   ctx.font = 'bold 13px -apple-system, sans-serif';
   ctx.fillStyle = '#1e293b';
-  ctx.fillText(`GCL 门控调度 — 周期 ${cycleTime}μs, 保护带 ${guardBand}μs`, marginLeft, 18);
+  ctx.fillText(`GCL 门控调度 — ${linkSpeed} Mbps, 周期 ${cycleTime}μs, 保护带 ${guardBand}μs`, marginLeft, 18);
   
   // Time axis
   const axisY = topOffset + queues.length * (trackH + gap) + 10;
@@ -2004,9 +2681,19 @@ function updateGCL() {
   if (guardBand > cycleTime * 0.15) {
     warning = '<span style="color:#d32f2f;font-weight:600;">⚠ 保护带过大（>' + Math.round(cycleTime * 0.15) + 'μs），带宽利用率显著降低！</span>';
   } else if (guardBand === 0) {
-    warning = '<span style="color:#d32f2f;font-weight:600;">⚠ 无保护带！帧重叠风险极高——队列切换时未完成的帧可能与下一个窗口的帧冲突。</span>';
+    warning = '<span style="color:#d32f2f;font-weight:600;">⚠ 无保护带！@ ' + linkSpeed + ' Mbps 最大帧传输需 ' + maxFrameTime + 'μs，无保护带时队列切换瞬间未完成的帧将与下一窗口冲突。</span>';
   }
-  infoDiv.innerHTML = `有效带宽利用率: <strong>${utilization}%</strong> | 保护带总开销: <strong>${totalGuardPct}%</strong> ${warning}`;
+  const scheduledWindowUs = cycleTime * 0.20;
+  const scheduledBytes = Math.floor(scheduledWindowUs * bytesPerUs);
+  const maxFramesInWindow = Math.floor(scheduledBytes / 1538);
+  const beWindowUs = cycleTime * 0.50;
+  const beBytes = Math.floor(beWindowUs * bytesPerUs);
+  
+  infoDiv.innerHTML = `有效带宽利用率: <strong>${utilization}%</strong> | 保护带总开销: <strong>${totalGuardPct}%</strong><br>` +
+    `<span style="color:var(--ts-red);">@ ${linkSpeed} Mbps：</span>` +
+    `最大帧传输 <strong>${maxFrameTime}μs</strong> (1538B) | 最小片段 <strong>${minFragTime}μs</strong> (64B) | ` +
+    `调度窗口(Q7)可传 <strong>≈${scheduledBytes} B</strong> (${maxFramesInWindow} 个最大帧) | ` +
+    `BE 窗口(Q0)可传 <strong>≈${beBytes} B</strong> ` + warning;
 }
 
 // ========================================
@@ -2356,6 +3043,309 @@ function drawVennDiagram() {
       canvas.style.cursor = 'default';
     }
   });
+}
+
+// ========================================
+// Architecture diagram interaction
+// ========================================
+const archProtoData = {
+  as: {
+    title: '802.1AS — gPTP 精确时间同步',
+    body: '<p><strong>功能定位：</strong>TSN 所有时间相关机制的<span style="color:var(--primary);font-weight:700;">绝对基石</span>。没有精确的时间同步，门控调度 (Qbv)、帧复制消除 (CB) 都无法工作。</p>' +
+      '<p><strong>解决的问题：</strong>让网络中每台设备的时钟达到亚微秒级一致性（硬件时间戳下 ±100ns~±1μs）。</p>' +
+      '<p><strong>工作原理：</strong>① BMCA 选举 Grandmaster 时钟 → ② Peer Delay 测量每段链路延迟 → ③ Sync/Follow_Up 逐跳传递时间。</p>' +
+      '<p><strong>关键参数：</strong>@ 100Mbps Sync 帧传输 6.88μs, 带宽开销 0.006%；@ 1000Mbps 传输 0.688μs, 开销 0.0006%。</p>' +
+      '<p><strong>依赖关系：</strong>802.1Qbv、802.1CB、802.1Qci 都依赖 AS 提供的时间基准。</p>'
+  },
+  asrev: {
+    title: '802.1AS-Rev — gPTP 增强版',
+    body: '<p><strong>功能定位：</strong>802.1AS 的修订版，增加了关键增强特性。</p>' +
+      '<p><strong>关键增强：</strong>① <strong>热备份 Grandmaster</strong> — 主 GM 故障时亚毫秒级切换到备用 GM，避免时间同步中断；② <strong>多时间域</strong> — 同一网络可运行多个独立的时间域（用于不同应用群组）；③ <strong>增强的 BMCA</strong> — 更快的角色切换和故障检测。</p>' +
+      '<p><strong>解决的问题：</strong>原始 AS 中 GM 故障切换可能需要数秒，期间 Qbv 调度失效。AS-Rev 将切换时间降至毫秒以下。</p>'
+  },
+  qbv: {
+    title: '802.1Qbv — 时间感知整形器 (TAS)',
+    body: '<p><strong>功能定位：</strong>TSN 实现<span style="color:var(--ts-red);font-weight:700;">确定性传输</span>的核心机制。控制"在精确的什么时刻发送什么帧"。</p>' +
+      '<p><strong>工作原理：</strong>交换机每个出端口维护一个 GCL（门控调度列表），按时间表打开/关闭 8 个优先级队列的传输门。</p>' +
+      '<p><strong>关键计算：</strong>@ 100Mbps 一个最大帧占用 123μs，@ 1000Mbps 仅 12.3μs。保护带 @ 100M 最小 5.12μs（有帧抢占），@ 1000M 最小 0.512μs。</p>' +
+      '<p><strong>依赖：</strong>强依赖 802.1AS 的时间同步（GCL 的时间基准）；配合 802.1Qbu 帧抢占可缩减保护带；由 802.1Qcc CNC 统一计算和下发 GCL。</p>'
+  },
+  qav: {
+    title: '802.1Qav — 信用量整形 (CBS)',
+    body: '<p><strong>功能定位：</strong>源自 AVB 的<span style="color:var(--accent);font-weight:700;">带宽预留与突发限制</span>机制，适用于对延迟有要求但不需要严格确定性的流量（如音视频流）。</p>' +
+      '<p><strong>工作原理：</strong>为每个 SR Class 维护信用量，≥0 可发送（以 sendSlope 下降），<0 等待（以 idleSlope 恢复）。</p>' +
+      '<p><strong>关键计算：</strong>@ 100M 预留 25%: idleSlope=25Mbps, sendSlope=-75Mbps, 帧间隔 487μs；@ 1000M 帧间隔 48.7μs — 整形粒度提高 10×。</p>' +
+      '<p><strong>与 Qbv 区别：</strong>CBS 是"软实时"（统计保证），Qbv 是"硬实时"（精确时间窗口保证）。两者可在同一交换机上协同工作。</p>'
+  },
+  qbu: {
+    title: '802.1Qbu / 802.3br — 帧抢占',
+    body: '<p><strong>功能定位：</strong>通过允许高优先级帧中断低优先级帧传输，<span style="color:var(--ts-red);font-weight:700;">缩减保护带</span>，提高带宽利用率。</p>' +
+      '<p><strong>工作原理：</strong>低优先级帧标记为 preemptable，高优先级为 express。express 帧到达时可打断 preemptable 帧传输，后者暂停并拆分为 mPacket 片段（最小 64B）。</p>' +
+      '<p><strong>效果：</strong>@ 100M 保护带从 123μs 降至 5.12μs（↓96%）；@ 1000M 从 12.3μs 降至 0.512μs（↓96%）。</p>' +
+      '<p><strong>与 Qbv 配合：</strong>帧抢占使 GCL 保护带可以设得非常短，从而为有效载荷留出更多时间窗口。</p>'
+  },
+  qci: {
+    title: '802.1Qci — 流过滤与策略 (PSFP)',
+    body: '<p><strong>功能定位：</strong>TSN 域的<span style="color:var(--ts-red);font-weight:700;">入口安全卫士</span>。在交换机入口逐流检查帧是否合规。</p>' +
+      '<p><strong>三道防线：</strong>① <strong>流门控 (Stream Gate)</strong> — 检查帧到达时间是否在预期的 GCL 窗口内；② <strong>流过滤 (Stream Filter)</strong> — 检查帧大小、VLAN、PCP 等属性；③ <strong>流计量 (Stream Meter)</strong> — 检查流量速率是否超标。</p>' +
+      '<p><strong>与安全的关系：</strong>Qci 可防御流量注入攻击 — 即使攻击者成功接入 TSN 端口，非法帧也会被入口过滤器丢弃。</p>'
+  },
+  cb: {
+    title: '802.1CB — 帧复制与消除 (FRER)',
+    body: '<p><strong>功能定位：</strong>实现<span style="color:var(--success);font-weight:700;">零切换时间的无缝冗余</span>，是 TSN 可靠性保证的核心。</p>' +
+      '<p><strong>工作原理：</strong>发送端添加 R-TAG（含 16 位序列号）并复制帧，沿不同路径传输。接收端用序列号消除重复帧。</p>' +
+      '<p><strong>带宽开销：</strong>R-TAG 仅 4 字节。@ 1000M 额外传输 0.032μs/帧；@ 100M 额外 0.32μs/帧。总带宽因双路径传输翻倍，但关键路径上无额外开销。</p>' +
+      '<p><strong>vs 传统冗余：</strong>RSTP 切换 ~秒级，MRP ~10-200ms，PRP/HSR ~0ms（但非标准以太网）。FRER 在标准以太网上实现 0ms 切换。</p>'
+  },
+  qcr: {
+    title: '802.1Qcr — 异步流量整形 (ATS)',
+    body: '<p><strong>功能定位：</strong>为<span style="color:var(--success);font-weight:700;">不需要全网时间同步</span>的场景提供确定性保证。</p>' +
+      '<p><strong>工作原理：</strong>基于令牌桶算法（Token Bucket），在交换机逐跳对每条流独立整形。不依赖 802.1AS 全局时间同步，因此适合 AS 部署困难的异构网络。</p>' +
+      '<p><strong>与 Qbv 对比：</strong>Qbv 需要全网同步时钟（硬实时），ATS 仅需本地时钟（软实时但确定性有界）。ATS 的最坏延迟界限通常比 Qbv 宽松，但部署更灵活。</p>' +
+      '<p><strong>典型应用：</strong>汽车网络中部分不支持 gPTP 的遗留 ECU、边缘 IoT 网关。</p>'
+  },
+  qcc: {
+    title: '802.1Qcc — 流预留增强 / 集中式管理',
+    body: '<p><strong>功能定位：</strong>TSN 网络的<span style="color:var(--accent);font-weight:700;">大脑</span>，定义了"谁来配置网络、怎么配置"。</p>' +
+      '<p><strong>核心实体：</strong>① <strong>CNC（Centralized Network Controller）</strong>— 计算全局最优的 GCL 调度和路径，通过 NETCONF/YANG 下发到交换机；② <strong>CUC（Centralized User Configuration）</strong>— 收集终端设备的流需求。</p>' +
+      '<p><strong>三种模型：</strong>完全集中式（CNC+CUC 统管）、混合式（CNC+SRP）、完全分布式（仅 SRP）。工业场景推荐完全集中式。</p>' +
+      '<p><strong>NETCONF/YANG：</strong>CNC 使用 NETCONF 协议 + YANG 数据模型配置交换机的 GCL、队列映射、VLAN 等参数。</p>'
+  },
+  qat: {
+    title: '802.1Qat — 流预留协议 (SRP/MSRP)',
+    body: '<p><strong>功能定位：</strong>分布式场景下终端设备<span style="color:var(--accent);font-weight:700;">自主声明和预留</span>网络资源。</p>' +
+      '<p><strong>核心协议：</strong>MSRP（多流预留协议）— Talker 声明流需求（带宽、延迟等级），交换机逐跳检查资源后转发，Listener 确认注册。</p>' +
+      '<p><strong>带宽限制：</strong>@ 100M 最大可预留 75 Mbps（SR Class A+B 合计不超过 75%），@ 1000M 最大 750 Mbps。剩余 25% 保留给 Best-Effort 流量。</p>' +
+      '<p><strong>与 Qcc 的关系：</strong>在完全集中式模型中 SRP 被 CNC/CUC 取代；在混合/分布式模型中 SRP 仍是主要的流预留机制。</p>'
+  }
+};
+
+function showArchProto(proto) {
+  const data = archProtoData[proto];
+  if (!data) return;
+  
+  document.getElementById('archInfoTitle').innerHTML = data.title;
+  document.getElementById('archInfoBody').innerHTML = data.body;
+  
+  document.querySelectorAll('.arch-block').forEach(b => b.classList.remove('active'));
+  const block = document.querySelector(`.arch-block[data-proto="${proto}"]`);
+  if (block) block.classList.add('active');
+  
+  document.getElementById('archInfoPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ========================================
+// Quiz system
+// ========================================
+function checkQuiz(quizId, el, correct) {
+  const container = document.getElementById(quizId);
+  const fb = document.getElementById(quizId + '-fb');
+  
+  if (container.dataset.answered === 'true') return;
+  container.dataset.answered = 'true';
+  
+  container.querySelectorAll('.quiz-opt').forEach(opt => {
+    opt.style.pointerEvents = 'none';
+  });
+  
+  if (correct) {
+    el.classList.add('correct');
+    fb.innerHTML = '<span style="color:var(--success);font-weight:600;">✓ 正确！</span>';
+  } else {
+    el.classList.add('wrong');
+    container.querySelectorAll('.quiz-opt').forEach(opt => {
+      if (opt.getAttribute('onclick') && opt.getAttribute('onclick').includes('true)')) {
+        opt.classList.add('correct');
+      }
+    });
+    fb.innerHTML = '<span style="color:var(--ts-red);font-weight:600;">✗ 不正确。</span> 正确答案已标绿高亮。';
+  }
+}
+
+// ========================================
+// GCL Mini diagram (for protocol overview)
+// ========================================
+function drawGCLMini() {
+  const canvas = document.getElementById('gclMiniCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  
+  const ml = 60, mr = 20, tw = W - ml - mr;
+  const queues = [
+    { name: 'Q7', label: 'Sched', color: '#d32f2f', open: [0, 0.15] },
+    { name: 'Q5', label: 'CBS-A', color: '#2e7d32', open: [0.17, 0.35] },
+    { name: 'Q3', label: 'CBS-B', color: '#1a73e8', open: [0.37, 0.55] },
+    { name: 'Q0', label: 'BE', color: '#9e9e9e', open: [0.57, 0.97] }
+  ];
+  
+  const th = 28, gap = 8, top = 10;
+  
+  queues.forEach((q, i) => {
+    const y = top + i * (th + gap);
+    
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = q.color;
+    ctx.fillText(q.name, 4, y + th / 2 + 4);
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText(q.label, 30, y + th / 2 + 4);
+    
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(ml, y, tw, th);
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeRect(ml, y, tw, th);
+    
+    const x1 = ml + q.open[0] * tw;
+    const w = (q.open[1] - q.open[0]) * tw;
+    ctx.fillStyle = q.color;
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(x1, y + 2, w, th - 4);
+    ctx.globalAlpha = 1;
+    
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillStyle = '#fff';
+    if (w > 30) ctx.fillText('OPEN', x1 + 4, y + th / 2 + 3);
+    
+    // Guard bands
+    const gbw = 0.02 * tw;
+    ctx.fillStyle = '#fbbf24';
+    ctx.globalAlpha = 0.5;
+    if (q.open[0] > 0) ctx.fillRect(x1 - gbw, y + 2, gbw, th - 4);
+    ctx.fillRect(x1 + w, y + 2, gbw, th - 4);
+    ctx.globalAlpha = 1;
+  });
+  
+  // Time axis
+  const axisY = top + queues.length * (th + gap);
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ml, axisY);
+  ctx.lineTo(ml + tw, axisY);
+  ctx.stroke();
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('0', ml - 4, axisY + 14);
+  ctx.fillText('T (调度周期)', ml + tw - 40, axisY + 14);
+  
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('← 每个周期重复 →', ml + tw / 2 - 40, axisY + 14);
+}
+
+// ========================================
+// CBS Credit curve diagram
+// ========================================
+function drawCBSCredit() {
+  const canvas = document.getElementById('cbsCreditCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  
+  const ml = 70, mr = 20, mt = 20, mb = 30;
+  const pw = W - ml - mr, ph = H - mt - mb;
+  const zeroY = mt + ph * 0.4;
+  
+  // Axes
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ml, mt);
+  ctx.lineTo(ml, mt + ph);
+  ctx.lineTo(ml + pw, mt + ph);
+  ctx.stroke();
+  
+  // Zero line
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(ml, zeroY);
+  ctx.lineTo(ml + pw, zeroY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.save();
+  ctx.translate(15, mt + ph / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Credit', 0, 0);
+  ctx.restore();
+  ctx.fillText('0', ml - 14, zeroY + 4);
+  ctx.fillText('时间 →', ml + pw - 30, mt + ph + 18);
+  
+  // Credit curve segments (idle → send → idle → wait → idle → send...)
+  const segments = [
+    { type: 'idle', duration: 0.08 },
+    { type: 'send', duration: 0.06 },
+    { type: 'idle', duration: 0.15 },
+    { type: 'send', duration: 0.06 },
+    { type: 'idle', duration: 0.12 },
+    { type: 'wait', duration: 0.10 },
+    { type: 'idle', duration: 0.18 },
+    { type: 'send', duration: 0.06 },
+    { type: 'idle', duration: 0.12 },
+    { type: 'send', duration: 0.06 }
+  ];
+  
+  const idleSlope = 0.33;
+  const sendSlope = -1.0;
+  let credit = 0, x = ml, maxCredit = 0.5;
+  
+  ctx.beginPath();
+  ctx.moveTo(x, zeroY - credit * ph * 0.7);
+  ctx.strokeStyle = '#1a73e8';
+  ctx.lineWidth = 2.5;
+  
+  segments.forEach(seg => {
+    const dx = seg.duration * pw;
+    let slope = seg.type === 'send' ? sendSlope : (seg.type === 'wait' ? 0 : idleSlope);
+    let newCredit = credit + slope * seg.duration * 4;
+    
+    if (seg.type === 'idle' && newCredit > maxCredit) newCredit = maxCredit;
+    if (seg.type === 'wait') newCredit = credit;
+    if (seg.type === 'idle' && credit < 0) {
+      newCredit = credit + idleSlope * seg.duration * 4;
+    }
+    
+    const ny = zeroY - newCredit * ph * 0.7;
+    ctx.lineTo(x + dx, ny);
+    
+    // Frame marker for send segments
+    if (seg.type === 'send') {
+      ctx.stroke();
+      ctx.fillStyle = '#fee2e2';
+      ctx.fillRect(x, mt, dx, ph);
+      ctx.beginPath();
+      ctx.moveTo(x + dx, ny);
+      ctx.strokeStyle = '#1a73e8';
+      ctx.lineWidth = 2.5;
+    }
+    
+    credit = newCredit;
+    x += dx;
+  });
+  ctx.stroke();
+  
+  // Labels
+  ctx.font = 'bold 10px sans-serif';
+  ctx.fillStyle = '#d32f2f';
+  ctx.fillText('发送帧', ml + 0.09 * pw, mt + 14);
+  ctx.fillText('(credit ↓)', ml + 0.09 * pw, mt + 26);
+  
+  ctx.fillStyle = '#1a73e8';
+  ctx.fillText('空闲恢复 (idleSlope: credit ↑)', ml + 0.35 * pw, zeroY - ph * 0.25);
+  
+  ctx.fillStyle = '#d32f2f';
+  ctx.fillText('sendSlope', ml + 0.02 * pw + 2, zeroY + 16);
+  
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('credit ≥ 0: 允许发送', ml + pw - 160, mt + 14);
+  ctx.fillText('credit < 0: 等待恢复', ml + pw - 160, mt + 28);
 }
 
 // ========================================
