@@ -696,7 +696,7 @@ html { scroll-behavior: smooth; }
     </p>
     <div class="card">
       <div class="card-title"><span class="icon">⚠️</span>传统以太网的核心问题</div>
-      <p><strong>不确定的时延：</strong>当网络负载增大时，数据帧可能因队列拥塞而经历不可预测的排队延迟。在最坏情况下，一个关键控制消息的传输延迟可能从微秒级飙升到毫秒级甚至更高。</p>
+      <p><strong>不确定的时延：</strong>当网络负载增大时，数据帧可能因队列拥塞而经历不可预测的排队延迟。在最坏情况下，一个关键控制消息的传输延迟可能从微秒级飙升到毫秒级甚至更高。以一个 8 队列交换机的出端口为例：若 7 个其他队列各有一个最大帧（1538 字节）排队，则 @ 100 Mbps 最坏等待 = 7 × 123 μs ≈ <strong>861 μs</strong>；@ 1000 Mbps 最坏等待 = 7 × 12.3 μs ≈ <strong>86 μs</strong>。如果多个交换机级联，此延迟逐跳累积。</p>
       <p><strong>抖动（Jitter）无法控制：</strong>即使平均时延较低，不同数据帧之间的到达时间差异（抖动）可能非常大。对于运动控制、音视频同步等应用，抖动是致命问题。</p>
       <p><strong>缺乏流量隔离：</strong>关键任务流量与普通 IT 数据流量共享相同的队列和带宽，一个突发的文件传输就可能阻塞控制信号的及时送达。</p>
       <p><strong>无原生冗余机制：</strong>标准以太网依赖 STP（生成树协议）进行冗余切换，故障恢复时间通常在秒级，远不能满足工业控制 &lt;10ms 的要求。</p>
@@ -853,7 +853,7 @@ graph LR
         <h4>数据流特征</h4>
         <div class="info-box">
           <strong>时间敏感流量（Scheduled Traffic）</strong>
-          PLC → TSN 交换机 → 远程 I/O / 驱动器：周期性控制命令与反馈，周期 250μs~1ms，优先级最高，使用 802.1Qbv 门控调度保证其独占时间窗口。
+          PLC → TSN 交换机 → 远程 I/O / 驱动器：周期性控制命令与反馈，周期 250μs~1ms，优先级最高，使用 802.1Qbv 门控调度保证其独占时间窗口。典型控制报文为 64~256 字节，@ 1000 Mbps 传输时间仅 0.5~2 μs，@ 100 Mbps 为 5~20 μs，均可在一个调度窗口内完成。
         </div>
         <div class="info-box">
           <strong>尽力而为流量（Best-Effort Traffic）</strong>
@@ -926,7 +926,7 @@ graph TB
         </div>
         <div class="info-box">
           <strong>高带宽传感器数据</strong>
-          摄像头、LiDAR 原始数据流 — 带宽需求高（单路摄像头可达 1~4 Gbps），使用 802.1Qbv 为其分配固定带宽窗口。
+          摄像头、LiDAR 原始数据流 — 带宽需求高（单路 200 万像素摄像头 @30fps 原始数据约 1 Gbps）。在 1000 Mbps TSN 骨干链路上，一路摄像头即可占满全部带宽，因此多传感器融合场景通常需要多条千兆链路或聚合链路，并使用 802.1Qbv 为其分配固定带宽窗口。在 100 Mbps 端口上仅可承载压缩后的传感器数据（如 H.264 编码视频约 8~20 Mbps/路）。
         </div>
       </div>
     </div>
@@ -1040,7 +1040,8 @@ graph LR
         </div>
         <div class="info-box">
           <strong>带宽保障与同步</strong>
-          802.1Qav 的信用量整形（CBS）为每条音视频流预留固定带宽，确保流量不突发。802.1AS gPTP 为所有设备提供统一时钟，使调音台可以将来自不同交换机上的 64 路麦克风信号精确对齐到同一采样时刻。
+          802.1Qav 的信用量整形（CBS）为每条音视频流预留固定带宽，确保流量不突发。802.1AS gPTP 为所有设备提供统一时钟，使调音台可以将来自不同交换机上的 64 路麦克风信号精确对齐到同一采样时刻。<br><br>
+          <strong>带宽计算参考：</strong>单路 48kHz/24bit 无压缩音频 ≈ 1.152 Mbps，64 路 ≈ 73.7 Mbps — 一条 100 Mbps 链路可承载（使用 CBS 预留 75%）。单路 1080p@30fps 无压缩视频 ≈ 1.49 Gbps，需要至少 1000 Mbps 链路（实际需多链路聚合或压缩传输）。
         </div>
       </div>
     </div>
@@ -1198,6 +1199,14 @@ graph LR
           <p style="font-size:13px;color:var(--text-secondary);">拖动下方滑块调整保护带（Guard Band）大小，观察其对时间槽利用率和潜在冲突的影响：</p>
           
           <div class="slider-group">
+            <label>链路速率：</label>
+            <select id="linkSpeedSelect" onchange="updateGCL()" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:600;background:#fff;cursor:pointer;">
+              <option value="1000">1000 Mbps (1 Gbps)</option>
+              <option value="100">100 Mbps</option>
+            </select>
+            <span class="val" id="linkSpeedInfo" style="min-width:80px;"></span>
+          </div>
+          <div class="slider-group">
             <label>保护带宽度：</label>
             <input type="range" id="guardBandSlider" min="0" max="50" value="10" oninput="updateGCL()">
             <span class="val" id="guardBandVal">10μs</span>
@@ -1226,6 +1235,12 @@ graph LR
           <div class="tree-leaf">
             CBS 适用于对延迟有一定要求但不需要严格确定性的流量（如音视频流），通常分配给 SR Class A（最大延迟 2ms/7跳）和 SR Class B（最大延迟 50ms/7跳）。
           </div>
+          <div class="tree-leaf" style="background:#eff6ff;">
+            <strong>CBS 带宽计算示例 @ 100 Mbps：</strong>若为 SR Class A 预留 idleSlope = 25 Mbps（25% 带宽），则 sendSlope = -(100 - 25) = -75 Mbps。发送一个 1522 字节帧耗时 121.76 μs，信用量减少 121.76 × 75 = 9132 credit；空闲恢复需 9132 / 25 = 365.28 μs。因此两帧之间最小间隔约 487 μs，最大突发被有效限制。
+          </div>
+          <div class="tree-leaf" style="background:#f0fdf4;">
+            <strong>CBS 带宽计算示例 @ 1000 Mbps：</strong>同样预留 idleSlope = 250 Mbps（25%），sendSlope = -750 Mbps。发送同一帧耗时仅 12.176 μs，信用量减少 12.176 × 750 = 9132 credit；空闲恢复需 9132 / 250 = 36.53 μs。两帧最小间隔约 48.7 μs — 千兆链路上 CBS 的整形粒度提高了约 10 倍。
+          </div>
         </div>
       </li>
       <li class="tree-item">
@@ -1237,7 +1252,16 @@ graph LR
             <strong>帧抢占（Frame Preemption）</strong>允许高优先级的"快速帧"（express frame）中断正在传输中的低优先级"可抢占帧"（preemptable frame）。被中断的低优先级帧分成多个片段（fragment），在高优先级帧传输完成后继续传输并在接收端重组。
           </div>
           <div class="tree-leaf">
-            帧抢占将最坏情况下的高优先级等待时间从一个最大帧传输时间（1518字节 ≈ 123μs @100Mbps）降低到一个最小片段大小（64字节 ≈ 5.12μs @100Mbps），显著减小了保护带需求，提高了带宽利用率。帧抢占通常与 802.1Qbv 配合使用。
+            帧抢占的效果取决于链路速率。以最大以太网帧（1518 字节 + 前导与 IFG 共 20 字节 = 1538 字节 = 12304 bit）和最小片段（64 字节 = 512 bit）为例：
+          </div>
+          <div class="tree-leaf" style="background:#eff6ff;">
+            <strong>@ 100 Mbps：</strong>最大帧传输时间 = 12304 bit ÷ 100 Mbit/s = <strong>123.04 μs</strong>；最小片段传输时间 = 512 bit ÷ 100 Mbit/s = <strong>5.12 μs</strong>。启用帧抢占后，高优先级帧的最坏等待从 ~123 μs 降至 ~5 μs，保护带缩减约 96%。
+          </div>
+          <div class="tree-leaf" style="background:#f0fdf4;">
+            <strong>@ 1000 Mbps：</strong>最大帧传输时间 = 12304 bit ÷ 1000 Mbit/s = <strong>12.304 μs</strong>；最小片段传输时间 = 512 bit ÷ 1000 Mbit/s = <strong>0.512 μs</strong>。千兆链路上即使不使用帧抢占，最坏等待仅 ~12 μs，抢占后降至亚微秒级。
+          </div>
+          <div class="tree-leaf">
+            因此，帧抢占在 <strong>100 Mbps</strong> 链路上收益最为显著，而在 <strong>1000 Mbps</strong> 链路上帧传输时间本身已很短，改善相对较小但对极端确定性场景仍有价值。帧抢占通常与 802.1Qbv 配合使用。
           </div>
         </div>
       </li>
@@ -1724,16 +1748,16 @@ function initRadarChart() {
       eth: '传统以太网 (20/100): Best-Effort 转发，无任何确定性保证，受队列拥塞影响严重。'
     },
     '低时延': {
-      tsn: 'TSN (92/100): 通过时间感知整形和帧抢占，端到端时延可控制在微秒级，7跳网络 <100μs。',
-      eth: '传统以太网 (45/100): 平均时延尚可，但最坏情况时延不可预测，可能达到毫秒级。'
+      tsn: 'TSN (92/100): 通过时间感知整形和帧抢占，@ 1000Mbps 7跳网络端到端时延可控制在 <100μs；@ 100Mbps 约 <500μs（每跳最大帧传输 123μs，但门控调度可将其降至个位数μs）。',
+      eth: '传统以太网 (45/100): @ 1000Mbps 单跳最坏等待约 86μs（7队列×12.3μs）；@ 100Mbps 约 861μs（7×123μs）。多跳累积后最坏时延不可预测，可达数毫秒。'
     },
     '低抖动': {
       tsn: 'TSN (95/100): 门控调度使同一流量的帧在每个周期中的发送时刻固定，抖动可控制在 ±1μs 以内。',
       eth: '传统以太网 (25/100): 抖动随网络负载波动巨大，无法满足运动控制和音视频同步要求。'
     },
     '带宽利用率': {
-      tsn: 'TSN (85/100): 时间敏感流量独占窗口外的时间段可用于 Best-Effort 流量，综合利用率高。但保护带会损失少量带宽。',
-      eth: '传统以太网 (70/100): 统计复用带宽利用率较好，但无法为关键流量保证带宽。'
+      tsn: 'TSN (85/100): @ 1000Mbps 保护带仅需约 0.5μs（最小片段），对 500μs 周期仅损失 0.1% 带宽；@ 100Mbps 保护带约 5μs，损失约 1%。综合利用率高于专有实时以太网。',
+      eth: '传统以太网 (70/100): 统计复用在高负载下利用率可达 90%+，但无法为关键流量保证带宽。@ 100Mbps 仅 100 Mbit/s 总带宽，多流竞争时关键流量易被挤占；@ 1000Mbps 带宽裕量更大但仍无隔离保证。'
     },
     '冗余能力': {
       tsn: 'TSN (90/100): 802.1CB FRER 实现零切换冗余，无中断帧复制消除。',
@@ -1861,9 +1885,17 @@ function updateGCL() {
   const ctx = canvas.getContext('2d');
   const guardBand = parseInt(document.getElementById('guardBandSlider').value);
   const cycleTime = parseInt(document.getElementById('cycleSlider').value);
+  const linkSpeed = parseInt(document.getElementById('linkSpeedSelect').value);
   
   document.getElementById('guardBandVal').textContent = guardBand + 'μs';
   document.getElementById('cycleVal').textContent = cycleTime + 'μs';
+  
+  const maxFrameBits = 12304;
+  const minFragBits = 512;
+  const maxFrameTime = (maxFrameBits / linkSpeed).toFixed(2);
+  const minFragTime = (minFragBits / linkSpeed).toFixed(2);
+  const bytesPerUs = linkSpeed / 8;
+  document.getElementById('linkSpeedInfo').innerHTML = maxFrameTime + 'μs/帧<sub>max</sub>';
   
   const W = canvas.width;
   const H = canvas.height;
@@ -1892,7 +1924,7 @@ function updateGCL() {
   // Title
   ctx.font = 'bold 13px -apple-system, sans-serif';
   ctx.fillStyle = '#1e293b';
-  ctx.fillText(`GCL 门控调度 — 周期 ${cycleTime}μs, 保护带 ${guardBand}μs`, marginLeft, 18);
+  ctx.fillText(`GCL 门控调度 — ${linkSpeed} Mbps, 周期 ${cycleTime}μs, 保护带 ${guardBand}μs`, marginLeft, 18);
   
   // Time axis
   const axisY = topOffset + queues.length * (trackH + gap) + 10;
@@ -2004,9 +2036,19 @@ function updateGCL() {
   if (guardBand > cycleTime * 0.15) {
     warning = '<span style="color:#d32f2f;font-weight:600;">⚠ 保护带过大（>' + Math.round(cycleTime * 0.15) + 'μs），带宽利用率显著降低！</span>';
   } else if (guardBand === 0) {
-    warning = '<span style="color:#d32f2f;font-weight:600;">⚠ 无保护带！帧重叠风险极高——队列切换时未完成的帧可能与下一个窗口的帧冲突。</span>';
+    warning = '<span style="color:#d32f2f;font-weight:600;">⚠ 无保护带！@ ' + linkSpeed + ' Mbps 最大帧传输需 ' + maxFrameTime + 'μs，无保护带时队列切换瞬间未完成的帧将与下一窗口冲突。</span>';
   }
-  infoDiv.innerHTML = `有效带宽利用率: <strong>${utilization}%</strong> | 保护带总开销: <strong>${totalGuardPct}%</strong> ${warning}`;
+  const scheduledWindowUs = cycleTime * 0.20;
+  const scheduledBytes = Math.floor(scheduledWindowUs * bytesPerUs);
+  const maxFramesInWindow = Math.floor(scheduledBytes / 1538);
+  const beWindowUs = cycleTime * 0.50;
+  const beBytes = Math.floor(beWindowUs * bytesPerUs);
+  
+  infoDiv.innerHTML = `有效带宽利用率: <strong>${utilization}%</strong> | 保护带总开销: <strong>${totalGuardPct}%</strong><br>` +
+    `<span style="color:var(--ts-red);">@ ${linkSpeed} Mbps：</span>` +
+    `最大帧传输 <strong>${maxFrameTime}μs</strong> (1538B) | 最小片段 <strong>${minFragTime}μs</strong> (64B) | ` +
+    `调度窗口(Q7)可传 <strong>≈${scheduledBytes} B</strong> (${maxFramesInWindow} 个最大帧) | ` +
+    `BE 窗口(Q0)可传 <strong>≈${beBytes} B</strong> ` + warning;
 }
 
 // ========================================
