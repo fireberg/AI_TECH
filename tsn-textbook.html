@@ -1937,11 +1937,11 @@ graph LR
         <div class="tree-content">
           <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">帧在<span style="color:#7c3aed;font-weight:600;">复制点</span>被一分为二，沿两条独立路径传输，最终在<span style="color:#7c3aed;font-weight:600;">消除点</span>合并——仅保留先到达的副本，丢弃重复帧。点击 <strong>"发送数据帧"</strong> 观察完整流程，点击交换机节点可模拟链路故障。</p>
           <div style="text-align:center;margin-bottom:12px;">
-            <button onclick="startFRER()" style="padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">发送数据帧</button>
+            <button onclick="startFRER()" style="padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">发送 4 帧序列</button>
             <button onclick="resetFRER()" style="padding:8px 20px;background:var(--be-gray);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;margin-left:8px;">重置</button>
           </div>
           <div class="gcl-canvas-wrap">
-            <canvas id="frerCanvas" width="700" height="320"></canvas>
+            <canvas id="frerCanvas" width="700" height="320" style="cursor:pointer;"></canvas>
           </div>
           <div id="frerLog" style="margin-top:12px;font-size:13px;color:var(--text-secondary);min-height:30px;"></div>
         </div>
@@ -2814,17 +2814,40 @@ function drawFRER() {
     }
   });
   
+  // Draw discard effects at elimination point
+  if (frerState.discardEffects) {
+    frerState.discardEffects = frerState.discardEffects.filter(e => e.timer > 0);
+    frerState.discardEffects.forEach(e => {
+      e.timer--;
+      const alpha = e.timer / 30;
+      const r = 12 + (30 - e.timer) * 0.8;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = e.color;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.stroke();
+      ctx.globalAlpha = alpha;
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillStyle = '#d32f2f';
+      ctx.textAlign = 'center';
+      ctx.fillText('✕ ' + e.seq, e.x, e.y - r - 4);
+      ctx.textAlign = 'left';
+      ctx.globalAlpha = 1;
+    });
+  }
+  
   // Draw animated frames
   frerState.animFrames.forEach(frame => {
     ctx.beginPath();
-    ctx.arc(frame.x, frame.y, 8, 0, Math.PI * 2);
+    ctx.arc(frame.x, frame.y, 11, 0, Math.PI * 2);
     ctx.fillStyle = frame.color;
     ctx.fill();
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2;
     ctx.stroke();
     
-    ctx.font = 'bold 8px sans-serif';
+    ctx.font = 'bold 9px sans-serif';
     ctx.fillStyle = '#fff';
     ctx.textAlign = 'center';
     ctx.fillText(frame.seq, frame.x, frame.y + 3);
@@ -2870,85 +2893,136 @@ function startFRER() {
   
   const log = document.getElementById('frerLog');
   
-  const path1 = ['src', 'rep', 'sw1', 'sw3', 'elim', 'dst'];
-  const path2 = ['src', 'rep', 'sw2', 'sw4', 'elim', 'dst'];
+  const pathDef1 = ['src', 'rep', 'sw1', 'sw3', 'elim', 'dst'];
+  const pathDef2 = ['src', 'rep', 'sw2', 'sw4', 'elim', 'dst'];
   
-  const path1Failed = path1.some(id => frerState.failed.has(id));
-  const path2Failed = path2.some(id => frerState.failed.has(id));
+  const p1Failed = pathDef1.some(id => frerState.failed.has(id));
+  const p2Failed = pathDef2.some(id => frerState.failed.has(id));
   
-  log.innerHTML = '<span style="color:var(--primary);">发送端</span> → <span style="color:#7c3aed;font-weight:600;">复制点</span>：帧被复制为两份（相同序列号 S1），分别沿路径 1 和路径 2 发送...';
-  
-  const frames = [];
-  if (!path1Failed) {
-    frames.push({ path: path1, color: '#1a73e8', seq: 'S1', progress: 0, active: true, pathId: 1 });
-  }
-  if (!path2Failed) {
-    frames.push({ path: path2, color: '#ff6d00', seq: 'S1', progress: 0, active: true, pathId: 2 });
-  }
-  
-  if (frames.length === 0) {
-    log.innerHTML = '<span style="color:var(--ts-red);font-weight:600;">两条路径均故障！数据帧丢失！</span>';
+  if (p1Failed && p2Failed) {
+    log.innerHTML = '<span style="color:var(--ts-red);font-weight:600;">两条路径均故障！所有数据帧丢失！</span>';
     frerState.animating = false;
     return;
   }
   
-  const speed1 = 0.016;
-  const speed2 = 0.013;
-  let firstArrived = false;
-  let elimDone = false;
+  const totalFrames = 4;
+  const baseSpeed = 0.005;
+  const frameInterval = 55;
+  const allFrames = [];
+  const elimRecord = {};
+  let deliveredCount = 0;
+  let discardedCount = 0;
+  
+  log.innerHTML = '<span style="color:var(--primary);">发送端开始连续发送 ' + totalFrames + ' 帧...</span>';
+  
+  function launchFrame(seqNum) {
+    const seqLabel = 'S' + seqNum;
+    elimRecord[seqLabel] = { first: null, discarded: false };
+
+    // src → rep: shared initial segment (single dot, purple)
+    const sharedFrame = {
+      path: ['src', 'rep'],
+      color: '#7c3aed', seq: seqLabel, progress: 0, active: true,
+      pathId: 0, seqNum: seqNum, phase: 'toRep', spawned: false
+    };
+    allFrames.push(sharedFrame);
+  }
+
+  let launched = 0;
+  let frameTimer = null;
+  
+  function scheduleNextFrame() {
+    if (launched < totalFrames) {
+      launched++;
+      launchFrame(launched);
+      if (launched < totalFrames) {
+        frameTimer = setTimeout(scheduleNextFrame, frameInterval * (1 / baseSpeed) / 60 * 3);
+      }
+    }
+  }
+  scheduleNextFrame();
   
   function animate() {
-    frames.forEach(f => {
+    allFrames.forEach(f => {
       if (!f.active) return;
-      f.progress += (f.pathId === 1 ? speed1 : speed2);
+      f.progress += baseSpeed;
       
-      const totalSegments = f.path.length - 1;
-      const segmentProgress = f.progress * totalSegments;
-      const currentSeg = Math.min(Math.floor(segmentProgress), totalSegments - 1);
-      const segPct = segmentProgress - currentSeg;
+      const totalSeg = f.path.length - 1;
+      const segProg = f.progress * totalSeg;
+      const curSeg = Math.min(Math.floor(segProg), totalSeg - 1);
+      const segPct = segProg - curSeg;
       
-      if (currentSeg >= totalSegments) {
+      if (segProg >= totalSeg) {
         f.active = false;
+        
+        if (f.phase === 'toRep' && !f.spawned) {
+          f.spawned = true;
+          if (!p1Failed) {
+            allFrames.push({
+              path: pathDef1.slice(1),
+              color: '#1a73e8', seq: f.seq, progress: 0, active: true,
+              pathId: 1, seqNum: f.seqNum, phase: 'path'
+            });
+          }
+          if (!p2Failed) {
+            allFrames.push({
+              path: pathDef2.slice(1),
+              color: '#ff6d00', seq: f.seq, progress: 0, active: true,
+              pathId: 2, seqNum: f.seqNum, phase: 'path'
+            });
+          }
+        }
+        
+        if (f.phase === 'path') {
+          const rec = elimRecord[f.seq];
+          if (!rec.first) {
+            rec.first = f.pathId;
+            allFrames.push({
+              path: ['elim', 'dst'],
+              color: '#2e7d32', seq: f.seq, progress: 0, active: true,
+              pathId: 0, seqNum: f.seqNum, phase: 'toDst'
+            });
+          } else {
+            rec.discarded = true;
+            discardedCount++;
+            frerState.discardEffects = frerState.discardEffects || [];
+            const elimNode = frerState.nodes.find(n => n.id === 'elim');
+            frerState.discardEffects.push({
+              x: elimNode.x + elimNode.w / 2,
+              y: elimNode.y + elimNode.h / 2,
+              seq: f.seq, timer: 30, color: f.color
+            });
+          }
+        }
+        
+        if (f.phase === 'toDst') {
+          deliveredCount++;
+        }
         return;
       }
       
-      const fromNode = frerState.nodes.find(n => n.id === f.path[currentSeg]);
-      const toNode = frerState.nodes.find(n => n.id === f.path[currentSeg + 1]);
-      
+      const fromNode = frerState.nodes.find(n => n.id === f.path[curSeg]);
+      const toNode = frerState.nodes.find(n => n.id === f.path[curSeg + 1]);
       f.x = fromNode.x + fromNode.w + (toNode.x - fromNode.x - fromNode.w) * segPct;
       f.y = fromNode.y + fromNode.h / 2 + (toNode.y + toNode.h / 2 - fromNode.y - fromNode.h / 2) * segPct;
     });
     
-    frerState.animFrames = frames.filter(f => f.active);
+    frerState.animFrames = allFrames.filter(f => f.active && f.x !== undefined);
     drawFRER();
     
-    const arrived = frames.filter(f => !f.active);
-    if (arrived.length === 1 && !firstArrived) {
-      firstArrived = true;
-      const firstPath = arrived[0].pathId;
-      log.innerHTML = `<span style="color:var(--success);font-weight:600;">路径 ${firstPath} 的帧先通过消除点 → 到达接收端 ✓</span>`;
-    }
-    if (arrived.length === 2 && !elimDone) {
-      elimDone = true;
-      const elimNode = frerState.nodes.find(n => n.id === 'elim');
-      // Flash the elimination node
-      const origColor = elimNode.color;
-      elimNode.color = '#d32f2f';
-      drawFRER();
-      setTimeout(() => { elimNode.color = origColor; drawFRER(); }, 400);
-    }
+    const anyActive = allFrames.some(f => f.active) || launched < totalFrames;
     
-    if (frames.some(f => f.active)) {
+    if (anyActive) {
       requestAnimationFrame(animate);
     } else {
-      if (frames.length === 2) {
-        setTimeout(() => {
-          log.innerHTML += '<br><span style="color:#7c3aed;font-weight:600;">✦ 消除点 (Eliminate)：</span><span style="color:var(--primary);">序列号 S1 匹配 → 保留先到达的副本，丢弃重复帧 → 仅一份数据送达接收端。</span>';
-        }, 300);
-      } else if (frames.length === 1) {
-        setTimeout(() => {
-          log.innerHTML += `<br><span style="color:var(--warning);">仅一条路径可用（另一条已故障），帧经消除点直接送达——无缝冗余生效！应用层零感知。</span>`;
-        }, 300);
+      const bothPaths = !p1Failed && !p2Failed;
+      if (bothPaths) {
+        log.innerHTML = '<span style="color:var(--success);font-weight:600;">✓ 全部 ' + totalFrames + ' 帧已送达接收端</span><br>' +
+          '<span style="color:#7c3aed;font-weight:600;">✦ 消除点统计：</span>收到 ' + (totalFrames * 2) + ' 个副本，保留 ' + deliveredCount + ' 帧，丢弃 ' + discardedCount + ' 个重复帧（序列号匹配消除）';
+      } else {
+        const workingPath = p1Failed ? 2 : 1;
+        log.innerHTML = '<span style="color:var(--success);font-weight:600;">✓ 全部 ' + totalFrames + ' 帧已送达接收端</span><br>' +
+          '<span style="color:var(--warning);">路径 ' + workingPath + ' 独立完成传输——另一条路径已故障，无缝冗余保障了零丢帧！</span>';
       }
       frerState.animating = false;
     }
@@ -2960,6 +3034,7 @@ function startFRER() {
 function resetFRER() {
   frerState.failed.clear();
   frerState.animFrames = [];
+  frerState.discardEffects = [];
   frerState.animating = false;
   drawFRER();
   document.getElementById('frerLog').innerHTML = '点击交换机模拟故障，然后点击"发送数据帧"观察冗余效果。';
