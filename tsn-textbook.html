@@ -1,0 +1,2377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TSN 时间敏感网络交互式教材</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --primary: #1a73e8;
+  --primary-dark: #1557b0;
+  --accent: #ff6d00;
+  --ts-red: #d32f2f;
+  --be-gray: #9e9e9e;
+  --success: #2e7d32;
+  --warning: #f9a825;
+  --bg: #f5f7fa;
+  --sidebar-bg: #1e293b;
+  --sidebar-text: #cbd5e1;
+  --sidebar-active: #38bdf8;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --radius: 8px;
+  --sidebar-w: 280px;
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  overflow-y: auto;
+  z-index: 100;
+  display: flex; flex-direction: column;
+  transition: transform 0.3s;
+}
+.sidebar-header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-header h1 {
+  font-size: 18px; font-weight: 700;
+  color: #f1f5f9; letter-spacing: 0.5px;
+}
+.sidebar-header .subtitle {
+  font-size: 12px; color: var(--sidebar-active);
+  margin-top: 4px; font-weight: 500;
+}
+.sidebar nav { flex: 1; padding: 12px 0; }
+.sidebar nav ul { list-style: none; }
+.sidebar nav li {}
+.sidebar nav a {
+  display: block; padding: 8px 20px; font-size: 14px;
+  color: var(--sidebar-text); text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: all 0.2s;
+}
+.sidebar nav a:hover {
+  color: #f1f5f9; background: rgba(255,255,255,0.05);
+}
+.sidebar nav a.active {
+  color: var(--sidebar-active);
+  border-left-color: var(--sidebar-active);
+  background: rgba(56,189,248,0.08);
+  font-weight: 600;
+}
+.sidebar nav a.sub {
+  padding-left: 36px; font-size: 13px;
+}
+.sidebar nav a.sub2 {
+  padding-left: 50px; font-size: 12px;
+}
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 11px; color: #64748b;
+}
+
+/* Mobile toggle */
+.menu-toggle {
+  display: none; position: fixed; top: 12px; left: 12px;
+  z-index: 200; background: var(--sidebar-bg); color: #fff;
+  border: none; border-radius: 6px; padding: 8px 12px;
+  font-size: 18px; cursor: pointer;
+}
+
+/* Main content */
+.main {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+}
+.content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+/* Sections */
+.section { margin-bottom: 64px; scroll-margin-top: 20px; }
+.section-title {
+  font-size: 28px; font-weight: 800;
+  color: var(--text); margin-bottom: 8px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid var(--primary);
+  display: inline-block;
+}
+.section-desc {
+  font-size: 15px; color: var(--text-secondary);
+  margin-bottom: 32px; line-height: 1.8;
+}
+h3 {
+  font-size: 20px; font-weight: 700;
+  color: var(--text); margin: 32px 0 12px;
+}
+h4 {
+  font-size: 17px; font-weight: 600;
+  color: var(--primary-dark); margin: 24px 0 8px;
+}
+p { margin-bottom: 16px; }
+
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+.card-title {
+  font-size: 16px; font-weight: 700;
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title .icon { font-size: 20px; }
+
+/* Timeline */
+.timeline-container { position: relative; padding: 20px 0; }
+.timeline-track {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0;
+  min-height: 160px;
+}
+.timeline-track::before {
+  content: '';
+  position: absolute;
+  top: 30px; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 2px;
+}
+.timeline-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+.timeline-dot {
+  width: 18px; height: 18px;
+  background: var(--primary);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--primary);
+  margin-top: 22px;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+.timeline-node:hover .timeline-dot,
+.timeline-node.active .timeline-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent), 0 0 12px rgba(255,109,0,0.4);
+  transform: scale(1.3);
+}
+.timeline-year {
+  font-size: 13px; font-weight: 700;
+  color: var(--primary);
+  margin-top: 10px;
+  white-space: nowrap;
+}
+.timeline-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  text-align: center;
+  line-height: 1.3;
+  max-width: 90px;
+  word-break: break-word;
+}
+.timeline-popup {
+  display: none;
+  position: absolute;
+  top: calc(100% + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 16px;
+  min-width: 260px;
+  max-width: 340px;
+  z-index: 10;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.timeline-popup::before {
+  content: '';
+  position: absolute;
+  top: -6px; left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px; height: 12px;
+  background: var(--card-bg);
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+}
+.timeline-popup.show { display: block; }
+.timeline-popup h5 {
+  font-size: 14px; color: var(--primary);
+  margin-bottom: 6px;
+}
+.timeline-popup .close-btn {
+  position: absolute; top: 6px; right: 8px;
+  background: none; border: none; font-size: 16px;
+  cursor: pointer; color: var(--text-secondary);
+}
+
+/* Chart containers */
+.chart-box {
+  position: relative;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.chart-box canvas {
+  max-height: 400px;
+}
+
+/* Scenario cards */
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.scenario-card {
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.scenario-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+.scenario-card.active {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, rgba(26,115,232,0.05), rgba(26,115,232,0.02));
+}
+.scenario-icon {
+  font-size: 40px; margin-bottom: 8px;
+}
+.scenario-card h4 {
+  font-size: 14px; font-weight: 700;
+  color: var(--text); margin: 0;
+}
+.scenario-detail {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.scenario-detail.active { display: block; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 4px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 20px;
+}
+.tab-btn {
+  padding: 8px 16px;
+  background: none; border: none;
+  font-size: 14px; font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Collapsible tree */
+.tree { list-style: none; padding-left: 0; }
+.tree ul { list-style: none; padding-left: 24px; }
+.tree-item {
+  margin: 4px 0;
+}
+.tree-toggle {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px; font-weight: 600;
+  color: var(--text);
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s;
+}
+.tree-toggle:hover {
+  border-color: var(--primary);
+  background: rgba(26,115,232,0.03);
+}
+.tree-toggle .arrow {
+  transition: transform 0.2s;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.tree-item.open > .tree-toggle .arrow {
+  transform: rotate(90deg);
+}
+.tree-content {
+  display: none;
+  padding: 12px 0 4px 16px;
+}
+.tree-item.open > .tree-content {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+.tree-leaf {
+  padding: 8px 14px;
+  margin: 4px 0;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.7;
+  border-left: 3px solid var(--primary);
+}
+
+/* Slider controls */
+.slider-group {
+  display: flex; align-items: center; gap: 12px;
+  margin: 12px 0;
+}
+.slider-group label {
+  font-size: 13px; font-weight: 600;
+  min-width: 100px;
+}
+.slider-group input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+}
+.slider-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.slider-group .val {
+  font-size: 13px; font-weight: 700;
+  color: var(--primary);
+  min-width: 40px; text-align: right;
+}
+
+/* GCL Timing diagram (canvas-based) */
+.gcl-canvas-wrap {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  overflow-x: auto;
+}
+
+/* Redundancy diagram */
+.frer-diagram {
+  position: relative;
+  min-height: 300px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  overflow: hidden;
+}
+.frer-node {
+  position: absolute;
+  width: 80px; height: 48px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 2;
+  text-align: center;
+  line-height: 1.2;
+}
+.frer-node:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Config model diagrams */
+.config-diagram {
+  position: relative;
+  min-height: 320px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.config-node {
+  position: absolute;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 2;
+  text-align: center;
+  line-height: 1.3;
+}
+.config-node:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Tooltip */
+.tooltip {
+  display: none;
+  position: fixed;
+  background: var(--sidebar-bg);
+  color: #f1f5f9;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  max-width: 280px;
+  z-index: 1000;
+  line-height: 1.5;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+}
+.tooltip.show { display: block; }
+
+/* Venn diagram */
+.venn-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  height: 300px;
+  margin: 0 auto;
+}
+.venn-circle {
+  position: absolute;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  opacity: 0.25;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.venn-circle:hover { opacity: 0.4; }
+.venn-label {
+  position: absolute;
+  font-size: 14px; font-weight: 700;
+  pointer-events: none;
+}
+.venn-overlap {
+  position: absolute;
+  cursor: pointer;
+  z-index: 5;
+}
+
+/* Badge / tag */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+.tag-red { background: #fde8e8; color: var(--ts-red); }
+.tag-blue { background: #dbeafe; color: var(--primary); }
+.tag-green { background: #d1fae5; color: var(--success); }
+.tag-orange { background: #ffedd5; color: var(--accent); }
+.tag-gray { background: #f1f5f9; color: var(--text-secondary); }
+
+/* Info box */
+.info-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+}
+.info-box.warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+.info-box.danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+.info-box strong { display: block; margin-bottom: 4px; }
+
+/* Mermaid */
+.mermaid-wrap {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 16px 0;
+  overflow-x: auto;
+}
+.mermaid { text-align: center; }
+
+/* Attack surface diagram */
+.attack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.attack-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 3px solid var(--ts-red);
+}
+.attack-card:hover {
+  box-shadow: var(--shadow);
+  border-left-color: var(--accent);
+}
+.attack-card h5 {
+  font-size: 13px; margin-bottom: 6px;
+  color: var(--ts-red);
+}
+.attack-card p {
+  font-size: 12px; color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Tool chain */
+.tool-chain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.tool-item {
+  padding: 8px 14px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  border-radius: 6px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.tool-item:hover { transform: scale(1.05); }
+.tool-arrow {
+  font-size: 18px; color: var(--text-secondary);
+}
+
+/* Clock tree */
+.clock-tree-svg {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .menu-toggle { display: block; }
+  .main { margin-left: 0; }
+  .content { padding: 60px 16px 60px; }
+  .timeline-track { flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .scenario-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Smooth scroll */
+html { scroll-behavior: smooth; }
+
+/* Print */
+@media print {
+  .sidebar, .menu-toggle { display: none !important; }
+  .main { margin-left: 0; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: #475569; }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h1>TSN 交互式教材</h1>
+    <div class="subtitle">时间敏感网络 · IEEE 802.1</div>
+  </div>
+  <nav>
+    <ul>
+      <li><a href="#part1" class="active" data-section="part1">一、TSN 产生的原因</a></li>
+      <li><a href="#part1-limitation" class="sub" data-section="part1-limitation">传统以太网的局限</a></li>
+      <li><a href="#part1-demand" class="sub" data-section="part1-demand">确定性通信需求</a></li>
+      <li><a href="#part1-timeline" class="sub" data-section="part1-timeline">标准演进时间线</a></li>
+      <li><a href="#part1-compare" class="sub" data-section="part1-compare">TSN vs 传统以太网</a></li>
+      <li><a href="#part2" data-section="part2">二、TSN 应用场景</a></li>
+      <li><a href="#part2-overview" class="sub" data-section="part2-overview">场景全景概览</a></li>
+      <li><a href="#part2-detail" class="sub" data-section="part2-detail">场景详细分析</a></li>
+      <li><a href="#part3" data-section="part3">三、实施注意点</a></li>
+      <li><a href="#part3-timesync" class="sub" data-section="part3-timesync">时间同步 (802.1AS)</a></li>
+      <li><a href="#part3-shaping" class="sub" data-section="part3-shaping">流量调度与整形</a></li>
+      <li><a href="#part3-frer" class="sub" data-section="part3-frer">冗余与可靠性</a></li>
+      <li><a href="#part3-config" class="sub" data-section="part3-config">网络配置与管理</a></li>
+      <li><a href="#part3-security" class="sub" data-section="part3-security">安全考虑</a></li>
+      <li><a href="#part3-convergence" class="sub" data-section="part3-convergence">IT/OT 网络融合</a></li>
+      <li><a href="#part3-testing" class="sub" data-section="part3-testing">测试与验证</a></li>
+    </ul>
+  </nav>
+  <div class="sidebar-footer">
+    © 2024 TSN Interactive Textbook<br>IEEE 802.1 Time-Sensitive Networking
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+<div class="content">
+
+<!-- ============================================================ -->
+<!-- PART 1: TSN 产生的原因 -->
+<!-- ============================================================ -->
+<section class="section" id="part1">
+  <h2 class="section-title">一、TSN 产生的原因</h2>
+  <p class="section-desc">
+    时间敏感网络（Time-Sensitive Networking, TSN）是 IEEE 802.1 工作组制定的一系列标准，旨在将标准以太网扩展为具有确定性、低时延、高可靠性的实时通信网络。理解 TSN 的诞生背景，需要从传统以太网的根本局限说起。
+  </p>
+
+  <div id="part1-limitation">
+    <h3>1.1 传统以太网的局限</h3>
+    <p>
+      标准以太网（IEEE 802.3）自 1980 年代问世以来，已成为全球最普及的局域网技术。然而，以太网从设计之初就采用<strong>"尽力而为"（Best-Effort）</strong>的转发机制——数据帧在交换机中按照 FIFO（先进先出）队列进行排队和转发，不提供任何端到端的时延保证。
+    </p>
+    <div class="card">
+      <div class="card-title"><span class="icon">⚠️</span>传统以太网的核心问题</div>
+      <p><strong>不确定的时延：</strong>当网络负载增大时，数据帧可能因队列拥塞而经历不可预测的排队延迟。在最坏情况下，一个关键控制消息的传输延迟可能从微秒级飙升到毫秒级甚至更高。</p>
+      <p><strong>抖动（Jitter）无法控制：</strong>即使平均时延较低，不同数据帧之间的到达时间差异（抖动）可能非常大。对于运动控制、音视频同步等应用，抖动是致命问题。</p>
+      <p><strong>缺乏流量隔离：</strong>关键任务流量与普通 IT 数据流量共享相同的队列和带宽，一个突发的文件传输就可能阻塞控制信号的及时送达。</p>
+      <p><strong>无原生冗余机制：</strong>标准以太网依赖 STP（生成树协议）进行冗余切换，故障恢复时间通常在秒级，远不能满足工业控制 &lt;10ms 的要求。</p>
+    </div>
+  </div>
+
+  <div id="part1-demand">
+    <h3>1.2 确定性通信的迫切需求</h3>
+    <p>
+      进入 21 世纪，多个行业领域对网络通信的实时性与确定性提出了前所未有的要求：
+    </p>
+    <div class="card">
+      <div class="card-title"><span class="icon">🏭</span>工业 4.0 与智能制造</div>
+      <p>工业自动化中的运动控制要求通信周期低至 <strong>31.25μs ~ 1ms</strong>，抖动不超过 <strong>±1μs</strong>。传统工业现场总线（如 PROFINET IRT、EtherCAT）虽然满足了实时要求，但各自为封闭的专有生态系统，无法互联互通。工业 4.0 愿景呼唤统一的、基于标准以太网的实时网络底座。</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🚗</span>汽车电子电气架构</div>
+      <p>现代汽车从分布式 ECU 架构向<strong>域集中式/中央计算平台</strong>演进，车内需要一个统一的高带宽骨干网络来承载自动驾驶传感器数据、座舱娱乐、车身控制等混合流量。以太网 TSN 成为汽车骨干网络（Automotive Ethernet Backbone）的核心技术选型。</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">⚡</span>电力与能源</div>
+      <p>智能电网中的差动保护、同步相量测量（PMU）要求端到端通信时延 &lt; <strong>3ms</strong>，且网络必须具有<strong>无缝冗余切换</strong>能力。IEC 61850 标准定义了变电站通信协议，TSN 为其提供了确定性以太网传输层。</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🎬</span>专业音频视频（Pro AV）</div>
+      <p>广播级音视频传输要求样本级同步精度（&lt; <strong>1μs</strong>），且不允许丢帧。事实上，TSN 的前身 AVB（Audio Video Bridging）正是为此而生，是 TSN 标准族的直接源头。</p>
+    </div>
+  </div>
+
+  <div id="part1-timeline">
+    <h3>1.3 标准演进时间线</h3>
+    <p>TSN 并非从零开始，而是从 AVB 标准族演进而来。以下时间线展示了关键里程碑。<strong>点击任意节点</strong>查看详情：</p>
+    
+    <div class="card">
+      <div class="timeline-container">
+        <div class="timeline-track" id="timeline">
+          <!-- Nodes injected by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="part1-compare">
+    <h3>1.4 传统以太网 vs TSN 对比</h3>
+    <p>下方雷达图从五个关键维度对比了传统以太网与 TSN 网络的能力差异。<strong>悬停在数据点上</strong>可查看具体数值与解释。</p>
+    <div class="card">
+      <div class="chart-box">
+        <canvas id="radarChart"></canvas>
+      </div>
+      <div id="radarInfo" style="margin-top:16px; font-size:13px; color:var(--text-secondary); min-height:40px; text-align:center;">
+        悬停雷达图上的数据点以查看详细解释
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- PART 2: TSN 应用场景 -->
+<!-- ============================================================ -->
+<section class="section" id="part2">
+  <h2 class="section-title">二、TSN 应用场景</h2>
+  <p class="section-desc">
+    TSN 标准族的最大价值在于用一套统一的标准以太网机制，满足横跨工业、汽车、能源、音视频等不同行业的确定性通信需求。以下从四大核心应用场景深入分析。
+  </p>
+
+  <div id="part2-overview">
+    <h3>2.1 场景全景概览</h3>
+    <p>点击下方行业图标，在详情区查看该场景的网络拓扑、核心需求与数据流说明：</p>
+    <div class="scenario-grid" id="scenarioGrid">
+      <div class="scenario-card active" onclick="showScenario('industrial')" id="sc-industrial">
+        <div class="scenario-icon">🏭</div>
+        <h4>工业自动化</h4>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">OPC UA over TSN</div>
+      </div>
+      <div class="scenario-card" onclick="showScenario('automotive')" id="sc-automotive">
+        <div class="scenario-icon">🚗</div>
+        <h4>汽车骨干网络</h4>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">域控制器架构</div>
+      </div>
+      <div class="scenario-card" onclick="showScenario('power')" id="sc-power">
+        <div class="scenario-icon">⚡</div>
+        <h4>电力与能源</h4>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">IEC 61850 / 智能电网</div>
+      </div>
+      <div class="scenario-card" onclick="showScenario('av')" id="sc-av">
+        <div class="scenario-icon">🎬</div>
+        <h4>专业音视频</h4>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">广播 / 剧场 / 演出</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="part2-detail">
+    <h3>2.2 场景详细分析</h3>
+
+    <!-- Industrial -->
+    <div class="scenario-detail active" id="detail-industrial">
+      <div class="card">
+        <div class="card-title"><span class="icon">🏭</span>工业自动化 — OPC UA over TSN</div>
+        <h4>核心诉求</h4>
+        <p>
+          工业自动化要求控制器与 I/O 设备、传感器之间实现<strong>确定性周期通信</strong>。典型运动控制应用的通信周期为 250μs ~ 1ms，允许抖动不超过 ±1μs。传统工业以太网（如 PROFINET IRT、EtherCAT、POWERLINK）通过修改以太网协议栈实现了此要求，但形成了相互不兼容的封闭生态。
+        </p>
+        <p>
+          <strong>OPC UA over TSN</strong> 的组合将应用层互操作性（OPC UA 的信息建模与服务架构）与网络层确定性（TSN 的时间同步与流量调度）统一在标准以太网上，是工业 4.0 的关键通信基础设施。
+        </p>
+        <h4>关键 TSN 标准</h4>
+        <p>
+          <span class="tag tag-red">802.1AS</span> 时间同步
+          <span class="tag tag-blue">802.1Qbv</span> 时间感知整形
+          <span class="tag tag-green">802.1CB</span> 无缝冗余
+          <span class="tag tag-orange">802.1Qcc</span> 集中式配置
+        </p>
+        <h4>典型网络拓扑</h4>
+        <div class="mermaid-wrap">
+          <div class="mermaid">
+graph LR
+  CNC["CNC 集中网络<br>配置器 (802.1Qcc)"]
+  PLC1["PLC 控制器"]
+  PLC2["PLC 控制器"]
+  SW1["TSN 交换机 1"]
+  SW2["TSN 交换机 2"]
+  SW3["TSN 交换机 3"]
+  IO1["远程 I/O"]
+  IO2["远程 I/O"]
+  S1["传感器组"]
+  S2["驱动器组"]
+  HMI["HMI 面板"]
+  CLOUD["OPC UA 服务器<br>→ 云平台/MES"]
+
+  CNC -.->|NETCONF/YANG| SW1
+  CNC -.->|NETCONF/YANG| SW2
+  CNC -.->|NETCONF/YANG| SW3
+
+  PLC1 --- SW1
+  PLC2 --- SW2
+  SW1 --- SW3
+  SW2 --- SW3
+  SW3 --- IO1
+  SW3 --- IO2
+  IO1 --- S1
+  IO2 --- S2
+  SW1 --- HMI
+  SW2 --- CLOUD
+
+  style CNC fill:#e3f2fd,stroke:#1a73e8,stroke-width:2px
+  style PLC1 fill:#fff3e0,stroke:#ff6d00,stroke-width:2px
+  style PLC2 fill:#fff3e0,stroke:#ff6d00,stroke-width:2px
+  style SW1 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style SW2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style SW3 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+          </div>
+        </div>
+        <h4>数据流特征</h4>
+        <div class="info-box">
+          <strong>时间敏感流量（Scheduled Traffic）</strong>
+          PLC → TSN 交换机 → 远程 I/O / 驱动器：周期性控制命令与反馈，周期 250μs~1ms，优先级最高，使用 802.1Qbv 门控调度保证其独占时间窗口。
+        </div>
+        <div class="info-box">
+          <strong>尽力而为流量（Best-Effort Traffic）</strong>
+          HMI 画面刷新、OPC UA 历史数据上传至云平台、配置管理等流量在非时间敏感窗口传输，与实时流量和平共存。
+        </div>
+      </div>
+    </div>
+
+    <!-- Automotive -->
+    <div class="scenario-detail" id="detail-automotive">
+      <div class="card">
+        <div class="card-title"><span class="icon">🚗</span>汽车骨干网络 — 域控制器架构</div>
+        <h4>核心诉求</h4>
+        <p>
+          现代汽车正经历从<strong>分布式 ECU 架构</strong>向<strong>域集中式（Domain-based）</strong>乃至<strong>中央计算架构（Central Compute）</strong>的转变。一辆高级别自动驾驶汽车内可能有数十个传感器（摄像头、LiDAR、雷达、超声波）产生高达 <strong>数 Gbps</strong> 的数据流，同时车身控制、底盘控制要求 <strong>&lt;100μs</strong> 级别的确定性通信。
+        </p>
+        <p>
+          汽车以太网 TSN（基于 IEEE 802.3cg 10BASE-T1S、100BASE-T1、1000BASE-T1 等单对线物理层）成为连接域控制器与中央计算平台的骨干网络首选，用一根标准以太网线缆同时承载 ADAS 数据、信息娱乐流媒体和实时控制命令。
+        </p>
+        <h4>关键 TSN 标准</h4>
+        <p>
+          <span class="tag tag-red">802.1AS</span> 全车时间同步
+          <span class="tag tag-blue">802.1Qbv</span> 门控调度
+          <span class="tag tag-orange">802.1Qbu</span> 帧抢占
+          <span class="tag tag-green">802.1CB</span> 冗余传输
+        </p>
+        <h4>典型网络拓扑</h4>
+        <div class="mermaid-wrap">
+          <div class="mermaid">
+graph TB
+  CC["中央计算平台"]
+  ADAS["ADAS 域控制器"]
+  BODY["车身域控制器"]
+  CHASSIS["底盘域控制器"]
+  IVI["信息娱乐域"]
+  SW_B["TSN 骨干交换机"]
+  CAM["摄像头×8"]
+  LIDAR["LiDAR×2"]
+  RADAR["雷达×5"]
+  DISP["显示屏×3"]
+  AUDIO["音频系统"]
+  BRAKE["制动系统"]
+  STEER["转向系统"]
+  LIGHT["灯光/门锁"]
+  
+  CC --- SW_B
+  SW_B --- ADAS
+  SW_B --- BODY
+  SW_B --- CHASSIS
+  SW_B --- IVI
+  ADAS --- CAM
+  ADAS --- LIDAR
+  ADAS --- RADAR
+  IVI --- DISP
+  IVI --- AUDIO
+  CHASSIS --- BRAKE
+  CHASSIS --- STEER
+  BODY --- LIGHT
+
+  style CC fill:#e3f2fd,stroke:#1a73e8,stroke-width:2px
+  style SW_B fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style ADAS fill:#fff3e0,stroke:#ff6d00,stroke-width:2px
+  style CHASSIS fill:#fce4ec,stroke:#d32f2f,stroke-width:2px
+          </div>
+        </div>
+        <h4>数据流特征</h4>
+        <div class="info-box warning">
+          <strong>安全关键流量（Safety-Critical）</strong>
+          制动、转向控制命令 — 周期 &lt;1ms，端到端时延 &lt;100μs，采用冗余路径 (802.1CB) 和帧抢占 (802.1Qbu) 保障。
+        </div>
+        <div class="info-box">
+          <strong>高带宽传感器数据</strong>
+          摄像头、LiDAR 原始数据流 — 带宽需求高（单路摄像头可达 1~4 Gbps），使用 802.1Qbv 为其分配固定带宽窗口。
+        </div>
+      </div>
+    </div>
+
+    <!-- Power & Energy -->
+    <div class="scenario-detail" id="detail-power">
+      <div class="card">
+        <div class="card-title"><span class="icon">⚡</span>电力与能源 — 智能电网通信</div>
+        <h4>核心诉求</h4>
+        <p>
+          电力系统对通信的要求集中在两个方面：<strong>低时延高可靠</strong>（保护与控制应用）和<strong>精确时间同步</strong>（同步相量测量 PMU）。IEC 61850 标准为变电站通信定义了 GOOSE（快速事件消息）和 SV（采样值）协议，要求传输时延 &lt; <strong>3ms</strong>，网络故障恢复时间 &lt; <strong>几毫秒</strong>。
+        </p>
+        <p>
+          TSN 通过 <strong>802.1CB（无缝冗余）</strong>实现零切换时间的冗余，通过 <strong>802.1Qbv</strong> 保障 GOOSE/SV 消息的确定性传输，成为替代传统 PRP/HSR 冗余协议的候选方案。
+        </p>
+        <h4>关键 TSN 标准</h4>
+        <p>
+          <span class="tag tag-green">802.1CB</span> 帧复制与消除（FRER）
+          <span class="tag tag-red">802.1AS</span> 精确时间同步
+          <span class="tag tag-blue">802.1Qbv</span> 确定性调度
+          <span class="tag tag-orange">802.1Qci</span> 流过滤与策略
+        </p>
+        <h4>典型网络拓扑</h4>
+        <div class="mermaid-wrap">
+          <div class="mermaid">
+graph LR
+  MU1["合并单元 MU1<br>(采样值 SV)"]
+  MU2["合并单元 MU2"]
+  IED1["保护 IED 1<br>(差动保护)"]
+  IED2["保护 IED 2"]
+  SW1["TSN 交换机 A"]
+  SW2["TSN 交换机 B"]
+  RTU["远方终端<br>RTU/网关"]
+  SCADA["SCADA 主站"]
+  
+  MU1 --- SW1
+  MU1 --- SW2
+  MU2 --- SW1
+  MU2 --- SW2
+  SW1 --- IED1
+  SW2 --- IED1
+  SW1 --- IED2
+  SW2 --- IED2
+  SW1 --- RTU
+  SW2 --- RTU
+  RTU --- SCADA
+
+  style MU1 fill:#fff3e0,stroke:#ff6d00,stroke-width:2px
+  style MU2 fill:#fff3e0,stroke:#ff6d00,stroke-width:2px
+  style IED1 fill:#fce4ec,stroke:#d32f2f,stroke-width:2px
+  style IED2 fill:#fce4ec,stroke:#d32f2f,stroke-width:2px
+  style SW1 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style SW2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+          </div>
+        </div>
+        <div class="info-box danger">
+          <strong>关键需求：零切换冗余</strong>
+          电力系统的保护应用不允许任何通信中断。通过 802.1CB FRER，合并单元发出的采样值同时沿两条路径传输，接收端的保护 IED 自动消除重复帧，即使一条路径故障也不影响保护动作。
+        </div>
+      </div>
+    </div>
+
+    <!-- Pro AV -->
+    <div class="scenario-detail" id="detail-av">
+      <div class="card">
+        <div class="card-title"><span class="icon">🎬</span>专业音视频 — 广播与现场演出</div>
+        <h4>核心诉求</h4>
+        <p>
+          专业音视频行业是 TSN 技术的最早实践者。在剧场现场演出、广播电视制作中，数百路音频通道和多路高清视频信号需要在网络上实现<strong>样本级同步</strong>（音频同步精度 &lt; <strong>1μs</strong>，视频帧同步精度 &lt; <strong>±125μs</strong>）。
+        </p>
+        <p>
+          AES67（专业音频互联标准）和 SMPTE ST 2110（专业视频 IP 化标准）均以 IEEE 802.1AS 为时间同步基础。TSN 的前身 <strong>AVB（Audio Video Bridging）</strong>正是为此领域而生——802.1Qav（信用量整形）和 802.1AS 最初就是 AVB 的核心标准，后被纳入更广泛的 TSN 标准族。
+        </p>
+        <h4>关键 TSN/AVB 标准</h4>
+        <p>
+          <span class="tag tag-red">802.1AS</span> gPTP 时间同步
+          <span class="tag tag-blue">802.1Qav</span> 信用量整形 (CBS)
+          <span class="tag tag-green">802.1BA</span> AVB 系统 Profile
+          <span class="tag tag-orange">1722</span> AVB 传输协议 (AVTP)
+        </p>
+        <h4>典型网络拓扑</h4>
+        <div class="mermaid-wrap">
+          <div class="mermaid">
+graph LR
+  MIC["麦克风阵列<br>×64ch"]
+  STAGE["舞台音箱<br>×32ch"]
+  CAM1["广播摄像机 1<br>4K HDR"]
+  CAM2["广播摄像机 2"]
+  MIXER["数字调音台<br>(Talker/Listener)"]
+  VSWITCHER["视频切换台"]
+  TSN1["AVB/TSN<br>交换机 1"]
+  TSN2["AVB/TSN<br>交换机 2"]
+  REC["录制系统<br>NAS"]
+  MON["监听系统"]
+
+  MIC --- TSN1
+  STAGE --- TSN1
+  CAM1 --- TSN2
+  CAM2 --- TSN2
+  TSN1 --- TSN2
+  TSN1 --- MIXER
+  TSN2 --- VSWITCHER
+  MIXER --- MON
+  VSWITCHER --- REC
+
+  style TSN1 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style TSN2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style MIXER fill:#e3f2fd,stroke:#1a73e8,stroke-width:2px
+  style VSWITCHER fill:#e3f2fd,stroke:#1a73e8,stroke-width:2px
+          </div>
+        </div>
+        <div class="info-box">
+          <strong>带宽保障与同步</strong>
+          802.1Qav 的信用量整形（CBS）为每条音视频流预留固定带宽，确保流量不突发。802.1AS gPTP 为所有设备提供统一时钟，使调音台可以将来自不同交换机上的 64 路麦克风信号精确对齐到同一采样时刻。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- PART 3: 实施注意点 -->
+<!-- ============================================================ -->
+<section class="section" id="part3">
+  <h2 class="section-title">三、实施 TSN 的关键考虑</h2>
+  <p class="section-desc">
+    部署 TSN 网络涉及多项技术要素的协调配合。以下通过可折叠的知识树结构，系统展开每个关键注意点，辅以交互式图表深入理解。
+  </p>
+
+  <!-- 3.1 Time Sync -->
+  <div id="part3-timesync">
+    <h3>3.1 时间同步（IEEE 802.1AS / gPTP）</h3>
+    <p>精确时间同步是 TSN 所有机制的基石。没有统一的时间基准，门控调度 (Qbv)、帧复制消除 (CB) 等都无法正常工作。</p>
+    
+    <ul class="tree" id="tree-timesync">
+      <li class="tree-item open">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>gPTP 工作原理
+        </button>
+        <div class="tree-content">
+          <div class="tree-leaf">
+            <strong>广义精确时间协议（gPTP）</strong>是 IEEE 1588 PTP 的一个特定 Profile（IEEE 802.1AS）。它通过交换机逐跳测量和补偿链路延迟，将整个网络中所有设备的时钟同步到一个共同的 Grandmaster 时钟。典型精度可达 <strong>±100ns ~ ±1μs</strong>（取决于跳数和硬件时间戳能力）。
+          </div>
+          <div class="tree-leaf">
+            <strong>两步测量过程：</strong>① Sync + Follow_Up 消息从 Master 下发，携带发送时间戳；② Pdelay_Req / Pdelay_Resp 消息在每段链路上测量传播延迟（Peer Delay 机制）。每个交换机节点独立测量其上游链路延迟并补偿，因此 gPTP 的精度随跳数增加而缓慢退化。
+          </div>
+          <div class="tree-leaf">
+            <strong>硬件时间戳至关重要：</strong>要实现亚微秒同步精度，交换机和终端设备必须在 MAC 层或 PHY 层捕获时间戳（硬件时间戳），而非在软件协议栈中捕获（软件时间戳精度通常只有毫秒级）。
+          </div>
+        </div>
+      </li>
+      <li class="tree-item">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>Grandmaster 时钟选择与冗余
+        </button>
+        <div class="tree-content">
+          <div class="tree-leaf">
+            <strong>BMCA（Best Master Clock Algorithm）：</strong>gPTP 使用 BMCA 自动在网络中选举最优的 Grandmaster 时钟。选择标准依次为：时钟等级（clockClass）、精度（clockAccuracy）、方差（offsetScaledLogVariance）、优先级（priority1/2）。
+          </div>
+          <div class="tree-leaf">
+            <strong>冗余 Grandmaster：</strong>生产环境中应部署至少两个 Grandmaster 时钟源。当主 Grandmaster 故障时，BMCA 将自动选举备用 Grandmaster。但切换过程中（通常需要 2~10 个 Announce 间隔），网络的时间精度会暂时退化。<strong>802.1ASrev</strong> 引入了热备份 GM 机制以减少切换时间。
+          </div>
+        </div>
+      </li>
+      <li class="tree-item">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>时钟同步树示意
+        </button>
+        <div class="tree-content">
+          <p style="font-size:13px;margin-bottom:12px;color:var(--text-secondary);">下图展示了一个典型的 gPTP 时钟同步树。Grandmaster 时钟位于根节点，通过逐跳的 Peer Delay 测量将时间传递到每个叶子节点。</p>
+          <svg class="clock-tree-svg" viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg">
+            <!-- GM -->
+            <rect x="240" y="10" width="120" height="40" rx="6" fill="#e3f2fd" stroke="#1a73e8" stroke-width="2"/>
+            <text x="300" y="35" text-anchor="middle" font-size="12" font-weight="700" fill="#1a73e8">Grandmaster</text>
+            
+            <!-- SW1 -->
+            <rect x="100" y="90" width="100" height="36" rx="6" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+            <text x="150" y="113" text-anchor="middle" font-size="11" font-weight="600" fill="#2e7d32">TSN SW1</text>
+            
+            <!-- SW2 -->
+            <rect x="400" y="90" width="100" height="36" rx="6" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+            <text x="450" y="113" text-anchor="middle" font-size="11" font-weight="600" fill="#2e7d32">TSN SW2</text>
+            
+            <!-- End devices -->
+            <rect x="30" y="180" width="80" height="32" rx="6" fill="#fff3e0" stroke="#ff6d00" stroke-width="1.5"/>
+            <text x="70" y="200" text-anchor="middle" font-size="10" fill="#ff6d00">PLC-A</text>
+            
+            <rect x="150" y="180" width="80" height="32" rx="6" fill="#fff3e0" stroke="#ff6d00" stroke-width="1.5"/>
+            <text x="190" y="200" text-anchor="middle" font-size="10" fill="#ff6d00">Sensor-1</text>
+            
+            <rect x="350" y="180" width="80" height="32" rx="6" fill="#fff3e0" stroke="#ff6d00" stroke-width="1.5"/>
+            <text x="390" y="200" text-anchor="middle" font-size="10" fill="#ff6d00">PLC-B</text>
+            
+            <rect x="470" y="180" width="80" height="32" rx="6" fill="#fff3e0" stroke="#ff6d00" stroke-width="1.5"/>
+            <text x="510" y="200" text-anchor="middle" font-size="10" fill="#ff6d00">Camera</text>
+            
+            <!-- Links -->
+            <line x1="300" y1="50" x2="150" y2="90" stroke="#94a3b8" stroke-width="2"/>
+            <line x1="300" y1="50" x2="450" y2="90" stroke="#94a3b8" stroke-width="2"/>
+            <line x1="150" y1="126" x2="70" y2="180" stroke="#94a3b8" stroke-width="1.5"/>
+            <line x1="150" y1="126" x2="190" y2="180" stroke="#94a3b8" stroke-width="1.5"/>
+            <line x1="450" y1="126" x2="390" y2="180" stroke="#94a3b8" stroke-width="1.5"/>
+            <line x1="450" y1="126" x2="510" y2="180" stroke="#94a3b8" stroke-width="1.5"/>
+            
+            <!-- Delay annotations -->
+            <text x="200" y="72" font-size="9" fill="#d32f2f" font-weight="600">Peer Delay = 342ns</text>
+            <text x="380" y="72" font-size="9" fill="#d32f2f" font-weight="600">Peer Delay = 289ns</text>
+            <text x="52" y="160" font-size="9" fill="#64748b">PD=126ns</text>
+            <text x="178" y="160" font-size="9" fill="#64748b">PD=118ns</text>
+            <text x="358" y="160" font-size="9" fill="#64748b">PD=131ns</text>
+            <text x="488" y="160" font-size="9" fill="#64748b">PD=142ns</text>
+
+            <!-- Accumulated error -->
+            <text x="70" y="230" text-anchor="middle" font-size="9" fill="#1a73e8" font-weight="600">累计误差 ±68ns</text>
+            <text x="190" y="230" text-anchor="middle" font-size="9" fill="#1a73e8" font-weight="600">累计误差 ±61ns</text>
+            <text x="390" y="230" text-anchor="middle" font-size="9" fill="#1a73e8" font-weight="600">累计误差 ±55ns</text>
+            <text x="510" y="230" text-anchor="middle" font-size="9" fill="#1a73e8" font-weight="600">累计误差 ±72ns</text>
+
+            <!-- Legend -->
+            <rect x="180" y="260" width="240" height="50" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+            <circle cx="200" cy="278" r="5" fill="#1a73e8"/>
+            <text x="210" y="282" font-size="10" fill="#334155">Grandmaster 时钟源</text>
+            <circle cx="200" cy="296" r="5" fill="#2e7d32"/>
+            <text x="210" y="300" font-size="10" fill="#334155">TSN 交换机（透明时钟）</text>
+          </svg>
+        </div>
+      </li>
+      <li class="tree-item">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>精度影响因素与最佳实践
+        </button>
+        <div class="tree-content">
+          <div class="tree-leaf">
+            <strong>影响同步精度的关键因素：</strong>
+            ① 网络跳数（每跳引入约 ±10~30ns 误差）；
+            ② 交换机时间戳精度（PHY 时间戳 vs MAC 时间戳）；
+            ③ 振荡器质量（TCXO vs OCXO）；
+            ④ 链路非对称性（光纤 vs 铜缆，不同长度上下行不对称）；
+            ⑤ Sync 消息发送间隔（典型 125ms，更短间隔可提升精度但增加带宽开销）。
+          </div>
+          <div class="tree-leaf">
+            <strong>最佳实践：</strong>
+            将 Grandmaster 部署在网络拓扑的中心位置以最小化最大跳数；
+            所有 TSN 交换机和终端使用支持硬件时间戳的设备；
+            在关键应用中部署冗余 Grandmaster 并确保 BMCA 参数配置正确；
+            定期监测同步精度（通过 802.1AS 的 Sync 统计信息）。
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- 3.2 Traffic Shaping -->
+  <div id="part3-shaping">
+    <h3>3.2 流量调度与整形</h3>
+    <p>TSN 提供了多种流量调度机制，其中最核心的是 <strong>802.1Qbv 时间感知整形（TAS）</strong>。以下交互式演示展示了门控调度的工作原理。</p>
+    
+    <ul class="tree">
+      <li class="tree-item open">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>802.1Qbv — 时间感知整形器 (TAS)
+        </button>
+        <div class="tree-content">
+          <div class="tree-leaf">
+            <strong>核心思想：</strong>在交换机出端口设置一个"门控列表"（Gate Control List, GCL），按照精确的时间表打开和关闭不同优先级队列的传输门。当一个队列的门关闭时，该队列中的帧不能发送；只有门打开时才能传输。通过预先计算好所有交换机的门控时间表，可以为关键流量保留独占的传输窗口，实现零抖动、确定性时延。
+          </div>
+          
+          <h4 style="margin-top:20px;">交互式 GCL 门控调度时序图</h4>
+          <p style="font-size:13px;color:var(--text-secondary);">拖动下方滑块调整保护带（Guard Band）大小，观察其对时间槽利用率和潜在冲突的影响：</p>
+          
+          <div class="slider-group">
+            <label>保护带宽度：</label>
+            <input type="range" id="guardBandSlider" min="0" max="50" value="10" oninput="updateGCL()">
+            <span class="val" id="guardBandVal">10μs</span>
+          </div>
+          <div class="slider-group">
+            <label>调度周期：</label>
+            <input type="range" id="cycleSlider" min="100" max="1000" value="500" step="50" oninput="updateGCL()">
+            <span class="val" id="cycleVal">500μs</span>
+          </div>
+          
+          <div class="gcl-canvas-wrap">
+            <canvas id="gclCanvas" width="800" height="260"></canvas>
+          </div>
+          
+          <div id="gclInfo" style="margin-top:12px;font-size:13px;color:var(--text-secondary);min-height:30px;"></div>
+        </div>
+      </li>
+      <li class="tree-item">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>802.1Qav — 信用量整形 (CBS)
+        </button>
+        <div class="tree-content">
+          <div class="tree-leaf">
+            <strong>Credit-Based Shaper（CBS）</strong>源自 AVB 标准，为流量类别分配信用量（credit）。当信用量 ≥ 0 时允许发送帧，发送后信用量以 sendSlope 速率下降；当信用量 &lt; 0 时必须等待，信用量以 idleSlope 速率恢复。这种机制确保每个流量类别的平均带宽不超过预留值，同时限制突发。
+          </div>
+          <div class="tree-leaf">
+            CBS 适用于对延迟有一定要求但不需要严格确定性的流量（如音视频流），通常分配给 SR Class A（最大延迟 2ms/7跳）和 SR Class B（最大延迟 50ms/7跳）。
+          </div>
+        </div>
+      </li>
+      <li class="tree-item">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>802.1Qbu / 802.3br — 帧抢占
+        </button>
+        <div class="tree-content">
+          <div class="tree-leaf">
+            <strong>帧抢占（Frame Preemption）</strong>允许高优先级的"快速帧"（express frame）中断正在传输中的低优先级"可抢占帧"（preemptable frame）。被中断的低优先级帧分成多个片段（fragment），在高优先级帧传输完成后继续传输并在接收端重组。
+          </div>
+          <div class="tree-leaf">
+            帧抢占将最坏情况下的高优先级等待时间从一个最大帧传输时间（1518字节 ≈ 123μs @100Mbps）降低到一个最小片段大小（64字节 ≈ 5.12μs @100Mbps），显著减小了保护带需求，提高了带宽利用率。帧抢占通常与 802.1Qbv 配合使用。
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- 3.3 FRER -->
+  <div id="part3-frer">
+    <h3>3.3 冗余与可靠性（IEEE 802.1CB FRER）</h3>
+    <p>帧复制与消除（Frame Replication and Elimination for Reliability, FRER）是 TSN 实现零切换冗余的关键机制。</p>
+    
+    <ul class="tree">
+      <li class="tree-item open">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>FRER 工作原理
+        </button>
+        <div class="tree-content">
+          <div class="tree-leaf">
+            <strong>基本流程：</strong>发送端将每个数据帧复制为两份（或更多），沿不同的网络路径传输。接收端利用序列号识别和消除重复帧，只保留最先到达的副本。这样，即使一条路径上发生链路故障或交换机故障，另一条路径上的帧仍能正常到达，应用层完全无感知。
+          </div>
+          <div class="tree-leaf">
+            <strong>与传统冗余对比：</strong>RSTP（快速生成树）的故障切换时间在秒级；MRP（介质冗余协议）约 10~200ms；PRP/HSR 可实现零切换但需要专用协议。802.1CB FRER 在标准以太网帧基础上添加序列号标签（R-TAG），实现了与 PRP/HSR 同等的零切换冗余，同时兼容标准以太网基础设施。
+          </div>
+        </div>
+      </li>
+      <li class="tree-item">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>冗余路径交互演示
+        </button>
+        <div class="tree-content">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">点击 <strong>"发送数据帧"</strong> 按钮观察帧复制与消除过程。点击交换机节点可模拟故障。</p>
+          <div style="text-align:center;margin-bottom:12px;">
+            <button onclick="startFRER()" style="padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">发送数据帧</button>
+            <button onclick="resetFRER()" style="padding:8px 20px;background:var(--be-gray);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;margin-left:8px;">重置</button>
+          </div>
+          <div class="gcl-canvas-wrap">
+            <canvas id="frerCanvas" width="700" height="320"></canvas>
+          </div>
+          <div id="frerLog" style="margin-top:12px;font-size:13px;color:var(--text-secondary);min-height:30px;"></div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- 3.4 Configuration -->
+  <div id="part3-config">
+    <h3>3.4 网络配置与管理（IEEE 802.1Qcc）</h3>
+    <p>TSN 网络需要精心规划和配置流量调度、流量预留和路径选择。802.1Qcc 定义了三种配置模型。</p>
+    
+    <div class="tabs" id="configTabs">
+      <button class="tab-btn active" onclick="switchConfigTab('centralized')">完全集中式</button>
+      <button class="tab-btn" onclick="switchConfigTab('hybrid')">集中网络/分布式用户</button>
+      <button class="tab-btn" onclick="switchConfigTab('distributed')">完全分布式</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-centralized">
+      <div class="card">
+        <div class="card-title"><span class="icon">🏢</span>完全集中式配置模型</div>
+        <p>在完全集中式模型中，<strong>CNC（Centralized Network Controller）</strong>负责所有网络配置决策，<strong>CUC（Centralized User Configuration）</strong>作为终端设备的代理与 CNC 通信。所有流预留、路径计算、GCL 配置由 CNC 统一完成，通过 NETCONF/YANG 下发到每台 TSN 交换机。</p>
+        <div class="mermaid-wrap">
+          <div class="mermaid">
+graph TB
+  CUC["CUC<br>集中式用户配置器"]
+  CNC["CNC<br>集中式网络配置器"]
+  SW1["TSN 交换机 1"]
+  SW2["TSN 交换机 2"]
+  SW3["TSN 交换机 3"]
+  EP1["终端设备 A<br>(Talker)"]
+  EP2["终端设备 B<br>(Listener)"]
+  EP3["终端设备 C<br>(Listener)"]
+
+  CUC <-->|"流需求<br>UNI接口"| CNC
+  CNC -->|"NETCONF/YANG<br>GCL配置"| SW1
+  CNC -->|"NETCONF/YANG<br>GCL配置"| SW2
+  CNC -->|"NETCONF/YANG<br>GCL配置"| SW3
+  EP1 --- SW1
+  SW1 --- SW2
+  SW2 --- SW3
+  SW3 --- EP2
+  SW2 --- EP3
+  EP1 -.->|"流需求注册"| CUC
+  EP2 -.->|"流需求注册"| CUC
+  EP3 -.->|"流需求注册"| CUC
+
+  style CNC fill:#e3f2fd,stroke:#1a73e8,stroke-width:2px
+  style CUC fill:#ede9fe,stroke:#7c3aed,stroke-width:2px
+  style SW1 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style SW2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style SW3 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+          </div>
+        </div>
+        <div class="info-box">
+          <strong>优势：</strong>全局最优的路径与调度计算；统一的策略管理与监控；适合大型工业网络。<br>
+          <strong>挑战：</strong>CNC 是单点故障（需部署冗余 CNC）；初始部署和维护复杂度较高；需要所有设备支持 NETCONF/YANG。
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-hybrid">
+      <div class="card">
+        <div class="card-title"><span class="icon">🔀</span>集中网络 / 分布式用户配置模型</div>
+        <p>在此混合模型中，终端设备（Talker/Listener）使用 <strong>SRP（Stream Reservation Protocol，IEEE 802.1Qat）</strong> 自主向网络声明流需求。<strong>CNC</strong> 仅负责配置网络基础设施（交换机的 GCL、队列映射等），不直接参与终端的流注册。</p>
+        <div class="mermaid-wrap">
+          <div class="mermaid">
+graph TB
+  CNC2["CNC<br>集中式网络配置器"]
+  SW4["TSN 交换机 1"]
+  SW5["TSN 交换机 2"]
+  EP4["终端 A (Talker)<br>SRP 声明"]
+  EP5["终端 B (Listener)<br>SRP 注册"]
+
+  CNC2 -->|"NETCONF/YANG<br>基础调度配置"| SW4
+  CNC2 -->|"NETCONF/YANG<br>基础调度配置"| SW5
+  EP4 <-->|"SRP<br>流声明/预留"| SW4
+  SW4 <-->|"SRP 转发"| SW5
+  SW5 <-->|"SRP<br>流注册/确认"| EP5
+
+  style CNC2 fill:#e3f2fd,stroke:#1a73e8,stroke-width:2px
+  style SW4 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style SW5 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style EP4 fill:#fff3e0,stroke:#ff6d00,stroke-width:2px
+  style EP5 fill:#fff3e0,stroke:#ff6d00,stroke-width:2px
+          </div>
+        </div>
+        <div class="info-box">
+          <strong>优势：</strong>终端设备可即插即用，自主声明流需求；减轻 CNC 的管理负担。<br>
+          <strong>适用场景：</strong>AVB/TSN 音视频网络（设备频繁接入/移除）；中等规模网络。
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-distributed">
+      <div class="card">
+        <div class="card-title"><span class="icon">🌐</span>完全分布式配置模型</div>
+        <p>无集中控制器，所有配置通过 <strong>SRP</strong> 和交换机本地决策完成。每台交换机根据收到的流预留请求独立决定是否接受流、分配资源和配置队列。这是最简单但全局优化能力最弱的模型。</p>
+        <div class="mermaid-wrap">
+          <div class="mermaid">
+graph LR
+  EPD1["终端 A<br>(Talker)"]
+  SWD1["TSN SW 1<br>本地决策"]
+  SWD2["TSN SW 2<br>本地决策"]
+  EPD2["终端 B<br>(Listener)"]
+
+  EPD1 <-->|"SRP 声明"| SWD1
+  SWD1 <-->|"SRP 转发"| SWD2
+  SWD2 <-->|"SRP 注册"| EPD2
+
+  style SWD1 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style SWD2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style EPD1 fill:#fff3e0,stroke:#ff6d00,stroke-width:2px
+  style EPD2 fill:#fff3e0,stroke:#ff6d00,stroke-width:2px
+          </div>
+        </div>
+        <div class="info-box warning">
+          <strong>局限：</strong>无法实现全局最优调度；不适合复杂的 Qbv 门控配置（因为 GCL 需要全网协调）。<br>
+          <strong>适用场景：</strong>小型 AVB 网络；对实时性要求不极端的场景。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3.5 Security -->
+  <div id="part3-security">
+    <h3>3.5 安全考虑</h3>
+    <p>TSN 网络在 IIoT（工业物联网）环境中面临多种安全威胁。由于 TSN 深度依赖时间同步和精确调度，攻击者可以利用这些机制的弱点发起针对性攻击。</p>
+    
+    <ul class="tree">
+      <li class="tree-item open">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>TSN 攻击面分析
+        </button>
+        <div class="tree-content">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">以下展示了 TSN 网络主要的安全威胁点。点击每个卡片查看详情：</p>
+          <div class="attack-grid">
+            <div class="attack-card" onclick="this.classList.toggle('expanded')">
+              <h5>时间同步攻击</h5>
+              <p>篡改 gPTP Sync/Follow_Up 消息，注入虚假时间信息，导致门控调度错位。攻击者可通过中间人攻击修改时间戳，使 TSN 网络失去同步。</p>
+              <div style="margin-top:8px;font-size:11px;color:var(--primary);">
+                <strong>防御：</strong>启用 MACsec (802.1AE) 加密链路层通信；部署 802.1AS 认证机制；使用冗余 Grandmaster 进行交叉验证。
+              </div>
+            </div>
+            <div class="attack-card" onclick="this.classList.toggle('expanded')">
+              <h5>GCL 配置篡改</h5>
+              <p>通过未授权访问 NETCONF/YANG 接口，修改交换机的门控调度列表，使关键流量窗口被关闭或缩小。</p>
+              <div style="margin-top:8px;font-size:11px;color:var(--primary);">
+                <strong>防御：</strong>使用 TLS 保护 NETCONF 会话；实施 RBAC（基于角色的访问控制）；配置变更审计日志。
+              </div>
+            </div>
+            <div class="attack-card" onclick="this.classList.toggle('expanded')">
+              <h5>流量注入/泛洪</h5>
+              <p>向 TSN 域注入大量非法帧，挤占门控窗口内的带宽，导致合法时间敏感流量被丢弃。</p>
+              <div style="margin-top:8px;font-size:11px;color:var(--primary);">
+                <strong>防御：</strong>启用 802.1Qci（Per-Stream Filtering and Policing）对每条流进行入口过滤和策略执行；配置端口 ACL 限制流量源。
+              </div>
+            </div>
+            <div class="attack-card" onclick="this.classList.toggle('expanded')">
+              <h5>SRP 欺骗</h5>
+              <p>伪造 SRP 流预留消息，声明不存在的流或篡改带宽需求，耗尽网络预留资源。</p>
+              <div style="margin-top:8px;font-size:11px;color:var(--primary);">
+                <strong>防御：</strong>使用 802.1X 端口认证限制终端接入；CNC 验证流需求的合理性；部署入侵检测系统（IDS）监控异常预留请求。
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- 3.6 IT/OT Convergence -->
+  <div id="part3-convergence">
+    <h3>3.6 与现有 IT/OT 网络融合</h3>
+    <p>TSN 的一个关键价值主张是实现 IT（信息技术）与 OT（运营技术）网络的融合。但这一融合过程面临多重挑战。</p>
+    
+    <ul class="tree">
+      <li class="tree-item open">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>IT/OT 融合交互示意
+        </button>
+        <div class="tree-content">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">下图以 Venn 图形式展示了 TSN 域、OT 域与 IT 域的关系。悬停在不同区域上查看说明：</p>
+          <div style="text-align:center;">
+            <canvas id="vennCanvas" width="560" height="380"></canvas>
+          </div>
+          <div id="vennInfo" style="margin-top:12px;font-size:13px;color:var(--text-secondary);min-height:40px;text-align:center;">
+            悬停在 Venn 图的不同区域上查看详细说明
+          </div>
+        </div>
+      </li>
+      <li class="tree-item">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>遗留设备兼容性
+        </button>
+        <div class="tree-content">
+          <div class="tree-leaf">
+            <strong>挑战：</strong>现有 OT 环境中大量遗留设备不支持 TSN（无硬件时间戳、无 Qbv 能力）。这些设备可能运行 PROFINET、EtherNet/IP 或 Modbus TCP 等传统工业协议。
+          </div>
+          <div class="tree-leaf">
+            <strong>解决策略：</strong>① 使用 TSN 网关/桥接设备将遗留流量封装到 TSN 域中；② 在 TSN 交换机上为遗留设备端口配置 Best-Effort 队列，将其流量与时间敏感流量隔离；③ 分阶段迁移，优先在关键控制环路部署 TSN，逐步扩展。
+          </div>
+        </div>
+      </li>
+      <li class="tree-item">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>VLAN 划分策略
+        </button>
+        <div class="tree-content">
+          <div class="tree-leaf">
+            TSN 流量通常使用专用 VLAN 进行隔离。典型划分为：① <span class="tag tag-red">VLAN 100</span> 时间敏感控制流量（Scheduled Traffic）；② <span class="tag tag-blue">VLAN 200</span> 音视频或中等优先级流量（CBS 整形）；③ <span class="tag tag-gray">VLAN 300</span> IT/办公网络 Best-Effort 流量。
+          </div>
+          <div class="tree-leaf">
+            802.1Qci（Per-Stream Filtering and Policing）可在交换机入口对每条流进行 VLAN、优先级、帧大小检查，拒绝不符合策略的帧进入 TSN 域，防止 IT 流量误入实时区域。
+          </div>
+        </div>
+      </li>
+      <li class="tree-item">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>TSN 与 5G 的协同
+        </button>
+        <div class="tree-content">
+          <div class="tree-leaf">
+            <strong>3GPP Release 16</strong> 已定义了 5G 系统与 TSN 的集成架构。5G 网络可以作为一个"虚拟 TSN 桥"（TSN bridge）被纳入 TSN 域，由 CNC 统一管理。5G 的 URLLC（超高可靠低延迟通信）能力可以为无线连接的终端设备提供 TSN 级别的确定性保证。
+          </div>
+          <div class="tree-leaf">
+            <strong>典型应用：</strong>移动 AGV（自动导引车）通过 5G URLLC 接入工厂的 TSN 骨干网络，实现无线环境下的确定性控制通信。5G-TSN 集成需要解决的关键问题包括：5G 空口的时延抖动补偿、时间同步透传、以及 QoS 映射。
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- 3.7 Testing & Verification -->
+  <div id="part3-testing">
+    <h3>3.7 测试与验证</h3>
+    <p>TSN 网络的部署必须经过严格的测试与验证，确保时间同步精度、流量调度正确性和冗余切换能力满足要求。</p>
+    
+    <ul class="tree">
+      <li class="tree-item open">
+        <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>测试工具链
+        </button>
+        <div class="tree-content">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">TSN 验证涉及多个测试环节，从协议一致性到系统集成：</p>
+          <div class="tool-chain">
+            <div class="tool-item" title="Spirent / Keysight 的 TSN 协议一致性测试套件">协议一致性测试</div>
+            <span class="tool-arrow">→</span>
+            <div class="tool-item" title="使用 Linux TC + taprio qdisc 或专用流量生成器">流量生成</div>
+            <span class="tool-arrow">→</span>
+            <div class="tool-item" title="Calnex / Meinberg 等时间同步分析仪">时间同步验证</div>
+            <span class="tool-arrow">→</span>
+            <div class="tool-item" title="NetEM、Spirent 等网络损伤模拟器注入延迟/丢包/抖动">网络损伤模拟</div>
+            <span class="tool-arrow">→</span>
+            <div class="tool-item" title="端到端延迟测量、冗余切换时间验证、长时间稳定性测试">系统集成测试</div>
+          </div>
+          <div style="margin-top:16px;">
+            <div class="tree-leaf">
+              <strong>协议一致性测试：</strong>验证设备对 802.1AS、802.1Qbv、802.1CB 等标准的实现是否符合规范。通常使用 Spirent TestCenter 或 Keysight 的 TSN 测试模块，发送标准定义的协议消息并检查设备响应。
+            </div>
+            <div class="tree-leaf">
+              <strong>流量生成与分析：</strong>使用硬件流量生成器（如 Ixia、Spirent）或开源工具（如 Linux <code>tc</code> + <code>taprio</code> qdisc、<code>iperf3</code>）产生时间敏感和尽力而为混合流量，测量端到端延迟和抖动分布。
+            </div>
+            <div class="tree-leaf">
+              <strong>时间同步验证：</strong>使用 PTP 分析仪（如 Calnex Sentinel）或高精度示波器测量各节点的时钟偏差，验证 gPTP 同步精度是否满足应用要求（如 ±1μs）。
+            </div>
+            <div class="tree-leaf">
+              <strong>网络损伤模拟：</strong>使用网络损伤模拟器注入链路延迟、丢包、抖动、线序错误等故障条件，验证 TSN 网络在非理想条件下的表现（如 FRER 冗余切换、GCL 调度鲁棒性）。
+            </div>
+            <div class="tree-leaf">
+              <strong>长时间稳定性测试：</strong>TSN 网络应进行至少 72 小时的持续运行测试，监测时间同步精度的长期漂移、GCL 调度的周期性误差累积、以及内存/CPU 资源的使用趋势。
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<!-- Global tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ========================================
+// Initialization
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+  initTimeline();
+  initRadarChart();
+  updateGCL();
+  initFRERCanvas();
+  drawVennDiagram();
+  initSidebarScroll();
+  
+  // Initialize Mermaid
+  if (typeof mermaid !== 'undefined') {
+    mermaid.initialize({ 
+      startOnLoad: true, 
+      theme: 'neutral',
+      flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+      securityLevel: 'loose'
+    });
+  }
+});
+
+// ========================================
+// Sidebar scroll tracking
+// ========================================
+function initSidebarScroll() {
+  const links = document.querySelectorAll('.sidebar nav a');
+  const sections = [];
+  links.forEach(link => {
+    const id = link.getAttribute('href')?.replace('#', '');
+    if (id) {
+      const el = document.getElementById(id);
+      if (el) sections.push({ el, link });
+    }
+  });
+  
+  window.addEventListener('scroll', () => {
+    let current = sections[0];
+    for (const s of sections) {
+      if (s.el.getBoundingClientRect().top <= 80) current = s;
+    }
+    links.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  });
+}
+
+// ========================================
+// Timeline
+// ========================================
+const timelineData = [
+  {
+    year: '2005',
+    label: 'AVB 任务组成立',
+    title: 'IEEE 802.1 AVB 任务组成立',
+    desc: 'IEEE 802.1 工作组成立 Audio Video Bridging (AVB) 任务组，目标是为专业音视频应用定义标准以太网上的实时传输机制。这标志着标准以太网向确定性通信方向演进的起点。'
+  },
+  {
+    year: '2009',
+    label: '802.1Qav CBS',
+    title: 'IEEE 802.1Qav — 信用量整形 (CBS)',
+    desc: '发布信用量整形（Credit-Based Shaper）标准，为 AVB 流量提供带宽预留和突发限制。定义了 SR Class A（最大 2ms/7跳延迟）和 SR Class B（最大 50ms/7跳延迟）两个服务等级。'
+  },
+  {
+    year: '2011',
+    label: '802.1AS gPTP',
+    title: 'IEEE 802.1AS — 广义精确时间协议',
+    desc: '发布基于 IEEE 1588 的广义精确时间协议（gPTP），为 AVB/TSN 网络中的所有设备提供统一的时间基准。采用 Peer Delay 机制逐跳测量链路延迟，典型精度 ±1μs。这是 TSN 所有时间相关功能的基石。'
+  },
+  {
+    year: '2012',
+    label: 'AVB→TSN 更名',
+    title: 'AVB 任务组更名为 TSN 任务组',
+    desc: '随着工业自动化、汽车等行业对确定性以太网的需求日益增长，AVB 任务组的工作范围从音视频扩展到通用实时通信。任务组正式更名为 Time-Sensitive Networking (TSN) 任务组，标志着从"音视频桥接"到"时间敏感网络"的战略升级。'
+  },
+  {
+    year: '2016',
+    label: '802.1Qbv TAS',
+    title: 'IEEE 802.1Qbv — 时间感知整形器 (TAS)',
+    desc: '发布时间感知整形器标准，引入门控调度列表（Gate Control List, GCL）概念。交换机按照精确的时间表打开/关闭不同优先级队列的传输门，为时间敏感流量保留独占的传输窗口，实现微秒级的确定性时延。这是 TSN 最核心的调度标准之一。'
+  },
+  {
+    year: '2017',
+    label: '802.1CB FRER',
+    title: 'IEEE 802.1CB — 帧复制与消除 (FRER)',
+    desc: '发布帧复制与消除标准，通过在发送端复制帧、沿不同路径传输、在接收端消除重复，实现零切换时间的无缝冗余。这为工业控制、电力保护等对可靠性要求极高的应用提供了标准化的冗余方案。'
+  },
+  {
+    year: '2018',
+    label: '802.1Qcc SRP',
+    title: 'IEEE 802.1Qcc — 流预留协议增强',
+    desc: '发布增强的流预留协议标准，定义了完全集中式、集中网络/分布式用户、完全分布式三种 TSN 网络配置模型。引入 CNC（集中式网络配置器）和 CUC（集中式用户配置器）概念，支持 NETCONF/YANG 进行网络配置管理。'
+  },
+  {
+    year: '2020+',
+    label: '持续演进',
+    title: 'TSN 标准持续演进',
+    desc: '802.1ASrev（AS 修订版，增强冗余 GM）、802.1Qcr（异步流量整形 ATS）、802.1Qdj（配置增强）等新标准持续推进。同时 TSN 与 5G 的集成（3GPP R16）、OPC UA over TSN 的工业落地也在加速。TSN Profile 标准（如 IEC/IEEE 60802 工业自动化 TSN Profile）正在制定中。'
+  }
+];
+
+function initTimeline() {
+  const track = document.getElementById('timeline');
+  timelineData.forEach((item, i) => {
+    const node = document.createElement('div');
+    node.className = 'timeline-node';
+    node.innerHTML = `
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">${item.year}</div>
+      <div class="timeline-label">${item.label}</div>
+      <div class="timeline-popup" id="popup-${i}">
+        <button class="close-btn" onclick="event.stopPropagation();closePopup(${i})">&times;</button>
+        <h5>${item.title}</h5>
+        <p>${item.desc}</p>
+      </div>
+    `;
+    node.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePopup(i);
+    });
+    track.appendChild(node);
+  });
+  
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.timeline-popup.show').forEach(p => p.classList.remove('show'));
+    document.querySelectorAll('.timeline-node.active').forEach(n => n.classList.remove('active'));
+  });
+}
+
+function togglePopup(i) {
+  const popup = document.getElementById(`popup-${i}`);
+  const node = popup.closest('.timeline-node');
+  const wasOpen = popup.classList.contains('show');
+  
+  document.querySelectorAll('.timeline-popup.show').forEach(p => p.classList.remove('show'));
+  document.querySelectorAll('.timeline-node.active').forEach(n => n.classList.remove('active'));
+  
+  if (!wasOpen) {
+    popup.classList.add('show');
+    node.classList.add('active');
+  }
+}
+
+function closePopup(i) {
+  document.getElementById(`popup-${i}`).classList.remove('show');
+  document.getElementById(`popup-${i}`).closest('.timeline-node').classList.remove('active');
+}
+
+// ========================================
+// Radar Chart
+// ========================================
+function initRadarChart() {
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  
+  const labels = ['确定性', '低时延', '低抖动', '带宽利用率', '冗余能力'];
+  const tsnData = [95, 92, 95, 85, 90];
+  const ethData = [20, 45, 25, 70, 15];
+  
+  const explanations = {
+    '确定性': {
+      tsn: 'TSN (95/100): 802.1Qbv 门控调度提供微秒级确定性，GCL 保证关键帧在精确时间窗口发送。',
+      eth: '传统以太网 (20/100): Best-Effort 转发，无任何确定性保证，受队列拥塞影响严重。'
+    },
+    '低时延': {
+      tsn: 'TSN (92/100): 通过时间感知整形和帧抢占，端到端时延可控制在微秒级，7跳网络 <100μs。',
+      eth: '传统以太网 (45/100): 平均时延尚可，但最坏情况时延不可预测，可能达到毫秒级。'
+    },
+    '低抖动': {
+      tsn: 'TSN (95/100): 门控调度使同一流量的帧在每个周期中的发送时刻固定，抖动可控制在 ±1μs 以内。',
+      eth: '传统以太网 (25/100): 抖动随网络负载波动巨大，无法满足运动控制和音视频同步要求。'
+    },
+    '带宽利用率': {
+      tsn: 'TSN (85/100): 时间敏感流量独占窗口外的时间段可用于 Best-Effort 流量，综合利用率高。但保护带会损失少量带宽。',
+      eth: '传统以太网 (70/100): 统计复用带宽利用率较好，但无法为关键流量保证带宽。'
+    },
+    '冗余能力': {
+      tsn: 'TSN (90/100): 802.1CB FRER 实现零切换冗余，无中断帧复制消除。',
+      eth: '传统以太网 (15/100): 依赖 STP/RSTP，故障切换时间秒级，远不能满足工业要求。'
+    }
+  };
+
+  const chart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'TSN 网络',
+          data: tsnData,
+          backgroundColor: 'rgba(26, 115, 232, 0.15)',
+          borderColor: '#1a73e8',
+          borderWidth: 2,
+          pointBackgroundColor: '#1a73e8',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 8
+        },
+        {
+          label: '传统以太网',
+          data: ethData,
+          backgroundColor: 'rgba(158, 158, 158, 0.15)',
+          borderColor: '#9e9e9e',
+          borderWidth: 2,
+          pointBackgroundColor: '#9e9e9e',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 8
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        r: {
+          beginAtZero: true,
+          max: 100,
+          ticks: { stepSize: 20, font: { size: 11 } },
+          pointLabels: { font: { size: 13, weight: '600' } },
+          grid: { color: '#e2e8f0' },
+          angleLines: { color: '#e2e8f0' }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 13 }, padding: 20 }
+        },
+        tooltip: {
+          callbacks: {
+            afterBody: function(context) {
+              const label = context[0].label;
+              const dsLabel = context[0].dataset.label;
+              const expl = explanations[label];
+              if (expl) {
+                return dsLabel.includes('TSN') ? '\n' + expl.tsn : '\n' + expl.eth;
+              }
+              return '';
+            }
+          },
+          bodyFont: { size: 12 },
+          titleFont: { size: 13, weight: '700' },
+          padding: 12,
+          maxWidth: 350,
+          displayColors: false
+        }
+      },
+      onHover: function(event, activeElements) {
+        const infoDiv = document.getElementById('radarInfo');
+        if (activeElements.length > 0) {
+          const el = activeElements[0];
+          const label = labels[el.index];
+          const dsLabel = chart.data.datasets[el.datasetIndex].label;
+          const expl = explanations[label];
+          if (expl) {
+            infoDiv.innerHTML = dsLabel.includes('TSN') ? expl.tsn : expl.eth;
+          }
+        }
+      }
+    }
+  });
+}
+
+// ========================================
+// Scenario switching
+// ========================================
+function showScenario(id) {
+  document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.scenario-detail').forEach(d => d.classList.remove('active'));
+  
+  document.getElementById('sc-' + id).classList.add('active');
+  document.getElementById('detail-' + id).classList.add('active');
+  
+  // Re-render mermaid diagrams in the newly visible panel
+  const panel = document.getElementById('detail-' + id);
+  const mermaidEls = panel.querySelectorAll('.mermaid');
+  mermaidEls.forEach(el => {
+    if (el.getAttribute('data-processed') === 'true') {
+      // Already processed
+    }
+  });
+}
+
+// ========================================
+// Collapsible tree
+// ========================================
+function toggleTree(btn) {
+  const item = btn.closest('.tree-item');
+  item.classList.toggle('open');
+}
+
+// ========================================
+// GCL Timing Diagram
+// ========================================
+function updateGCL() {
+  const canvas = document.getElementById('gclCanvas');
+  const ctx = canvas.getContext('2d');
+  const guardBand = parseInt(document.getElementById('guardBandSlider').value);
+  const cycleTime = parseInt(document.getElementById('cycleSlider').value);
+  
+  document.getElementById('guardBandVal').textContent = guardBand + 'μs';
+  document.getElementById('cycleVal').textContent = cycleTime + 'μs';
+  
+  const W = canvas.width;
+  const H = canvas.height;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  
+  ctx.clearRect(0, 0, W, H);
+  
+  const marginLeft = 120;
+  const marginRight = 30;
+  const trackW = W - marginLeft - marginRight;
+  const trackH = 36;
+  const gap = 14;
+  const topOffset = 30;
+  
+  const queues = [
+    { name: 'Q7 (Scheduled)', color: '#d32f2f', pct: 0.20 },
+    { name: 'Q6 (Reserved)', color: '#1a73e8', pct: 0.15 },
+    { name: 'Q5 (CBS Class A)', color: '#2e7d32', pct: 0.15 },
+    { name: 'Q0 (Best-Effort)', color: '#9e9e9e', pct: 0.50 }
+  ];
+  
+  const guardPct = guardBand / cycleTime;
+  
+  // Title
+  ctx.font = 'bold 13px -apple-system, sans-serif';
+  ctx.fillStyle = '#1e293b';
+  ctx.fillText(`GCL 门控调度 — 周期 ${cycleTime}μs, 保护带 ${guardBand}μs`, marginLeft, 18);
+  
+  // Time axis
+  const axisY = topOffset + queues.length * (trackH + gap) + 10;
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(marginLeft, axisY);
+  ctx.lineTo(marginLeft + trackW, axisY);
+  ctx.stroke();
+  
+  // Time markers
+  ctx.font = '11px -apple-system, sans-serif';
+  ctx.fillStyle = '#64748b';
+  for (let i = 0; i <= 10; i++) {
+    const x = marginLeft + (trackW * i / 10);
+    ctx.beginPath();
+    ctx.moveTo(x, axisY);
+    ctx.lineTo(x, axisY + 5);
+    ctx.stroke();
+    ctx.fillText(Math.round(cycleTime * i / 10) + 'μs', x - 12, axisY + 18);
+  }
+  
+  let offset = 0;
+  queues.forEach((q, i) => {
+    const y = topOffset + i * (trackH + gap);
+    
+    // Queue label
+    ctx.font = 'bold 12px -apple-system, sans-serif';
+    ctx.fillStyle = q.color;
+    ctx.fillText(q.name, 4, y + trackH / 2 + 4);
+    
+    // Track background
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(marginLeft, y, trackW, trackH);
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeRect(marginLeft, y, trackW, trackH);
+    
+    // Gate OPEN window
+    const openStart = marginLeft + offset * trackW;
+    const adjustedPct = Math.max(q.pct - guardPct / queues.length, 0.02);
+    const openW = adjustedPct * trackW;
+    
+    ctx.fillStyle = q.color;
+    ctx.globalAlpha = 0.8;
+    ctx.fillRect(openStart, y + 2, openW, trackH - 4);
+    ctx.globalAlpha = 1;
+    
+    // OPEN label
+    ctx.font = 'bold 10px -apple-system, sans-serif';
+    ctx.fillStyle = '#fff';
+    if (openW > 40) {
+      ctx.fillText('OPEN', openStart + 6, y + trackH / 2 + 3);
+    }
+    
+    // Guard band
+    if (guardBand > 0) {
+      const gbStart = openStart + openW;
+      const gbW = (guardPct / queues.length) * trackW;
+      ctx.fillStyle = '#fbbf24';
+      ctx.globalAlpha = 0.5;
+      ctx.fillRect(gbStart, y + 2, gbW, trackH - 4);
+      ctx.globalAlpha = 1;
+      
+      if (gbW > 20) {
+        ctx.font = '9px -apple-system, sans-serif';
+        ctx.fillStyle = '#92400e';
+        ctx.fillText('GB', gbStart + 2, y + trackH / 2 + 3);
+      }
+    }
+    
+    // CLOSED regions
+    const closedStart = openStart + openW + (guardPct / queues.length) * trackW;
+    const closedEnd = marginLeft + trackW;
+    if (closedStart < closedEnd) {
+      ctx.fillStyle = '#f1f5f9';
+    }
+    
+    offset += q.pct;
+  });
+  
+  // Legend
+  const ly = axisY + 34;
+  ctx.font = '11px -apple-system, sans-serif';
+  
+  const legendItems = [
+    { color: '#d32f2f', label: '时间敏感 (Scheduled)' },
+    { color: '#1a73e8', label: '预留流量 (Reserved)' },
+    { color: '#2e7d32', label: 'CBS Class A' },
+    { color: '#9e9e9e', label: '尽力而为 (BE)' },
+    { color: '#fbbf24', label: '保护带 (Guard Band)' }
+  ];
+  
+  let lx = marginLeft;
+  legendItems.forEach(item => {
+    ctx.fillStyle = item.color;
+    ctx.globalAlpha = item.color === '#fbbf24' ? 0.6 : 0.8;
+    ctx.fillRect(lx, ly, 14, 14);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#334155';
+    ctx.fillText(item.label, lx + 18, ly + 11);
+    lx += ctx.measureText(item.label).width + 36;
+  });
+  
+  // Info
+  const totalGuardPct = (guardPct * 100).toFixed(1);
+  const utilization = (100 - parseFloat(totalGuardPct)).toFixed(1);
+  const infoDiv = document.getElementById('gclInfo');
+  let warning = '';
+  if (guardBand > cycleTime * 0.15) {
+    warning = '<span style="color:#d32f2f;font-weight:600;">⚠ 保护带过大（>' + Math.round(cycleTime * 0.15) + 'μs），带宽利用率显著降低！</span>';
+  } else if (guardBand === 0) {
+    warning = '<span style="color:#d32f2f;font-weight:600;">⚠ 无保护带！帧重叠风险极高——队列切换时未完成的帧可能与下一个窗口的帧冲突。</span>';
+  }
+  infoDiv.innerHTML = `有效带宽利用率: <strong>${utilization}%</strong> | 保护带总开销: <strong>${totalGuardPct}%</strong> ${warning}`;
+}
+
+// ========================================
+// FRER Canvas Animation
+// ========================================
+let frerState = { nodes: [], links: [], failed: new Set(), animating: false, animFrames: [] };
+
+function initFRERCanvas() {
+  const canvas = document.getElementById('frerCanvas');
+  
+  frerState.nodes = [
+    { id: 'src', x: 60, y: 150, w: 80, h: 44, label: '发送端\n(Talker)', color: '#1a73e8', textColor: '#fff' },
+    { id: 'sw1', x: 230, y: 60, w: 90, h: 40, label: 'TSN SW-A\n路径1', color: '#2e7d32', textColor: '#fff' },
+    { id: 'sw2', x: 230, y: 240, w: 90, h: 40, label: 'TSN SW-B\n路径2', color: '#2e7d32', textColor: '#fff' },
+    { id: 'sw3', x: 430, y: 60, w: 90, h: 40, label: 'TSN SW-C', color: '#2e7d32', textColor: '#fff' },
+    { id: 'sw4', x: 430, y: 240, w: 90, h: 40, label: 'TSN SW-D', color: '#2e7d32', textColor: '#fff' },
+    { id: 'dst', x: 590, y: 150, w: 80, h: 44, label: '接收端\n(Listener)', color: '#ff6d00', textColor: '#fff' }
+  ];
+  
+  frerState.links = [
+    { from: 'src', to: 'sw1', path: 1 },
+    { from: 'src', to: 'sw2', path: 2 },
+    { from: 'sw1', to: 'sw3', path: 1 },
+    { from: 'sw2', to: 'sw4', path: 2 },
+    { from: 'sw3', to: 'dst', path: 1 },
+    { from: 'sw4', to: 'dst', path: 2 }
+  ];
+  
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    
+    for (const node of frerState.nodes) {
+      if (mx >= node.x && mx <= node.x + node.w && my >= node.y && my <= node.y + node.h) {
+        if (node.id.startsWith('sw')) {
+          if (frerState.failed.has(node.id)) {
+            frerState.failed.delete(node.id);
+          } else {
+            frerState.failed.add(node.id);
+          }
+          drawFRER();
+          const log = document.getElementById('frerLog');
+          if (frerState.failed.size > 0) {
+            log.innerHTML = `<span style="color:var(--ts-red);font-weight:600;">模拟故障节点: ${[...frerState.failed].join(', ')}</span> — 点击节点切换故障状态`;
+          } else {
+            log.innerHTML = '所有节点正常。点击交换机可模拟故障。';
+          }
+        }
+        break;
+      }
+    }
+  });
+  
+  drawFRER();
+}
+
+function drawFRER() {
+  const canvas = document.getElementById('frerCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw links
+  frerState.links.forEach(link => {
+    const fromNode = frerState.nodes.find(n => n.id === link.from);
+    const toNode = frerState.nodes.find(n => n.id === link.to);
+    
+    const x1 = fromNode.x + fromNode.w;
+    const y1 = fromNode.y + fromNode.h / 2;
+    const x2 = toNode.x;
+    const y2 = toNode.y + toNode.h / 2;
+    
+    const isFailed = frerState.failed.has(link.from) || frerState.failed.has(link.to);
+    
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = isFailed ? '#fca5a5' : (link.path === 1 ? '#1a73e8' : '#ff6d00');
+    ctx.lineWidth = isFailed ? 1 : 2;
+    if (isFailed) ctx.setLineDash([4, 4]);
+    else ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+  
+  // Draw nodes
+  frerState.nodes.forEach(node => {
+    const isFailed = frerState.failed.has(node.id);
+    
+    ctx.fillStyle = isFailed ? '#fca5a5' : node.color;
+    ctx.strokeStyle = isFailed ? '#d32f2f' : 'transparent';
+    ctx.lineWidth = isFailed ? 2 : 0;
+    
+    roundRect(ctx, node.x, node.y, node.w, node.h, 6);
+    ctx.fill();
+    if (isFailed) ctx.stroke();
+    
+    ctx.fillStyle = isFailed ? '#991b1b' : node.textColor;
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    const lines = node.label.split('\n');
+    lines.forEach((line, i) => {
+      ctx.fillText(line, node.x + node.w / 2, node.y + node.h / 2 + (i - (lines.length - 1) / 2) * 14 + 4);
+    });
+    ctx.textAlign = 'left';
+    
+    if (isFailed) {
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillStyle = '#d32f2f';
+      ctx.textAlign = 'center';
+      ctx.fillText('✕', node.x + node.w / 2, node.y - 4);
+      ctx.textAlign = 'left';
+    }
+  });
+  
+  // Draw animated frames
+  frerState.animFrames.forEach(frame => {
+    ctx.beginPath();
+    ctx.arc(frame.x, frame.y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = frame.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText(frame.seq, frame.x, frame.y + 3);
+    ctx.textAlign = 'left';
+  });
+  
+  // Labels
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.fillStyle = '#1a73e8';
+  ctx.fillText('路径 1（主路径）', 280, 45);
+  ctx.fillStyle = '#ff6d00';
+  ctx.fillText('路径 2（冗余路径）', 280, 295);
+  
+  if (frerState.nodes.some(n => n.id.startsWith('sw'))) {
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('点击交换机模拟故障', 260, 165);
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function startFRER() {
+  if (frerState.animating) return;
+  frerState.animating = true;
+  frerState.animFrames = [];
+  
+  const log = document.getElementById('frerLog');
+  
+  const path1 = ['src', 'sw1', 'sw3', 'dst'];
+  const path2 = ['src', 'sw2', 'sw4', 'dst'];
+  
+  const path1Failed = path1.some(id => frerState.failed.has(id));
+  const path2Failed = path2.some(id => frerState.failed.has(id));
+  
+  log.innerHTML = '<span style="color:var(--primary);">发送端复制帧 → 沿两条路径发送...</span>';
+  
+  const frames = [];
+  if (!path1Failed) {
+    frames.push({ path: path1, color: '#1a73e8', seq: 'S1', progress: 0, active: true, pathId: 1 });
+  }
+  if (!path2Failed) {
+    frames.push({ path: path2, color: '#ff6d00', seq: 'S1', progress: 0, active: true, pathId: 2 });
+  }
+  
+  if (frames.length === 0) {
+    log.innerHTML = '<span style="color:var(--ts-red);font-weight:600;">两条路径均故障！数据帧丢失！</span>';
+    frerState.animating = false;
+    return;
+  }
+  
+  const speed = 0.015;
+  let firstArrived = false;
+  
+  function animate() {
+    frames.forEach(f => {
+      if (!f.active) return;
+      f.progress += speed;
+      
+      const totalSegments = f.path.length - 1;
+      const segmentProgress = f.progress * totalSegments;
+      const currentSeg = Math.min(Math.floor(segmentProgress), totalSegments - 1);
+      const segPct = segmentProgress - currentSeg;
+      
+      if (currentSeg >= totalSegments) {
+        f.active = false;
+        return;
+      }
+      
+      const fromNode = frerState.nodes.find(n => n.id === f.path[currentSeg]);
+      const toNode = frerState.nodes.find(n => n.id === f.path[currentSeg + 1]);
+      
+      f.x = fromNode.x + fromNode.w + (toNode.x - fromNode.x - fromNode.w) * segPct;
+      f.y = fromNode.y + fromNode.h / 2 + (toNode.y + toNode.h / 2 - fromNode.y - fromNode.h / 2) * segPct;
+    });
+    
+    frerState.animFrames = frames.filter(f => f.active);
+    drawFRER();
+    
+    const arrived = frames.filter(f => !f.active);
+    if (arrived.length > 0 && !firstArrived) {
+      firstArrived = true;
+      const firstPath = arrived[0].pathId;
+      log.innerHTML = `<span style="color:var(--success);font-weight:600;">路径 ${firstPath} 的帧先到达接收端 ✓</span>`;
+    }
+    
+    if (frames.some(f => f.active)) {
+      requestAnimationFrame(animate);
+    } else {
+      if (frames.length === 2) {
+        setTimeout(() => {
+          log.innerHTML += '<br><span style="color:var(--primary);">接收端消除重复帧（FRER 序列号匹配），只保留先到达的副本。</span>';
+        }, 300);
+      } else if (frames.length === 1) {
+        setTimeout(() => {
+          log.innerHTML += `<br><span style="color:var(--warning);">仅一条路径可用（另一条已故障），帧仍成功到达——无缝冗余生效！</span>`;
+        }, 300);
+      }
+      frerState.animating = false;
+    }
+  }
+  
+  requestAnimationFrame(animate);
+}
+
+function resetFRER() {
+  frerState.failed.clear();
+  frerState.animFrames = [];
+  frerState.animating = false;
+  drawFRER();
+  document.getElementById('frerLog').innerHTML = '点击交换机模拟故障，然后点击"发送数据帧"观察冗余效果。';
+}
+
+// ========================================
+// Config tab switching
+// ========================================
+function switchConfigTab(tab) {
+  document.querySelectorAll('#configTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  
+  event.target.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ========================================
+// Venn Diagram (IT/OT/TSN convergence)
+// ========================================
+function drawVennDiagram() {
+  const canvas = document.getElementById('vennCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  
+  const circles = [
+    { cx: 190, cy: 170, r: 130, color: '#1a73e8', label: 'IT 域', labelX: 100, labelY: 80 },
+    { cx: 370, cy: 170, r: 130, color: '#ff6d00', label: 'OT 域', labelX: 420, labelY: 80 },
+    { cx: 280, cy: 260, r: 110, color: '#2e7d32', label: 'TSN 域', labelX: 250, labelY: 360 }
+  ];
+  
+  const regions = [
+    { id: 'it', test: (x,y) => inCircle(x,y,circles[0]) && !inCircle(x,y,circles[1]) && !inCircle(x,y,circles[2]),
+      info: '<strong>纯 IT 域：</strong>传统企业网络 — Web 服务、邮件、ERP 系统、数据库。采用标准以太网 Best-Effort 传输，对实时性无特殊要求。' },
+    { id: 'ot', test: (x,y) => inCircle(x,y,circles[1]) && !inCircle(x,y,circles[0]) && !inCircle(x,y,circles[2]),
+      info: '<strong>纯 OT 域：</strong>遗留工业网络 — PROFIBUS、Modbus RTU、DeviceNet 等现场总线。独立封闭运行，通常不与 IT 网络互联。' },
+    { id: 'tsn', test: (x,y) => inCircle(x,y,circles[2]) && !inCircle(x,y,circles[0]) && !inCircle(x,y,circles[1]),
+      info: '<strong>纯 TSN 域：</strong>新建 TSN 网络基础设施 — TSN 交换机、gPTP 时钟源、CNC 配置器。构成确定性通信的网络底座。' },
+    { id: 'it-ot', test: (x,y) => inCircle(x,y,circles[0]) && inCircle(x,y,circles[1]) && !inCircle(x,y,circles[2]),
+      info: '<strong>IT-OT 交叉：</strong>工业以太网网关、SCADA/MES 系统 — 传统 IT/OT 融合区域，面临协议转换、安全隔离等挑战。' },
+    { id: 'it-tsn', test: (x,y) => inCircle(x,y,circles[0]) && inCircle(x,y,circles[2]) && !inCircle(x,y,circles[1]),
+      info: '<strong>IT-TSN 交叉：</strong>TSN 感知的 IT 交换机和服务器 — 支持 802.1Qbv 的企业级交换机，可在 IT 网络中为关键应用保留带宽。' },
+    { id: 'ot-tsn', test: (x,y) => inCircle(x,y,circles[1]) && inCircle(x,y,circles[2]) && !inCircle(x,y,circles[0]),
+      info: '<strong>OT-TSN 交叉：</strong>OPC UA over TSN 终端设备 — 新一代工业控制器和 I/O 模块，原生支持 TSN 和 OPC UA 通信栈。' },
+    { id: 'all', test: (x,y) => inCircle(x,y,circles[0]) && inCircle(x,y,circles[1]) && inCircle(x,y,circles[2]),
+      info: '<strong>IT-OT-TSN 融合核心：</strong>统一的 TSN 骨干网络 — 工业 4.0 愿景的核心区域。在同一以太网基础设施上同时承载 IT 流量（ERP/MES）、OT 控制流量（PLC 通信）和实时音视频流量，通过 TSN 的流量调度和隔离实现和平共存。' }
+  ];
+  
+  function inCircle(x, y, c) {
+    return Math.pow(x - c.cx, 2) + Math.pow(y - c.cy, 2) <= Math.pow(c.r, 2);
+  }
+  
+  function draw(highlightRegion) {
+    ctx.clearRect(0, 0, W, H);
+    
+    circles.forEach((c, i) => {
+      ctx.beginPath();
+      ctx.arc(c.cx, c.cy, c.r, 0, Math.PI * 2);
+      ctx.fillStyle = c.color;
+      ctx.globalAlpha = 0.12;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = c.color;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      
+      ctx.font = 'bold 16px -apple-system, sans-serif';
+      ctx.fillStyle = c.color;
+      ctx.textAlign = 'center';
+      ctx.fillText(c.label, c.labelX, c.labelY);
+      ctx.textAlign = 'left';
+    });
+    
+    // Center label
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.fillStyle = '#1e293b';
+    ctx.textAlign = 'center';
+    ctx.fillText('融合核心', 280, 210);
+    ctx.textAlign = 'left';
+  }
+  
+  draw(null);
+  
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width);
+    const my = (e.clientY - rect.top) * (H / rect.height);
+    
+    const infoDiv = document.getElementById('vennInfo');
+    let found = false;
+    for (const region of regions) {
+      if (region.test(mx, my)) {
+        infoDiv.innerHTML = region.info;
+        canvas.style.cursor = 'pointer';
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      infoDiv.innerHTML = '悬停在 Venn 图的不同区域上查看详细说明';
+      canvas.style.cursor = 'default';
+    }
+  });
+}
+
+// ========================================
+// Fallback: offline Mermaid alternative
+// ========================================
+window.addEventListener('load', function() {
+  if (typeof mermaid === 'undefined') {
+    document.querySelectorAll('.mermaid').forEach(el => {
+      const code = el.textContent;
+      el.innerHTML = '<pre style="background:#f8fafc;padding:16px;border-radius:6px;font-size:12px;overflow-x:auto;font-family:monospace;white-space:pre-wrap;">' +
+        '<div style="color:#d32f2f;font-weight:600;margin-bottom:8px;">⚠ Mermaid CDN 不可用（离线模式）— 显示图表源码：</div>' +
+        code.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+    });
+  }
+});
+</script>
+
+</body>
+</html>
