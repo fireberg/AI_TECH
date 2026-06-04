@@ -1935,7 +1935,7 @@ graph LR
           <span class="arrow">▶</span>冗余路径交互演示
         </button>
         <div class="tree-content">
-          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">点击 <strong>"发送数据帧"</strong> 按钮观察帧复制与消除过程。点击交换机节点可模拟故障。</p>
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">帧在<span style="color:#7c3aed;font-weight:600;">复制点</span>被一分为二，沿两条独立路径传输，最终在<span style="color:#7c3aed;font-weight:600;">消除点</span>合并——仅保留先到达的副本，丢弃重复帧。点击 <strong>"发送数据帧"</strong> 观察完整流程，点击交换机节点可模拟链路故障。</p>
           <div style="text-align:center;margin-bottom:12px;">
             <button onclick="startFRER()" style="padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">发送数据帧</button>
             <button onclick="resetFRER()" style="padding:8px 20px;background:var(--be-gray);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;margin-left:8px;">重置</button>
@@ -2705,21 +2705,25 @@ function initFRERCanvas() {
   const canvas = document.getElementById('frerCanvas');
   
   frerState.nodes = [
-    { id: 'src', x: 60, y: 150, w: 80, h: 44, label: '发送端\n(Talker)', color: '#1a73e8', textColor: '#fff' },
-    { id: 'sw1', x: 230, y: 60, w: 90, h: 40, label: 'TSN SW-A\n路径1', color: '#2e7d32', textColor: '#fff' },
-    { id: 'sw2', x: 230, y: 240, w: 90, h: 40, label: 'TSN SW-B\n路径2', color: '#2e7d32', textColor: '#fff' },
-    { id: 'sw3', x: 430, y: 60, w: 90, h: 40, label: 'TSN SW-C', color: '#2e7d32', textColor: '#fff' },
-    { id: 'sw4', x: 430, y: 240, w: 90, h: 40, label: 'TSN SW-D', color: '#2e7d32', textColor: '#fff' },
-    { id: 'dst', x: 590, y: 150, w: 80, h: 44, label: '接收端\n(Listener)', color: '#ff6d00', textColor: '#fff' }
+    { id: 'src', x: 10, y: 140, w: 76, h: 44, label: '发送端\n(Talker)', color: '#1a73e8', textColor: '#fff' },
+    { id: 'rep', x: 110, y: 140, w: 72, h: 44, label: '复制点\n(Replicate)', color: '#7c3aed', textColor: '#fff' },
+    { id: 'sw1', x: 230, y: 50, w: 80, h: 38, label: 'TSN SW-A', color: '#2e7d32', textColor: '#fff' },
+    { id: 'sw2', x: 230, y: 235, w: 80, h: 38, label: 'TSN SW-B', color: '#2e7d32', textColor: '#fff' },
+    { id: 'sw3', x: 390, y: 50, w: 80, h: 38, label: 'TSN SW-C', color: '#2e7d32', textColor: '#fff' },
+    { id: 'sw4', x: 390, y: 235, w: 80, h: 38, label: 'TSN SW-D', color: '#2e7d32', textColor: '#fff' },
+    { id: 'elim', x: 510, y: 140, w: 72, h: 44, label: '消除点\n(Eliminate)', color: '#7c3aed', textColor: '#fff' },
+    { id: 'dst', x: 610, y: 140, w: 76, h: 44, label: '接收端\n(Listener)', color: '#ff6d00', textColor: '#fff' }
   ];
   
   frerState.links = [
-    { from: 'src', to: 'sw1', path: 1 },
-    { from: 'src', to: 'sw2', path: 2 },
+    { from: 'src', to: 'rep', path: 0 },
+    { from: 'rep', to: 'sw1', path: 1 },
+    { from: 'rep', to: 'sw2', path: 2 },
     { from: 'sw1', to: 'sw3', path: 1 },
     { from: 'sw2', to: 'sw4', path: 2 },
-    { from: 'sw3', to: 'dst', path: 1 },
-    { from: 'sw4', to: 'dst', path: 2 }
+    { from: 'sw3', to: 'elim', path: 1 },
+    { from: 'sw4', to: 'elim', path: 2 },
+    { from: 'elim', to: 'dst', path: 0 }
   ];
   
   canvas.addEventListener('click', (e) => {
@@ -2771,8 +2775,9 @@ function drawFRER() {
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
-    ctx.strokeStyle = isFailed ? '#fca5a5' : (link.path === 1 ? '#1a73e8' : '#ff6d00');
-    ctx.lineWidth = isFailed ? 1 : 2;
+    const pathColor = link.path === 0 ? '#7c3aed' : (link.path === 1 ? '#1a73e8' : '#ff6d00');
+    ctx.strokeStyle = isFailed ? '#fca5a5' : pathColor;
+    ctx.lineWidth = isFailed ? 1 : (link.path === 0 ? 3 : 2);
     if (isFailed) ctx.setLineDash([4, 4]);
     else ctx.setLineDash([]);
     ctx.stroke();
@@ -2827,17 +2832,21 @@ function drawFRER() {
   });
   
   // Labels
-  ctx.font = '10px -apple-system, sans-serif';
+  ctx.font = 'bold 10px -apple-system, sans-serif';
   ctx.fillStyle = '#1a73e8';
-  ctx.fillText('路径 1（主路径）', 280, 45);
+  ctx.fillText('路径 1（主路径）', 290, 35);
   ctx.fillStyle = '#ff6d00';
-  ctx.fillText('路径 2（冗余路径）', 280, 295);
+  ctx.fillText('路径 2（冗余路径）', 290, 290);
   
-  if (frerState.nodes.some(n => n.id.startsWith('sw'))) {
-    ctx.font = '10px -apple-system, sans-serif';
-    ctx.fillStyle = '#64748b';
-    ctx.fillText('点击交换机模拟故障', 260, 165);
-  }
+  // Flow direction arrows on the merge lines
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.fillStyle = '#7c3aed';
+  ctx.fillText('复制 →', 96, 128);
+  ctx.fillText('→ 消除', 508, 128);
+  
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('点击交换机模拟故障', 275, 165);
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -2861,13 +2870,13 @@ function startFRER() {
   
   const log = document.getElementById('frerLog');
   
-  const path1 = ['src', 'sw1', 'sw3', 'dst'];
-  const path2 = ['src', 'sw2', 'sw4', 'dst'];
+  const path1 = ['src', 'rep', 'sw1', 'sw3', 'elim', 'dst'];
+  const path2 = ['src', 'rep', 'sw2', 'sw4', 'elim', 'dst'];
   
   const path1Failed = path1.some(id => frerState.failed.has(id));
   const path2Failed = path2.some(id => frerState.failed.has(id));
   
-  log.innerHTML = '<span style="color:var(--primary);">发送端复制帧 → 沿两条路径发送...</span>';
+  log.innerHTML = '<span style="color:var(--primary);">发送端</span> → <span style="color:#7c3aed;font-weight:600;">复制点</span>：帧被复制为两份（相同序列号 S1），分别沿路径 1 和路径 2 发送...';
   
   const frames = [];
   if (!path1Failed) {
@@ -2883,13 +2892,15 @@ function startFRER() {
     return;
   }
   
-  const speed = 0.015;
+  const speed1 = 0.016;
+  const speed2 = 0.013;
   let firstArrived = false;
+  let elimDone = false;
   
   function animate() {
     frames.forEach(f => {
       if (!f.active) return;
-      f.progress += speed;
+      f.progress += (f.pathId === 1 ? speed1 : speed2);
       
       const totalSegments = f.path.length - 1;
       const segmentProgress = f.progress * totalSegments;
@@ -2912,10 +2923,19 @@ function startFRER() {
     drawFRER();
     
     const arrived = frames.filter(f => !f.active);
-    if (arrived.length > 0 && !firstArrived) {
+    if (arrived.length === 1 && !firstArrived) {
       firstArrived = true;
       const firstPath = arrived[0].pathId;
-      log.innerHTML = `<span style="color:var(--success);font-weight:600;">路径 ${firstPath} 的帧先到达接收端 ✓</span>`;
+      log.innerHTML = `<span style="color:var(--success);font-weight:600;">路径 ${firstPath} 的帧先通过消除点 → 到达接收端 ✓</span>`;
+    }
+    if (arrived.length === 2 && !elimDone) {
+      elimDone = true;
+      const elimNode = frerState.nodes.find(n => n.id === 'elim');
+      // Flash the elimination node
+      const origColor = elimNode.color;
+      elimNode.color = '#d32f2f';
+      drawFRER();
+      setTimeout(() => { elimNode.color = origColor; drawFRER(); }, 400);
     }
     
     if (frames.some(f => f.active)) {
@@ -2923,11 +2943,11 @@ function startFRER() {
     } else {
       if (frames.length === 2) {
         setTimeout(() => {
-          log.innerHTML += '<br><span style="color:var(--primary);">接收端消除重复帧（FRER 序列号匹配），只保留先到达的副本。</span>';
+          log.innerHTML += '<br><span style="color:#7c3aed;font-weight:600;">✦ 消除点 (Eliminate)：</span><span style="color:var(--primary);">序列号 S1 匹配 → 保留先到达的副本，丢弃重复帧 → 仅一份数据送达接收端。</span>';
         }, 300);
       } else if (frames.length === 1) {
         setTimeout(() => {
-          log.innerHTML += `<br><span style="color:var(--warning);">仅一条路径可用（另一条已故障），帧仍成功到达——无缝冗余生效！</span>`;
+          log.innerHTML += `<br><span style="color:var(--warning);">仅一条路径可用（另一条已故障），帧经消除点直接送达——无缝冗余生效！应用层零感知。</span>`;
         }, 300);
       }
       frerState.animating = false;
