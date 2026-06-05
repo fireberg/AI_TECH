@@ -123,6 +123,46 @@ function createKF2D(dt, q, r, p0) {
   };
 }</code></pre>
 
+<h2>二·五、互补滤波器——穷人版卡尔曼</h2>
+
+<p>在看完上面那一大段 KF 代码后，你可能会想：有没有更简单的方案？当然有——<strong>互补滤波器</strong>（Complementary Filter），它本质上就是第四章讲的稳态卡尔曼滤波器的特殊形式。</p>
+
+<p>对于位置估计，一个互补滤波器可以写成一行：</p>
+
+$$\hat{x}_k = \alpha \cdot x_{GPS} + (1-\alpha) \cdot (\hat{x}_{k-1} + v \cdot \Delta t)$$
+
+<p>这里的 \(\alpha\) 就对应于稳态卡尔曼增益 \(\mathbf{K}_\infty\)。当 GPS 噪声大（R 大）时，\(\alpha\) 小，更相信惯性推算；当 GPS 噪声小（R 小）时，\(\alpha\) 大，更相信 GPS。</p>
+
+<pre><code>/* 互补滤波器——3 行 C 代码，效果出奇地好 */
+float comp_filter(float gps_pos, float accel, float dt) {
+    static float pos = 0, vel = 0;
+    vel += accel * dt;
+    pos = 0.98f * (pos + vel * dt) + 0.02f * gps_pos;
+    return pos;
+}</code></pre>
+
+<p>对比卡尔曼滤波器：</p>
+
+<table style="border-collapse:collapse;margin:14px 0;width:100%;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;"></th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">互补滤波器</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">卡尔曼滤波器</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">代码量</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">3 行</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">~100 行</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">需要矩阵运算</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">否</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">是</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">自适应噪声</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">不能</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">自动适应</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">不确定度估计</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">没有</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">P 矩阵</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">多状态最优估计</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">不能（速度估计不最优）</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">所有状态都最优</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">适用场景</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">噪声恒定的简单系统</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">通用</td></tr>
+</tbody>
+</table>
+
+<p>在<strong>姿态估计</strong>领域，Madgwick 滤波器和 Mahony 滤波器都是互补滤波器的变体——它们在四元数空间上做类似的高通/低通融合。之所以效果好，是因为陀螺仪和加速度计的噪声特性相对稳定，不太需要自适应。</p>
+
+<p>但一旦你需要融合多个传感器（GPS + 气压计 + 光流 + ...）、需要知道估计的不确定度（用于决策）、或者噪声特性会变化——就该用完整的卡尔曼滤波器了。</p>
+
 <h2>三、实时仿真</h2>
 
 <div class="interactive-box">
@@ -176,6 +216,52 @@ function createKF2D(dt, q, r, p0) {
   <div id="errorPlot5" style="width:100%;height:220px;margin-top:12px;"></div>
 </div>
 
+<h2>三·五、马氏距离门限——别让坏数据毁了你的滤波器</h2>
+
+<p>在真实飞行中，GPS 偶尔会给出<strong>严重错误的读数</strong>——比如在城市峡谷中信号反射（multipath），位置突然跳几十米。如果你把这种"毒数据"直接喂给卡尔曼滤波器，它会被猛烈拉偏，可能需要好几秒才能恢复。</p>
+
+<p>解决方法：在做 KF 更新之前，先检查新息是否"合理"。用<strong>马氏距离</strong>（Mahalanobis Distance）来判断：</p>
+
+$$d^2 = \boldsymbol{\nu}^T \mathbf{S}^{-1} \boldsymbol{\nu}$$
+
+<p>其中 \(\boldsymbol{\nu}\) 是新息，\(\mathbf{S} = \mathbf{H}\mathbf{P}\mathbf{H}^T + \mathbf{R}\) 是新息的期望协方差。如果滤波器正确调谐，\(d^2\) 服从 \(\chi^2(m)\) 分布。</p>
+
+<p>设定一个门限：如果 \(d^2\) 超过 \(\chi^2\) 分布的 99% 分位数，就<strong>拒绝这次测量</strong>——它几乎肯定是异常值。</p>
+
+<table style="border-collapse:collapse;margin:14px 0;width:100%;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 14px;border:1px solid var(--border);">观测维数 m</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">95% 门限</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">99% 门限</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">典型传感器</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">1</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">3.84</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">6.63</td><td style="padding:6px 14px;border:1px solid var(--border);">气压计高度</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">2</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">5.99</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">9.21</td><td style="padding:6px 14px;border:1px solid var(--border);">GPS 水平位置 (x, y)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">3</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">7.81</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">11.34</td><td style="padding:6px 14px;border:1px solid var(--border);">GPS 位置 (x, y, z)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">6</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">12.59</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">16.81</td><td style="padding:6px 14px;border:1px solid var(--border);">GPS 位置+速度</td></tr>
+</tbody>
+</table>
+
+<pre><code>/* 马氏距离门限检测——在 KF update 前调用 */
+/* 对于 m=2 的 GPS 测量 */
+float innov[2] = { gps_x - kf.x[0], gps_y - kf.x[1] };
+
+/* Si 是 S 的逆矩阵（在计算 K 时已经算过了，直接复用） */
+float d2 = innov[0]*Si[0][0]*innov[0] + innov[1]*Si[1][1]*innov[1]
+         + 2*innov[0]*Si[0][1]*innov[1];
+
+if (d2 > 9.21f) {
+    /* 拒绝这次 GPS 测量——可能是多径效应 */
+    log_warning("GPS innovation gate reject: d2=%.1f", d2);
+    return;  /* 跳过更新，继续预测 */
+}
+
+/* 通过门限检测，正常执行 KF update */
+kf2d_update(&kf, gps_x, gps_y);</code></pre>
+
+<p><strong>关键原则</strong>：拒绝异常值后，<strong>不要重置滤波器</strong>——直接跳过更新步，让预测继续运行。滤波器会用惯性推算撑过没有 GPS 的时段，等下一次正常的 GPS 数据到来再校正。PX4 和 ArduPilot 的 EKF 都实现了这种新息门限检测（innovation gate test），对每个传感器的每次更新都会做。</p>
+
 <div class="note">
   <h3>嵌入式开发者笔记</h3>
 
@@ -206,6 +292,15 @@ void main_loop(void) {  /* 400Hz tick */
   <p style="margin-top:12px;"><strong>dt 的处理</strong>：如果 IMU 和主循环不完全同步，最好用实际时间差 dt 来构建 F 和 B 矩阵，而不是用固定的标称值。在 STM32 上可以用 DWT 周期计数器或 TIM 定时器来获取精确的 dt。</p>
 
   <p style="margin-top:10px;"><strong>数值检查</strong>：每次更新后，检查 P 的对角元素是否全部为正。如果出现负值，说明滤波器已经发散了——这通常意味着 Q 设得太小或者观测模型有误。</p>
+
+  <p style="margin-top:14px;"><strong>真实飞控架构参考</strong>：PX4 的 ECL-EKF（Estimation and Control Library）使用 <strong>24 维状态向量</strong>：</p>
+  <ul style="margin-left:18px;margin-top:6px;">
+    <li>四元数 (4) + 速度 (3) + 位置 (3) + 陀螺偏差 (3) + 加速度偏差 (3) + 地磁场 (3) + 风速 (2) + 磁偏差 (3)</li>
+    <li>运行频率：IMU 预测 250Hz + 按需更新（GPS 10Hz，气压 50Hz，磁力 50Hz）</li>
+    <li>使用 Joseph 形式更新 P，Mahalanobis 门限剔除异常值</li>
+    <li>源码：<a href="https://github.com/PX4/PX4-ECL" style="color:var(--primary);">github.com/PX4/PX4-ECL</a></li>
+  </ul>
+  <p style="margin-top:8px;">ArduPilot 的 EKF3 架构类似，但有一个独特设计：它运行<strong>三个并行的 EKF 实例</strong>（每个 IMU 一个），通过比较各实例的归一化新息平方（NIS）来选择最佳的那个。如果某个 IMU 出了故障，对应的 EKF 实例的 NIS 会飙高，系统自动切换到健康的实例——这就是传感器冗余+滤波器冗余的双重保障。</p>
 </div>
 
 </div>

@@ -111,6 +111,59 @@ $$\mathbf{H}_k = \begin{bmatrix}
   </ol>
 </div>
 
+<h2>二·五、误差状态卡尔曼滤波（ESKF）——真实飞控的选择</h2>
+
+<p>标准 EKF 直接估计完整的状态 \(\mathbf{x}\)（位置、速度、姿态...），然后在当前估计点做线性化。但在真实的惯性导航系统（INS）中，几乎所有专业实现都用一个更聪明的变体：<strong>误差状态卡尔曼滤波</strong>（Error-State Kalman Filter，ESKF）。</p>
+
+<p>核心思想是把状态分成两部分：</p>
+
+$$\mathbf{x}_{true} = \mathbf{x}_{nom} \oplus \delta\mathbf{x}$$
+
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li>\(\mathbf{x}_{nom}\)：<strong>名义状态</strong>（nominal state）——用完整的非线性方程传播，不做任何线性化</li>
+  <li>\(\delta\mathbf{x}\)：<strong>误差状态</strong>（error state）——用 EKF 估计，始终保持很小</li>
+  <li>\(\oplus\)：对于位置/速度就是普通加法；对于旋转是四元数乘法</li>
+</ul>
+
+<p><strong>为什么这样做更好？</strong></p>
+
+<div class="highlight-box">
+  <ol style="margin:0 0 0 18px;">
+    <li style="margin-bottom:8px;"><strong>线性化总是精确的</strong>：因为 \(\delta\mathbf{x}\) 始终很小（每次更新后都被"注入"名义状态并重置为零），所以一阶泰勒展开的误差极小。标准 EKF 在大角度旋转时线性化误差可能很大，ESKF 则不会。</li>
+    <li style="margin-bottom:8px;"><strong>避免旋转表示的奇异性</strong>：名义状态用四元数（4 个参数）表示旋转，但误差状态只需要 3 个参数（旋转误差向量）。这样 P 矩阵小 1 维，而且不会遇到万向锁问题。</li>
+    <li style="margin-bottom:8px;"><strong>名义传播是"免费"的精度</strong>：非线性传播不引入线性化误差，等于白拿了一段精确的积分，只在校正时才用近似。</li>
+    <li><strong>工业标准</strong>：PX4、ArduPilot、Google Cartographer、VINS-Mono、MSCKF 全都用 ESKF。</li>
+  </ol>
+</div>
+
+<p>代码结构对比：</p>
+
+<pre><code>/* ===== 标准 EKF ===== */
+x = f(x, u);           /* 非线性传播（精确） */
+F = df/dx|_{x};         /* 在 x 处求雅可比（x 可能很大，线性化误差大） */
+P = F * P * F' + Q;
+
+/* 更新 */
+H = dh/dx|_{x};
+K = P * H' * inv(H*P*H' + R);
+x = x + K * (z - h(x));
+P = (I - K*H) * P;
+
+/* ===== 误差状态 KF (ESKF) ===== */
+x_nom = f(x_nom, u);    /* 非线性传播（精确，不做线性化！） */
+F_err = df_err/d(δx);   /* 误差状态雅可比（δx ≈ 0，线性化超精确） */
+P = F_err * P * F_err' + Q;
+
+/* 更新 */
+H_err = dh/d(δx);
+K = P * H_err' * inv(H_err*P*H_err' + R);
+δx = K * (z - h(x_nom));        /* 估计误差 */
+x_nom = x_nom ⊕ δx;             /* 注入校正 */
+δx = 0;                          /* 重置误差状态 */
+P = (I - K*H_err) * P;           /* 可选：同时做 P 的重置变换 */</code></pre>
+
+<p>注意最关键的区别：名义状态的传播 <code>x_nom = f(x_nom, u)</code> 和标准 EKF 一样是用精确的非线性方程，但误差状态的雅可比 \(\mathbf{F}_{err}\) 是在 \(\delta\mathbf{x} \approx 0\) 处计算的——这意味着线性化点永远在"正确"的位置附近，不会随着状态漂移而恶化。</p>
+
 <h2>三、KF vs EKF 实时对比</h2>
 
 <p>下面的实验模拟无人机绕圈飞行，一个雷达站在原点测量到无人机的距离和角度。我们同时运行两个滤波器：</p>
@@ -160,6 +213,31 @@ $$\mathbf{H}_k = \begin{bmatrix}
 
   <div id="errPlot6" style="width:100%;height:200px;margin-top:8px;"></div>
 </div>
+
+<h2>三·五、可观测性分析——不是所有状态都看得见</h2>
+
+<p>在线性 KF 中，可观测性是由 \((\mathbf{F}, \mathbf{H})\) 决定的固定属性——要么可观测，要么不可观测。但在 EKF 中，情况更加微妙：<strong>可观测性取决于轨迹</strong>。</p>
+
+<p>这听起来很抽象，看几个飞控中的真实例子就懂了：</p>
+
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>直线飞行 + 仅 GPS 位置</strong>：航向角（yaw）<strong>不可观测</strong>。因为 GPS 只给位置不给朝向，而沿直线飞行时，你无法区分"机头朝前飞"和"机头歪着侧飞"——位置轨迹是一样的。</li>
+  <li><strong>悬停 + GPS 位置</strong>：速度是<strong>弱可观测</strong>的。位置测量可以慢慢推断出"速度为零"，但收敛很慢，因为静止时位置变化量几乎为零。</li>
+  <li><strong>匀速直线飞行</strong>：加速度偏差<strong>不可观测</strong>。因为偏差产生的效果和一个恒定的速度增量无法区分——需要变速或变向飞行才能让偏差"露出马脚"。</li>
+</ul>
+
+<div class="highlight-box">
+  <p style="margin:0;"><strong>实用判断法则：</strong>如果一个状态不可观测或弱可观测，它对应的 P 矩阵对角元素<strong>不会收敛</strong>——会持续增长或停留在很大的值。如果你在飞行日志中看到某个 P 对角元素一直不收敛，先别急着调 Q，很可能是可观测性的问题。</p>
+</div>
+
+<p>这就是为什么飞控需要这么多传感器的协同配合：</p>
+
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>磁力计</strong>：提供航向角的可观测性（在低速和悬停时尤其关键）</li>
+  <li><strong>GPS 速度</strong>（不仅是位置）：提供航向角在中高速飞行时的可观测性，同时加速速度状态的收敛</li>
+  <li><strong>初始化时的运动要求</strong>：PX4 要求解锁后先做一些运动（或等待一段时间），就是为了积累足够的可观测性来收敛偏差状态</li>
+  <li><strong>光流传感器</strong>：在无 GPS 环境中提供速度的可观测性，但需要已知高度（又一个可观测性约束）</li>
+</ul>
 
 <h2>四、EKF 的 C 语言实现要点</h2>
 
@@ -213,6 +291,14 @@ static inline float angle_wrap(float a) {
   </ul>
 
   <p style="margin-top:12px;"><strong>计算量对比</strong>：EKF 相比 KF 多了雅可比矩阵计算（对 4 维状态 2 维观测，多了约 8 次乘法加几次三角函数）。在 Cortex-M4F 上，一次 sqrtf + atan2f 大约 30~50 个时钟周期，微不足道。</p>
+
+  <p style="margin-top:14px;"><strong>迭代 EKF（IEKF）</strong>：标准 EKF 在更新步只线性化一次，但如果观测方程高度非线性，一次线性化可能不够准。IEKF 的做法是在更新步<strong>重复线性化 2-3 次</strong>：每次用更新后的 \(\hat{\mathbf{x}}\) 重新计算雅可比 \(\mathbf{H}_k\) 和新息，然后再做一次更新。</p>
+  <ul style="margin-left:18px;margin-top:6px;">
+    <li>对于高度非线性的观测方程（如 SLAM 中的相机投影模型、近距离雷达跟踪），IEKF 可以显著提高精度</li>
+    <li>代价：计算量翻 2-3 倍，但在 Cortex-M7@400MHz 上通常可以接受</li>
+    <li>收敛判据：当相邻两次迭代的状态变化量 \(\|\delta\mathbf{x}\|\) 小于阈值时停止</li>
+  </ul>
+  <p style="margin-top:8px;">更高级的替代方案：UKF（Unscented Kalman Filter）不需要手算雅可比，用 sigma 点采样来逼近非线性变换。代价是对 n 维状态需要传播 2n+1 个 sigma 点，但省掉了推导雅可比的人力成本——在快速原型开发阶段很有价值。</p>
 </div>
 
 </div>
