@@ -172,7 +172,7 @@ table.matrix-table th {
   border: 1px solid var(--border); font-size: 0.88em;
 }
 
-/* ===== Ch03/Ch05/Ch06/Ch07 extras ===== */
+/* ===== Stats panels ===== */
 .stats-panel, .stats-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
 .stat-box {
   background: var(--code-bg); border-radius: 8px; padding: 8px 14px;
@@ -351,6 +351,7 @@ footer {
   <h1>卡尔曼滤波交互式教材</h1>
   <p>从噪声传感器数据到精准状态估计 —— 一本写给嵌入式开发者的实战指南</p>
   <div class="subtitle">全部内容在浏览器中运行 · 无需安装任何工具 · 边学边动手</div>
+</div>
 <div class="container">
 <div class="intro">
     <h2>这本教材适合谁？</h2>
@@ -363,107 +364,86 @@ footer {
   </div>
 
   <div class="chapters">
-
     <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch01')">
       <div class="ch-num">01</div>
       <div class="ch-info">
         <h3>从振动噪声说起 —— 为什么需要卡尔曼滤波？</h3>
         <p>加速度计漂移、GPS 噪声、平均滤波和低通的局限。引出模型预测 vs 测量值的核心矛盾。</p>
-        <span class="tag tag-interact">交互可视化</span>
-        <span class="tag tag-code">信号滤波对比</span>
+        <span class="tag tag-interact">交互可视化</span><span class="tag tag-code">信号滤波对比</span>
       </div>
     </a>
-
     <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch02')">
       <div class="ch-num">02</div>
       <div class="ch-info">
         <h3>系统是台机器 —— 状态空间建模</h3>
         <p>状态向量、F/B/H 矩阵的物理含义，噪声模型 Q 和 R 从哪里来。</p>
-        <span class="tag tag-interact">2D 轨迹演示</span>
-        <span class="tag tag-math">矩阵可视化</span>
+        <span class="tag tag-interact">2D 轨迹演示</span><span class="tag tag-math">矩阵可视化</span>
       </div>
     </a>
-
     <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch03')">
       <div class="ch-num">03</div>
       <div class="ch-info">
         <h3>一场数据的融合 —— 预测与更新的直觉</h3>
         <p>两个高斯分布如何融合，卡尔曼增益 K 的直觉理解。</p>
-        <span class="tag tag-interact">高斯融合交互</span>
-        <span class="tag tag-math">K 值实时显示</span>
+        <span class="tag tag-interact">高斯融合交互</span><span class="tag tag-math">K 值实时显示</span>
       </div>
     </a>
-
     <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch04')">
       <div class="ch-num">04</div>
       <div class="ch-info">
-        <h3>程序员最爱的五个公式 —— 卡尔曼滤波算法</h3>
-        <p>预测与更新五步方程，附带 C 语言实现模板和单步执行面板。</p>
-        <span class="tag tag-interact">单步执行</span>
-        <span class="tag tag-code">C 语言模板</span>
-        <span class="tag tag-math">协方差椭圆</span>
+        <h3>程序员最爱的五个公式</h3>
+        <p>卡尔曼滤波算法的完整推导与逐步执行。</p>
+        <span class="tag tag-interact">单步执行面板</span><span class="tag tag-code">C 代码模板</span>
       </div>
     </a>
-
     <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch05')">
       <div class="ch-num">05</div>
       <div class="ch-info">
-        <h3>实战 —— 无人机水平位置估计</h3>
-        <p>完整 2D 卡尔曼滤波器：[x,y,vx,vy]，IMU+GPS 融合，实时动态轨迹。</p>
-        <span class="tag tag-interact">实时动画</span>
-        <span class="tag tag-code">完整实现</span>
+        <h3>实战——无人机水平位置估计</h3>
+        <p>完整 2D 卡尔曼滤波器：IMU + GPS 融合，从代码到可视化。</p>
+        <span class="tag tag-interact">实时仿真</span><span class="tag tag-code">完整实现</span>
       </div>
     </a>
-
     <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch06')">
       <div class="ch-num">06</div>
       <div class="ch-info">
-        <h3>当系统变"弯"了 —— 扩展卡尔曼滤波（EKF）</h3>
-        <p>非线性观测、雅可比线性化，EKF vs 线性 KF 对比实验。</p>
-        <span class="tag tag-interact">KF vs EKF 对比</span>
-        <span class="tag tag-math">雅可比矩阵</span>
+        <h3>当系统变“弯”了——EKF</h3>
+        <p>扩展卡尔曼滤波——处理非线性的工程利器。</p>
+        <span class="tag tag-interact">KF vs EKF 对比</span><span class="tag tag-math">雅可比矩阵</span>
       </div>
     </a>
-
     <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch07')">
       <div class="ch-num">07</div>
       <div class="ch-info">
-        <h3>嵌入式系统上的卡尔曼滤波 —— 工程实战清单</h3>
-        <p>数值稳定性、定点优化、内存布局、故障诊断实验室。</p>
-        <span class="tag tag-interact">故障诊断实验</span>
-        <span class="tag tag-code">ARM 优化代码</span>
+        <h3>嵌入式系统上的卡尔曼滤波</h3>
+        <p>工程实战清单——从“能跑”到“跑得好”的最后一公里。</p>
+        <span class="tag tag-interact">故障诊断实验室</span><span class="tag tag-code">调参方法</span>
       </div>
     </a>
-
     <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch08')">
       <div class="ch-num">08</div>
       <div class="ch-info">
-        <h3>更远的道路 —— 其他卡尔曼变体与应用场景</h3>
-        <p>UKF、信息滤波、自适应卡尔曼；电机控制、定高、SLAM 速览。</p>
-        <span class="tag tag-interact">场景对比</span>
-        <span class="tag tag-math">变体总结</span>
+        <h3>更远的道路</h3>
+        <p>其他卡尔曼变体与应用场景速览。</p>
+        <span class="tag tag-interact">EKF vs UKF</span><span class="tag tag-math">变体对比</span>
       </div>
     </a>
-
     <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch09')">
       <div class="ch-num">09</div>
       <div class="ch-info">
-        <h3>动手吧 —— 建造你自己的卡尔曼滤波器沙盒</h3>
-        <p>自定义 F/H/Q/R 矩阵，生成模拟数据或上传 CSV，一键导出 C 代码。</p>
-        <span class="tag tag-interact">全功能沙盒</span>
-        <span class="tag tag-code">C 代码生成</span>
+        <h3>动手吧——卡尔曼滤波器沙盒</h3>
+        <p>全功能在线沙盒：自定义矩阵、模拟数据、一键运行、导出 C 代码。</p>
+        <span class="tag tag-interact">全功能沙盒</span><span class="tag tag-code">代码导出</span>
       </div>
     </a>
-
   </div>
 </div>
-<footer>
-  卡尔曼滤波交互式教材 · 面向嵌入式开发者 · 浏览器即教室
-</footer>
 </section>
+
 
 <section id="ch01" class="chapter-section">
 <div class="container">
+
 <h1>第一章：从振动噪声说起</h1>
 <p class="chapter-meta">为什么需要卡尔曼滤波？——从传感器噪声到智能融合的必经之路</p>
 
@@ -485,6 +465,34 @@ footer {
 <p><strong>GPS</strong>：直接给出位置，不会漂移，但更新慢（1~10Hz），而且有几米的随机噪声。你的无人机可能已经飞出去两米了，GPS 还在报上一个位置。</p>
 
 <p>这就是我们面对的核心问题：<strong>没有一个传感器是完美的</strong>，但我们能不能把它们的优势结合起来？</p>
+
+<h2>一个直觉类比：两台秤称体重</h2>
+
+<p>在正式讨论滤波器之前，先来看一个 MIT 课程（16.322 Stochastic Estimation and Control）中经典的直觉类比，它能帮你秒懂卡尔曼滤波的核心思想。</p>
+
+<p>假设你要称体重，手头有两台秤：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>浴室电子秤</strong>（便宜，噪声大）：显示 70.5 kg，标准差 \(\sigma_1 = 2\) kg</li>
+  <li><strong>医院体检秤</strong>（精确，但读数慢）：显示 68.2 kg，标准差 \(\sigma_2 = 0.5\) kg</li>
+</ul>
+
+<p>你该相信哪台？答案是：<strong>都不要 100% 相信，而是做加权平均</strong>。直觉告诉我们应该更相信精度高的那台。但"更相信多少"有一个数学上的最优解。</p>
+
+<p>最优的加权系数为：</p>
+
+$$w = \frac{\sigma_2^2}{\sigma_1^2 + \sigma_2^2} = \frac{0.25}{4 + 0.25} = 0.0588$$
+
+<p>最优融合结果：</p>
+
+$$\hat{x} = w \cdot x_1 + (1-w) \cdot x_2 = 0.059 \times 70.5 + 0.941 \times 68.2 \approx 68.34 \text{ kg}$$
+
+<p>注意，结果非常接近精确的那台秤——这完全符合直觉。而这个 \(w\)，<strong>就是一维卡尔曼增益</strong>。</p>
+
+<p>MIT 16.322 把这叫做<strong>最小方差无偏估计</strong>（Minimum Variance Unbiased Estimation, MVUE）。融合后的方差为：</p>
+
+$$\sigma_{融合}^2 = \frac{\sigma_1^2 \cdot \sigma_2^2}{\sigma_1^2 + \sigma_2^2} = \frac{4 \times 0.25}{4.25} \approx 0.235 \text{ kg}^2$$
+
+<p>融合后的标准差约 0.49 kg——比两台秤中最好的那台（0.5 kg）还要好！这不是魔法，这是<strong>信息叠加</strong>的必然结果。卡尔曼滤波只不过是把这个简单的道理推广到了多维、动态、递归的场景。</p>
 
 <h2>二、先试试最直觉的办法</h2>
 
@@ -545,6 +553,47 @@ $$\hat{x}_k = \alpha \cdot z_k + (1-\alpha) \cdot \hat{x}_{k-1}$$
 
 <p>卡尔曼滤波的回答是：<strong>谁更靠谱就更相信谁，而且靠谱程度可以用方差来量化</strong>。下一章我们会看到，它如何用一个优雅的数学框架回答这个问题。</p>
 
+<h2>为什么是递归的？——从最小二乘到卡尔曼</h2>
+
+<p>假设你有 1000 个 GPS 测量点，想估计无人机的轨迹。最直接的方法是<strong>批处理最小二乘</strong>：把 1000 个方程列出来，一次性解一个超大的矩阵方程。在 MATLAB 里这很自然，但在嵌入式系统里——你的 MCU 可能只有 64KB RAM，根本存不下所有历史数据。</p>
+
+<p>更聪明的做法是<strong>递归最小二乘</strong>（Recursive Least Squares, RLS）：每来一个新测量，就更新一次估计，然后<strong>丢掉原始数据</strong>。只需要存当前的估计值和一个协方差矩阵——内存消耗是常数。</p>
+
+<p>卡尔曼滤波 = 递归最小二乘 + <strong>动态模型</strong>（状态转移方程）。这是 MIT 课程反复强调的关键洞察：</p>
+
+<div style="background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;text-align:center;font-size:1.05em;"><strong>卡尔曼滤波不是"又一个滤波器"——它是一个最优递归状态估计器。</strong></p>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:14px 0;">
+  <tr style="background:var(--primary-light);">
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">方法</th>
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">数据需求</th>
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">内存</th>
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">有动态模型？</th>
+  </tr>
+  <tr>
+    <td style="padding:8px 14px;border:1px solid var(--border);">批处理最小二乘</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">所有历史数据</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">O(N)</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">否</td>
+  </tr>
+  <tr>
+    <td style="padding:8px 14px;border:1px solid var(--border);">递归最小二乘</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">只需当前测量</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">O(n²)</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">否</td>
+  </tr>
+  <tr>
+    <td style="padding:8px 14px;border:1px solid var(--border);font-weight:700;color:var(--primary);">卡尔曼滤波</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">只需当前测量</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">O(n²)</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);font-weight:700;color:#16a34a;">是！</td>
+  </tr>
+</table>
+
+<p>在嵌入式系统中，递归不是一种"可选的优化"——它是<strong>唯一可行的方案</strong>。你的 STM32 没有能力存储和回溯所有历史测量值。卡尔曼滤波的递归结构天然契合嵌入式系统的约束：固定内存、逐个处理、实时输出。</p>
+
 <h2>四、加速度二次积分的灾难</h2>
 
 <p>为了更直观地理解"为什么不能只用 IMU"，来看加速度二次积分求位置的误差增长。假设加速度计有一个恒定偏差 \(b\)（零偏）：</p>
@@ -586,6 +635,8 @@ $$x_{err}(t) = \frac{1}{2} b \cdot t^2$$
   <p style="margin-top:10px;"><strong>低通滤波的相位滞后</strong>：一阶 IIR 低通滤波器（即 EMA）在截止频率处有 45° 的相位滞后。对于 100Hz 采样、10Hz 截止的典型飞控配置，这意味着大约 25ms 的延迟。如果控制回路带宽接近 10Hz，这个滞后可能导致振荡。</p>
   <p style="margin-top:10px;"><strong>工程中的常见做法</strong>：IMU 数据先过一个简单的低通滤波去掉电机振动（通常切在 30~80Hz），然后送进卡尔曼滤波器。卡尔曼滤波不是要取代简单滤波，而是在简单滤波的基础上做<strong>多传感器融合</strong>。</p>
 
+  <p style="margin-top:10px;"><strong>真实飞控中的 EKF</strong>：PX4 和 ArduPilot 这两大开源飞控都使用扩展卡尔曼滤波（EKF）作为核心导航方案，而不是简单的互补滤波。ArduPilot 的 EKF3 在 STM32H7（Cortex-M7, 480MHz）上以 <strong>400Hz</strong> 运行，同时融合 3 个 IMU + 2 个 GPS + 磁力计 + 气压计的数据。为什么需要这么复杂？因为简单的滤波器无法处理<strong>异构传感器融合</strong>——不同传感器有不同的采样率（IMU 1kHz vs GPS 10Hz）、不同的噪声特性、不同的延迟，只有卡尔曼滤波框架能优雅地统一处理这些差异。</p>
+
   <pre><code>/* 嵌入式 C：一阶 IIR 低通滤波 —— 最省资源的预滤波 */
 typedef struct {
     float out;    /* 上一次输出 */
@@ -597,8 +648,11 @@ static inline float lpf_update(LPF_t *f, float in) {
     return f->out;
 }</code></pre>
 </div>
-</div>
+
+</div><!-- container -->
 </section>
+
+
 <section id="ch02" class="chapter-section">
 <div class="container">
 <h1>第二章：系统是台机器——状态空间建模</h1>
@@ -651,6 +705,34 @@ $$\mathbf{x}_{k+1} = \mathbf{F} \cdot \mathbf{x}_k + \mathbf{B} \cdot u_k$$
 $$\mathbf{B} = \begin{bmatrix} \frac{1}{2}\Delta t^2 \\ \Delta t \end{bmatrix}, \quad u_k = a_k$$
 
 <p>这就是高中物理的运动方程 \(x = x_0 + v_0 t + \frac{1}{2}at^2\)，只不过写成了矩阵的样子。</p>
+
+<h2>从连续时间到离散时间——工程中的第一步</h2>
+
+<p>物理学家喜欢用连续时间描述系统——微分方程既优雅又精确：</p>
+
+$$\dot{\mathbf{x}} = \mathbf{A}\mathbf{x} + \mathbf{B}u$$
+
+<p>但你的 MCU 不会微积分。它只能在离散的时刻（每隔 \(\Delta t\)）读一次传感器、算一次。所以工程实践中的第一步是把连续模型<strong>离散化</strong>：</p>
+
+$$\mathbf{F} = e^{\mathbf{A}\Delta t} \approx \mathbf{I} + \mathbf{A}\Delta t + \frac{(\mathbf{A}\Delta t)^2}{2!} + \cdots$$
+
+<p>这是矩阵指数（matrix exponential）的泰勒展开。在大多数嵌入式场景下，\(\Delta t\) 很小（1~10ms），只取前两项就够了：</p>
+
+$$\mathbf{F} \approx \mathbf{I} + \mathbf{A}\Delta t \quad \text{（一阶近似）}$$
+
+<p>来看一个好消息：对于匀速运动模型，连续时间矩阵是：</p>
+
+$$\mathbf{A} = \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix}$$
+
+<p>注意 \(\mathbf{A}^2 = \mathbf{0}\)（零矩阵），所以泰勒展开在第二项就精确截断了：</p>
+
+$$\mathbf{F} = \mathbf{I} + \mathbf{A}\Delta t = \begin{bmatrix} 1 & \Delta t \\ 0 & 1 \end{bmatrix}$$
+
+<p>这恰好就是上一节得到的 \(\mathbf{F}\)！对于这个特殊系统，一阶近似碰巧就是精确解。但并非所有系统都这么幸运。</p>
+
+<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
+  <p style="margin:0;"><strong>⚠️ 工程警告</strong>：对于快速动态系统（如电机转速控制，带宽 > 100Hz）或 \(\Delta t\) 较大的场景，一阶近似可能导致数值不稳定。症状是协方差 P 发散或状态估计振荡。此时应使用二阶甚至精确的矩阵指数。在 C 语言中，对小矩阵（2×2, 3×3）可以手动展开到二阶或三阶。</p>
+</div>
 
 <h2>三、观测方程——"我能看到什么？"</h2>
 
@@ -739,6 +821,34 @@ $$\mathbf{F} = \begin{bmatrix} 1 & 0 & \Delta t & 0 \\ 0 & 1 & 0 & \Delta t \\ 0
   <div id="ch02_trajPlot" style="width:100%;height:480px;"></div>
 </div>
 
+<h2>可观测性——你的传感器能看到所有状态吗？</h2>
+
+<p>这是一个容易被初学者忽略但极其重要的问题：<strong>仅凭你的传感器和模型，你能估计出所有状态吗？</strong></p>
+
+<p>判断方法是构造<strong>可观测性矩阵</strong>（Observability Matrix）：</p>
+
+$$\mathcal{O} = \begin{bmatrix} \mathbf{H} \\ \mathbf{H}\mathbf{F} \\ \mathbf{H}\mathbf{F}^2 \\ \vdots \\ \mathbf{H}\mathbf{F}^{n-1} \end{bmatrix}$$
+
+<p>如果 \(\text{rank}(\mathcal{O}) = n\)（状态维度），则所有状态都是<strong>可观测的</strong>。</p>
+
+<h3>例子：GPS 只测位置，能估计速度吗？</h3>
+
+<p>对于二维无人机（状态 = [x, y, vx, vy]），GPS 只测位置：</p>
+
+$$\mathbf{H} = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \end{bmatrix}$$
+
+<p>构造可观测性矩阵（取前两个块就够了，因为 n=4, m=2）：</p>
+
+$$\mathcal{O} = \begin{bmatrix} \mathbf{H} \\ \mathbf{H}\mathbf{F} \end{bmatrix} = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 1 & 0 & \Delta t & 0 \\ 0 & 1 & 0 & \Delta t \end{bmatrix}$$
+
+<p>\(\text{rank}(\mathcal{O}) = 4\) → 所有状态可观测！即使 GPS 不直接测速度，因为 \(\mathbf{F}\) 把位置和速度耦合在一起（位置的变化蕴含了速度信息），滤波器可以从<strong>位置的变化率</strong>中推断出速度。</p>
+
+<h3>但有一个陷阱：弱可观测性</h3>
+
+<p>数学上可观测 ≠ 实际上估计得好。如果无人机静止不动，位置几乎不变，速度信息只能从噪声中微弱地体现——速度的<strong>协方差收敛极慢</strong>。这就是"弱可观测"。</p>
+
+<p>这也解释了为什么 PX4 飞控在初始化时要求你"fly around"（四处飞一飞）——只有在运动中，速度状态才能快速收敛，滤波器才能获得可靠的速度估计。同理，如果你的无人机只做匀速直线飞行，加速度偏差状态就是弱可观测的——需要机动飞行（转弯、加减速）来激发可观测性。</p>
+
 <div class="note">
   <h3>嵌入式开发者笔记</h3>
   <p><strong>Q 和 R 的确定方法</strong>：理论上 R 可以从传感器数据手册得到（但务必在实际安装条件下验证——在工作台上测和装到振动的机架上是两回事）。实际做法：</p>
@@ -766,9 +876,16 @@ static inline float var_get(const Variance_t *v) {
 }</code></pre>
 
   <p style="margin-top:10px;"><strong>状态向量维度的选择</strong>：每多加一维状态，协方差矩阵 P 就多一行一列。P 是 n×n 对称矩阵，存储量为 n(n+1)/2 个 float。4 维状态只需 10 个 float（40 字节），但 9 维就需要 45 个 float（180 字节）。在 Cortex-M0 上，这点内存可能就是关键瓶颈。</p>
+
+  <p style="margin-top:10px;"><strong>Allan 方差——IMU 噪声标定的标准工具</strong>：传感器数据手册上标注的<strong>噪声密度</strong>（Noise Density）就是 Allan 方差曲线在 \(\tau=1\) s 处的值。对于 MEMS 陀螺仪，关键参数是<strong>角度随机游走</strong>（ARW, Angular Random Walk），典型值为 0.1~1 °/√hr——这直接决定了你的过程噪声 \(\mathbf{Q}\) 中陀螺相关分量的大小。</p>
+
+  <p style="margin-top:10px;"><strong>实用标定方法</strong>：将 IMU 静置在稳定平面上，采集 1 小时以上的数据，然后用 Allan 方差分析工具（MATLAB 的 <code>allanvar</code> 或 Python 的 <code>allantools</code>）自动提取噪声参数。这比从数据手册抄参数可靠得多，因为实际安装环境（振动、温度）会显著改变噪声特性。</p>
 </div>
+
 </div>
 </section>
+
+
 <section id="ch03" class="chapter-section">
 <div class="container">
 <h1>第三章：一场数据的融合</h1>
@@ -793,6 +910,33 @@ static inline float var_get(const Variance_t *v) {
 
 <p>最终你应该更相信温度计（因为它更准），结果应该接近 25°C。但具体是多少？卡尔曼滤波给出了<strong>数学上最优的答案</strong>。</p>
 
+<h2>贝叶斯视角——卡尔曼滤波的"真正身份"</h2>
+
+<p>MIT 的课程（6.011, 16.322）在推导卡尔曼滤波时，不是从工程直觉出发，而是从<strong>贝叶斯定理</strong>开始：</p>
+
+$$p(x|z) \propto p(z|x) \cdot p(x)$$
+
+<p>翻译成人话：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>先验 \(p(x)\)</strong>：在看到测量之前，你对状态的信念（= 预测分布）</li>
+  <li><strong>似然 \(p(z|x)\)</strong>：如果状态是 \(x\)，观测到 \(z\) 的概率（= 测量模型）</li>
+  <li><strong>后验 \(p(x|z)\)</strong>：看到测量之后，你对状态的更新信念（= 融合结果）</li>
+</ul>
+
+<p>当先验和似然都是高斯分布时：</p>
+
+$$p(x) = \mathcal{N}(x;\, \hat{x}_{k|k-1},\, P_{k|k-1}), \quad p(z|x) = \mathcal{N}(z;\, Hx,\, R)$$
+
+<p>后验也是高斯分布（高斯的共轭性），而且后验的均值和方差<strong>恰好就是卡尔曼滤波更新公式</strong>！完整的贝叶斯后验写出来是：</p>
+
+$$p(x|z) \propto \mathcal{N}(z;\, Hx,\, R) \cdot \mathcal{N}(x;\, \hat{x}_{k|k-1},\, P_{k|k-1})$$
+
+<p>这揭示了卡尔曼滤波的真正身份：<strong>它不是一个工程经验公式，而是线性高斯系统下贝叶斯推断的精确解</strong>。</p>
+
+<div style="background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;font-size:1.05em;"><strong>关键推论</strong>：当系统是非线性的（如飞行器姿态动力学），或者噪声不是高斯的（如重尾噪声、多模态分布），卡尔曼滤波<strong>不再是最优的</strong>。这就是为什么存在 EKF（对非线性的妥协）、UKF（更好的非线性近似）和粒子滤波（完全抛弃高斯假设）。</p>
+</div>
+
 <h2>二、高斯分布的乘积——融合的数学</h2>
 
 <p>如果预测和测量都服从高斯分布：</p>
@@ -815,6 +959,31 @@ $$K = \frac{\sigma_p^2}{\sigma_p^2 + \sigma_z^2}$$
     <li>当测量很差（\(\sigma_z \to \infty\)）→ \(K \to 0\) → 完全相信预测</li>
     <li>融合后的不确定度 \(\sigma_{后验}\) <strong>永远比两个输入都小</strong>——信息只会增加！</li>
   </ul>
+</div>
+
+<div class="highlight-box">
+  <p style="margin:0;"><strong>信息永远增加——传感器融合的基本定理</strong></p>
+  <p style="margin:8px 0 0;">"融合后的不确定度永远不会大于任何一个输入的不确定度"——这不是巧合，而是数学定理。</p>
+  <p style="margin:8px 0 0;">用<strong>信息量</strong>（精度，\(1/\sigma^2\)）来理解更自然：</p>
+  $$\frac{1}{\sigma_{后验}^2} = \frac{1}{\sigma_p^2} + \frac{1}{\sigma_z^2}$$
+  <p style="margin:8px 0 0;">信息是<strong>相加</strong>的！即使一个传感器很差（信息量很小），它也在贡献正信息，融合后的总信息量一定更大。这就是 MIT 所说的<strong>"信息永不减少"原则</strong>（Information Never Decreases）。</p>
+  <p style="margin:8px 0 0;">这个视角也解释了为什么多传感器融合永远值得——哪怕加一个很差的传感器，它也只会让估计更好（最坏情况是几乎没帮助），绝不会让估计变差。</p>
+</div>
+
+<div class="interactive-box">
+  <h3>📊 交互实验：信息量可视化</h3>
+  <p style="font-size:.92em;color:var(--text-light);">观察预测、测量和融合后的信息量（\(1/\sigma^2\)）。注意后验信息量 = 预测信息量 + 测量信息量。</p>
+  <div class="controls">
+    <div class="control-group">
+      <label>预测 σ_p: <span class="val-display" id="ch03_infSigPVal">3.0</span></label>
+      <input type="range" id="ch03_infSigPSlider" min="0.5" max="8" step="0.1" value="3.0">
+    </div>
+    <div class="control-group">
+      <label>测量 σ_z: <span class="val-display" id="ch03_infSigZVal">1.5</span></label>
+      <input type="range" id="ch03_infSigZSlider" min="0.5" max="8" step="0.1" value="1.5">
+    </div>
+  </div>
+  <div id="ch03_infoPlot" style="width:100%;height:280px;"></div>
 </div>
 
 <h2>三、动手试一试</h2>
@@ -866,6 +1035,24 @@ $$K = \frac{\sigma_p^2}{\sigma_p^2 + \sigma_z^2}$$
     </div>
   </div>
 </div>
+
+<h2>"呼吸的节奏"——预测-更新的宏观行为</h2>
+
+<p>如果你运行上面的交互实验足够多步，会发现一个有趣的现象：协方差 P 的"一胀一缩"逐渐趋于一个<strong>稳定的振幅</strong>。预测后 P 增大一点，更新后 P 缩回来一点，但两者之间的跳动幅度越来越小，最终几乎不变。</p>
+
+<p>这不是巧合。对于线性时不变系统（F, H, Q, R 都是常数），协方差 P 最终会收敛到<strong>代数 Riccati 方程</strong>（Algebraic Riccati Equation, ARE）的解：</p>
+
+$$\mathbf{P}_\infty = \mathbf{F}\mathbf{P}_\infty\mathbf{F}^T + \mathbf{Q} - \mathbf{F}\mathbf{P}_\infty\mathbf{H}^T(\mathbf{H}\mathbf{P}_\infty\mathbf{H}^T + \mathbf{R})^{-1}\mathbf{H}\mathbf{P}_\infty\mathbf{F}^T$$
+
+<p>对应的卡尔曼增益也收敛到一个常数 \(\mathbf{K}_\infty\)。这意味着：</p>
+
+<div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;font-size:1.05em;"><strong>工程捷径</strong>：在很多嵌入式系统中，可以离线预计算稳态增益 \(\mathbf{K}_\infty\)，然后在运行时直接用这个常数——<strong>省掉所有的协方差传播和矩阵求逆！</strong></p>
+  <p style="margin:8px 0 0;">更新公式退化为：\(\hat{x}_{k} = \mathbf{F}\hat{x}_{k-1} + \mathbf{K}_\infty(z_k - \mathbf{H}\mathbf{F}\hat{x}_{k-1})\)</p>
+  <p style="margin:8px 0 0;">计算量从矩阵运算降到简单的乘加——在 Cortex-M0 上也能轻松跑。</p>
+</div>
+
+<p>事实上，经典的<strong>互补滤波器</strong>（Complementary Filter）本质上就是一个特定 Q/R 比值下的稳态卡尔曼滤波器。所以如果有人告诉你"互补滤波 vs 卡尔曼滤波"是两种不同的方法——其实互补滤波是卡尔曼滤波的一个特例。</p>
 
 <h2>四、预测-更新循环的可视化</h2>
 
@@ -924,9 +1111,16 @@ static void mat2_inv(const float A[2][2], float Ainv[2][2]) {
 }</code></pre>
 
   <p style="margin-top:10px;"><strong>定点数实现</strong>：如果你的 MCU 没有 FPU（比如 Cortex-M0），可以用 Q16.16 定点数表示 K。K 的范围总是 [0, 1]，非常适合定点表示。但要注意协方差矩阵的数值范围可能很大（位置单位是米的平方），需要仔细选择定点格式。</p>
+
+  <p style="margin-top:10px;"><strong>信息滤波器（Information Filter）</strong>：卡尔曼滤波有一个等价形式——用信息矩阵 \(\mathbf{P}^{-1}\) 代替协方差矩阵 \(\mathbf{P}\)。在这种形式下，多传感器融合变得极其简单：只需把各传感器的信息矩阵和信息向量<strong>相加</strong>即可。不需要复杂的串行融合顺序，也不需要处理跨传感器的相关性。</p>
+
+  <p style="margin-top:10px;"><strong>分布式传感器网络</strong>：在配备多个 GPS 接收机或多个 IMU 的系统中（如 PX4 支持 3 IMU 冗余），信息滤波器是首选，因为融合 = 简单的矩阵加法。PX4 的多 IMU 处理就使用了一种信息融合的变体——每个 IMU 独立产生信息贡献，最终汇总。这种架构天然支持传感器的热插拔和故障隔离。</p>
 </div>
+
 </div>
 </section>
+
+
 <section id="ch04" class="chapter-section">
 <div class="container">
 <h1>第四章：程序员最爱的五个公式</h1>
@@ -1002,6 +1196,42 @@ static void mat2_inv(const float A[2][2], float Ainv[2][2]) {
   <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">z</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">m×1</td><td style="padding:6px 14px;border:1px solid var(--border);">观测向量</td></tr>
 </tbody>
 </table>
+
+<h2>二·五、稳态卡尔曼增益——嵌入式工程师的捷径</h2>
+
+<p>你可能注意到了一个规律：随着预测-更新循环不断进行，协方差矩阵 P 和卡尔曼增益 K 最终会<strong>收敛到固定值</strong>。这不是巧合——这是数学上可以证明的。</p>
+
+<p>当 \(\mathbf{F}\)、\(\mathbf{H}\)、\(\mathbf{Q}\)、\(\mathbf{R}\) 都是常数矩阵（时不变系统），P 会收敛到一个稳态值 \(\mathbf{P}_\infty\)，它满足<strong>代数 Riccati 方程</strong>（ARE）：</p>
+
+$$\mathbf{P}_\infty = \mathbf{F}\left[\mathbf{P}_\infty - \mathbf{P}_\infty \mathbf{H}^T(\mathbf{H}\mathbf{P}_\infty \mathbf{H}^T + \mathbf{R})^{-1}\mathbf{H}\mathbf{P}_\infty\right]\mathbf{F}^T + \mathbf{Q}$$
+
+<p>对应的<strong>稳态卡尔曼增益</strong>就是一个常数矩阵：</p>
+
+$$\mathbf{K}_\infty = \mathbf{P}_\infty \mathbf{H}^T(\mathbf{H}\mathbf{P}_\infty \mathbf{H}^T + \mathbf{R})^{-1}$$
+
+<p>这意味着什么？你根本<strong>不需要在运行时更新 P 或计算 K</strong>！工程流程是这样的：</p>
+
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li>在 MATLAB/Python 里跑完整的卡尔曼滤波，迭代几十步直到 K 收敛</li>
+  <li>把收敛后的 \(\mathbf{K}_\infty\) 提取出来，硬编码到固件里</li>
+  <li>运行时只做 \(\hat{\mathbf{x}} = \mathbf{F}\hat{\mathbf{x}} + \mathbf{B}\mathbf{u} + \mathbf{K}_\infty(\mathbf{z} - \mathbf{H}\mathbf{F}\hat{\mathbf{x}})\)——一个矩阵-向量乘法搞定</li>
+</ol>
+
+<p><strong>计算量从 O(n³) 暴降到 O(n²)</strong>——因为省掉了协方差矩阵的乘法和求逆。对于资源极度受限的 8 位 MCU（比如 ATmega328），这可能是唯一可行的方案。</p>
+
+<div class="highlight-box" style="background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;"><strong>你可能已经用过稳态 KF 而不自知：</strong>互补滤波器（Complementary Filter）本质上就是一个稳态卡尔曼滤波器！比如经典的 IMU 姿态估计 <code>angle = 0.98*(angle+gyro*dt) + 0.02*accel_angle</code>，那个 <code>0.98</code> 和 <code>0.02</code> 就对应于 \(\mathbf{I}-\mathbf{K}_\infty\mathbf{H}\) 和 \(\mathbf{K}_\infty\) 的元素。Madgwick、Mahony 滤波器也是这个思路。</p>
+</div>
+
+<p><strong>使用条件</strong>：系统必须是<strong>可检测</strong>（detectable）且<strong>可镇定</strong>（stabilizable）的，这基本等价于"所有不稳定的状态都能被观测到"。对于典型的位置-速度-加速度模型，这个条件几乎总是满足的。</p>
+
+<p><strong>什么时候不能用稳态增益？</strong></p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li>GPS 信号质量变化（室内/室外切换、城市峡谷多径效应）→ R 不是常数</li>
+  <li>机动目标跟踪（加速/转弯时 Q 应该增大）→ Q 不是常数</li>
+  <li>传感器在线切换（某个传感器掉线/恢复）→ H 矩阵变化</li>
+  <li>滤波器刚启动的瞬态阶段（P 还没收敛，用稳态 K 会错过快速收敛的机会）</li>
+</ul>
 
 <h2>三、C 语言实现模板</h2>
 
@@ -1122,6 +1352,65 @@ void kf2d_update(KF2D_t *kf, float zx, float zy) {
   </div>
 </div>
 
+<h2>四·五、你的滤波器健康吗？——新息序列的秘密</h2>
+
+<p>调 Q 和 R 是卡尔曼滤波最让人头疼的事。很多人靠"手感"和"经验"，但其实有一个<strong>系统化的诊断方法</strong>——检查<strong>新息序列</strong>（Innovation Sequence）。</p>
+
+<p>回忆方程 ④ 中的新息 \(\boldsymbol{\nu}_k = \mathbf{z}_k - \mathbf{H}\hat{\mathbf{x}}_{k|k-1}\)。如果你的滤波器调得<strong>完美</strong>，新息序列会有三个"神奇"的性质（MIT 16.322 课程称之为 innovation sequence properties）：</p>
+
+<div class="eq-box" style="border-left-color:#8b5cf6;background:#f5f3ff;">
+  <div class="eq-label" style="color:#7c3aed;">新息序列三性质（滤波器健康指标）</div>
+  <p style="margin:8px 0;"><strong>性质 1：零均值</strong></p>
+  $$E[\boldsymbol{\nu}_k] = \mathbf{0}$$
+  <p style="font-size:.9em;color:var(--text-light);margin:4px 0 12px;">如果新息持续偏正或偏负 → 你的模型有<strong>系统性偏差</strong>（比如忘了建模风力、IMU 偏差没补偿）。</p>
+
+  <p style="margin:8px 0;"><strong>性质 2：白噪声（无自相关）</strong></p>
+  $$E[\boldsymbol{\nu}_k \boldsymbol{\nu}_j^T] = \mathbf{0}, \quad k \neq j$$
+  <p style="font-size:.9em;color:var(--text-light);margin:4px 0 12px;">如果相邻新息之间有相关性（像"有规律地上下波动"）→ <strong>Q 太小了</strong>，滤波器过度相信模型，来不及跟上真实状态的变化。</p>
+
+  <p style="margin:8px 0;"><strong>性质 3：协方差 = S</strong></p>
+  $$E[\boldsymbol{\nu}_k \boldsymbol{\nu}_k^T] = \mathbf{S}_k = \mathbf{H}\mathbf{P}_{k|k-1}\mathbf{H}^T + \mathbf{R}$$
+  <p style="font-size:.9em;color:var(--text-light);margin:4px 0;">如果新息的实际方差远大于 S 预测的方差 → <strong>R 太小了</strong>，你低估了测量噪声。反之 → R 太大了。</p>
+</div>
+
+<p>实操方法：把新息序列存下来（飞行日志），画出来看。用<strong>归一化新息平方</strong>（Normalized Innovation Squared，NIS）来定量检查：</p>
+
+$$\text{NIS}_k = \boldsymbol{\nu}_k^T \mathbf{S}_k^{-1} \boldsymbol{\nu}_k$$
+
+<p>如果滤波器正确调谐，NIS 应该服从 \(\chi^2(m)\) 分布（m 是观测维数）。对于 m=2，NIS 的均值应该约等于 2。如果均值远大于 2，说明 R 设小了或 Q 设小了；如果远小于 2，说明你的噪声参数设得太保守了（滤波器在"浪费"测量信息）。</p>
+
+<p><strong>这是调参的金标准</strong>：不要瞎猜 Q 和 R，而是迭代调整直到新息序列满足上述三个性质。</p>
+
+<h2>四·六、计算复杂度分析</h2>
+
+<p>卡尔曼滤波到底有多"贵"？这决定了你能在什么硬件上跑多大维度的滤波器。</p>
+
+<table style="border-collapse:collapse;margin:14px 0;width:100%;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">运算步骤</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">主要计算</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">复杂度</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);">① 状态预测 F·x</td><td style="padding:6px 14px;border:1px solid var(--border);">矩阵×向量</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">O(n²)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);">② 协方差预测 F·P·F<sup>T</sup>+Q</td><td style="padding:6px 14px;border:1px solid var(--border);">矩阵×矩阵×矩阵</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;"><strong>O(n³)</strong></td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);">③ 卡尔曼增益 P·H<sup>T</sup>·S<sup>-1</sup></td><td style="padding:6px 14px;border:1px solid var(--border);">矩阵乘 + m×m 求逆</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">O(n²m + m³)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);">④ 状态更新 x + K·ν</td><td style="padding:6px 14px;border:1px solid var(--border);">矩阵×向量</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">O(nm)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);">⑤ 协方差更新 (I-KH)·P</td><td style="padding:6px 14px;border:1px solid var(--border);">矩阵×矩阵</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">O(n²m)</td></tr>
+  <tr style="background:#f0fdf4;"><td style="padding:6px 14px;border:1px solid var(--border);font-weight:700;">总计（每步）</td><td style="padding:6px 14px;border:1px solid var(--border);"></td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;font-weight:700;">O(n³)（n&gt;m 时）</td></tr>
+</tbody>
+</table>
+
+<p>来看看实际的数字：</p>
+
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>n=4, m=2</strong>（本章的 2D 位置-速度）：约 200 次乘法 + 150 次加法 → Cortex-M4F@168MHz 上约 <strong>5μs</strong>，轻轻松松</li>
+  <li><strong>n=15, m=6</strong>（完整 INS：四元数+速度+位置+偏差）：约 8000 次乘法 → 约 <strong>100μs</strong>，400Hz 没问题</li>
+  <li><strong>n=2003, m=2</strong>（EKF-SLAM，1000 个路标）：P 矩阵是 2003×2003，光存储就要 16MB，每步约 <strong>400 万次乘法</strong> → 在 MCU 上完全不可行，这就是为什么 SLAM 要用粒子滤波或图优化</li>
+</ul>
+
+<p><strong>优化技巧</strong>：利用 P 的对称性，F·P·F<sup>T</sup> 的实际运算量可以减半；如果 F 是稀疏的（很多零元素），手动展开比通用矩阵乘法快 3-5 倍——这就是为什么飞控代码里的 KF 都是手写展开而不是调用 BLAS 库。</p>
+
 <div class="note">
   <h3>嵌入式开发者笔记</h3>
   <p><strong>协方差矩阵的对称存储</strong>：P 是对称矩阵（P[i][j] == P[j][i]），实际上只需存储上三角部分。4×4 矩阵从 16 个 float 减到 10 个。这在内存紧张的 MCU 上很实用：</p>
@@ -1144,9 +1433,16 @@ static inline float P_get(int i, int j) {
   <p style="margin-top:10px;"><strong>数值稳定性</strong>：方程 ⑤ 的简化形式 \(P = (I-KH)P\) 可能因为浮点误差导致 P 不对称甚至负定。Joseph 形式更安全：</p>
   $$\mathbf{P} = (\mathbf{I}-\mathbf{K}\mathbf{H})\mathbf{P}(\mathbf{I}-\mathbf{K}\mathbf{H})^T + \mathbf{K}\mathbf{R}\mathbf{K}^T$$
   <p>计算量多了约 50%，但能保证 P 的对称正定性。在长时间运行的飞控中，这点开销很值得。</p>
+
+  <p style="margin-top:14px;"><strong>稳态增益的实际应用</strong>：在 PX4 的高度估计器（altitude estimator）中，气压计融合的卡尔曼增益本质上是预计算好的几个常数。很多真实系统还会用<strong>增益调度</strong>（scheduled gains）——为不同飞行阶段（悬停 vs 巡航 vs 高过载机动）预计算不同的 K 值，根据当前状态切换。</p>
+
+  <p style="margin-top:10px;">那为什么 PX4 的主 EKF（ECL-EKF）还是用完整的协方差更新而不是稳态增益？因为 <strong>GPS 信号质量是时变的</strong>——从开阔地飞到建筑物旁边，多径效应让 R 突然增大好几倍。室内飞行甚至完全丢失 GPS，此时 H 矩阵直接降维。稳态增益处理不了这种动态变化。</p>
 </div>
+
 </div>
 </section>
+
+
 <section id="ch05" class="chapter-section">
 <div class="container">
 <h1>第五章：实战——无人机水平位置估计</h1>
@@ -1222,6 +1518,46 @@ function createKF2D(dt, q, r, p0) {
   };
 }</code></pre>
 
+<h2>二·五、互补滤波器——穷人版卡尔曼</h2>
+
+<p>在看完上面那一大段 KF 代码后，你可能会想：有没有更简单的方案？当然有——<strong>互补滤波器</strong>（Complementary Filter），它本质上就是第四章讲的稳态卡尔曼滤波器的特殊形式。</p>
+
+<p>对于位置估计，一个互补滤波器可以写成一行：</p>
+
+$$\hat{x}_k = \alpha \cdot x_{GPS} + (1-\alpha) \cdot (\hat{x}_{k-1} + v \cdot \Delta t)$$
+
+<p>这里的 \(\alpha\) 就对应于稳态卡尔曼增益 \(\mathbf{K}_\infty\)。当 GPS 噪声大（R 大）时，\(\alpha\) 小，更相信惯性推算；当 GPS 噪声小（R 小）时，\(\alpha\) 大，更相信 GPS。</p>
+
+<pre><code>/* 互补滤波器——3 行 C 代码，效果出奇地好 */
+float comp_filter(float gps_pos, float accel, float dt) {
+    static float pos = 0, vel = 0;
+    vel += accel * dt;
+    pos = 0.98f * (pos + vel * dt) + 0.02f * gps_pos;
+    return pos;
+}</code></pre>
+
+<p>对比卡尔曼滤波器：</p>
+
+<table style="border-collapse:collapse;margin:14px 0;width:100%;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;"></th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">互补滤波器</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">卡尔曼滤波器</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">代码量</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">3 行</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">~100 行</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">需要矩阵运算</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">否</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">是</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">自适应噪声</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">不能</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">自动适应</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">不确定度估计</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">没有</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">P 矩阵</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">多状态最优估计</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">不能（速度估计不最优）</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">所有状态都最优</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">适用场景</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">噪声恒定的简单系统</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">通用</td></tr>
+</tbody>
+</table>
+
+<p>在<strong>姿态估计</strong>领域，Madgwick 滤波器和 Mahony 滤波器都是互补滤波器的变体——它们在四元数空间上做类似的高通/低通融合。之所以效果好，是因为陀螺仪和加速度计的噪声特性相对稳定，不太需要自适应。</p>
+
+<p>但一旦你需要融合多个传感器（GPS + 气压计 + 光流 + ...）、需要知道估计的不确定度（用于决策）、或者噪声特性会变化——就该用完整的卡尔曼滤波器了。</p>
+
 <h2>三、实时仿真</h2>
 
 <div class="interactive-box">
@@ -1275,6 +1611,52 @@ function createKF2D(dt, q, r, p0) {
   <div id="ch05_errorPlot5" style="width:100%;height:220px;margin-top:12px;"></div>
 </div>
 
+<h2>三·五、马氏距离门限——别让坏数据毁了你的滤波器</h2>
+
+<p>在真实飞行中，GPS 偶尔会给出<strong>严重错误的读数</strong>——比如在城市峡谷中信号反射（multipath），位置突然跳几十米。如果你把这种"毒数据"直接喂给卡尔曼滤波器，它会被猛烈拉偏，可能需要好几秒才能恢复。</p>
+
+<p>解决方法：在做 KF 更新之前，先检查新息是否"合理"。用<strong>马氏距离</strong>（Mahalanobis Distance）来判断：</p>
+
+$$d^2 = \boldsymbol{\nu}^T \mathbf{S}^{-1} \boldsymbol{\nu}$$
+
+<p>其中 \(\boldsymbol{\nu}\) 是新息，\(\mathbf{S} = \mathbf{H}\mathbf{P}\mathbf{H}^T + \mathbf{R}\) 是新息的期望协方差。如果滤波器正确调谐，\(d^2\) 服从 \(\chi^2(m)\) 分布。</p>
+
+<p>设定一个门限：如果 \(d^2\) 超过 \(\chi^2\) 分布的 99% 分位数，就<strong>拒绝这次测量</strong>——它几乎肯定是异常值。</p>
+
+<table style="border-collapse:collapse;margin:14px 0;width:100%;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 14px;border:1px solid var(--border);">观测维数 m</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">95% 门限</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">99% 门限</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">典型传感器</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">1</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">3.84</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">6.63</td><td style="padding:6px 14px;border:1px solid var(--border);">气压计高度</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">2</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">5.99</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">9.21</td><td style="padding:6px 14px;border:1px solid var(--border);">GPS 水平位置 (x, y)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">3</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">7.81</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">11.34</td><td style="padding:6px 14px;border:1px solid var(--border);">GPS 位置 (x, y, z)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">6</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">12.59</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">16.81</td><td style="padding:6px 14px;border:1px solid var(--border);">GPS 位置+速度</td></tr>
+</tbody>
+</table>
+
+<pre><code>/* 马氏距离门限检测——在 KF update 前调用 */
+/* 对于 m=2 的 GPS 测量 */
+float innov[2] = { gps_x - kf.x[0], gps_y - kf.x[1] };
+
+/* Si 是 S 的逆矩阵（在计算 K 时已经算过了，直接复用） */
+float d2 = innov[0]*Si[0][0]*innov[0] + innov[1]*Si[1][1]*innov[1]
+         + 2*innov[0]*Si[0][1]*innov[1];
+
+if (d2 > 9.21f) {
+    /* 拒绝这次 GPS 测量——可能是多径效应 */
+    log_warning("GPS innovation gate reject: d2=%.1f", d2);
+    return;  /* 跳过更新，继续预测 */
+}
+
+/* 通过门限检测，正常执行 KF update */
+kf2d_update(&kf, gps_x, gps_y);</code></pre>
+
+<p><strong>关键原则</strong>：拒绝异常值后，<strong>不要重置滤波器</strong>——直接跳过更新步，让预测继续运行。滤波器会用惯性推算撑过没有 GPS 的时段，等下一次正常的 GPS 数据到来再校正。PX4 和 ArduPilot 的 EKF 都实现了这种新息门限检测（innovation gate test），对每个传感器的每次更新都会做。</p>
+
 <div class="note">
   <h3>嵌入式开发者笔记</h3>
 
@@ -1305,9 +1687,21 @@ void main_loop(void) {  /* 400Hz tick */
   <p style="margin-top:12px;"><strong>dt 的处理</strong>：如果 IMU 和主循环不完全同步，最好用实际时间差 dt 来构建 F 和 B 矩阵，而不是用固定的标称值。在 STM32 上可以用 DWT 周期计数器或 TIM 定时器来获取精确的 dt。</p>
 
   <p style="margin-top:10px;"><strong>数值检查</strong>：每次更新后，检查 P 的对角元素是否全部为正。如果出现负值，说明滤波器已经发散了——这通常意味着 Q 设得太小或者观测模型有误。</p>
+
+  <p style="margin-top:14px;"><strong>真实飞控架构参考</strong>：PX4 的 ECL-EKF（Estimation and Control Library）使用 <strong>24 维状态向量</strong>：</p>
+  <ul style="margin-left:18px;margin-top:6px;">
+    <li>四元数 (4) + 速度 (3) + 位置 (3) + 陀螺偏差 (3) + 加速度偏差 (3) + 地磁场 (3) + 风速 (2) + 磁偏差 (3)</li>
+    <li>运行频率：IMU 预测 250Hz + 按需更新（GPS 10Hz，气压 50Hz，磁力 50Hz）</li>
+    <li>使用 Joseph 形式更新 P，Mahalanobis 门限剔除异常值</li>
+    <li>源码：<a href="https://github.com/PX4/PX4-ECL" style="color:var(--primary);">github.com/PX4/PX4-ECL</a></li>
+  </ul>
+  <p style="margin-top:8px;">ArduPilot 的 EKF3 架构类似，但有一个独特设计：它运行<strong>三个并行的 EKF 实例</strong>（每个 IMU 一个），通过比较各实例的归一化新息平方（NIS）来选择最佳的那个。如果某个 IMU 出了故障，对应的 EKF 实例的 NIS 会飙高，系统自动切换到健康的实例——这就是传感器冗余+滤波器冗余的双重保障。</p>
 </div>
+
 </div>
 </section>
+
+
 <section id="ch06" class="chapter-section">
 <div class="container">
 <h1>第六章：当系统变"弯"了</h1>
@@ -1370,6 +1764,59 @@ $$\mathbf{H}_k = \begin{bmatrix}
   </ol>
 </div>
 
+<h2>二·五、误差状态卡尔曼滤波（ESKF）——真实飞控的选择</h2>
+
+<p>标准 EKF 直接估计完整的状态 \(\mathbf{x}\)（位置、速度、姿态...），然后在当前估计点做线性化。但在真实的惯性导航系统（INS）中，几乎所有专业实现都用一个更聪明的变体：<strong>误差状态卡尔曼滤波</strong>（Error-State Kalman Filter，ESKF）。</p>
+
+<p>核心思想是把状态分成两部分：</p>
+
+$$\mathbf{x}_{true} = \mathbf{x}_{nom} \oplus \delta\mathbf{x}$$
+
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li>\(\mathbf{x}_{nom}\)：<strong>名义状态</strong>（nominal state）——用完整的非线性方程传播，不做任何线性化</li>
+  <li>\(\delta\mathbf{x}\)：<strong>误差状态</strong>（error state）——用 EKF 估计，始终保持很小</li>
+  <li>\(\oplus\)：对于位置/速度就是普通加法；对于旋转是四元数乘法</li>
+</ul>
+
+<p><strong>为什么这样做更好？</strong></p>
+
+<div class="highlight-box">
+  <ol style="margin:0 0 0 18px;">
+    <li style="margin-bottom:8px;"><strong>线性化总是精确的</strong>：因为 \(\delta\mathbf{x}\) 始终很小（每次更新后都被"注入"名义状态并重置为零），所以一阶泰勒展开的误差极小。标准 EKF 在大角度旋转时线性化误差可能很大，ESKF 则不会。</li>
+    <li style="margin-bottom:8px;"><strong>避免旋转表示的奇异性</strong>：名义状态用四元数（4 个参数）表示旋转，但误差状态只需要 3 个参数（旋转误差向量）。这样 P 矩阵小 1 维，而且不会遇到万向锁问题。</li>
+    <li style="margin-bottom:8px;"><strong>名义传播是"免费"的精度</strong>：非线性传播不引入线性化误差，等于白拿了一段精确的积分，只在校正时才用近似。</li>
+    <li><strong>工业标准</strong>：PX4、ArduPilot、Google Cartographer、VINS-Mono、MSCKF 全都用 ESKF。</li>
+  </ol>
+</div>
+
+<p>代码结构对比：</p>
+
+<pre><code>/* ===== 标准 EKF ===== */
+x = f(x, u);           /* 非线性传播（精确） */
+F = df/dx|_{x};         /* 在 x 处求雅可比（x 可能很大，线性化误差大） */
+P = F * P * F' + Q;
+
+/* 更新 */
+H = dh/dx|_{x};
+K = P * H' * inv(H*P*H' + R);
+x = x + K * (z - h(x));
+P = (I - K*H) * P;
+
+/* ===== 误差状态 KF (ESKF) ===== */
+x_nom = f(x_nom, u);    /* 非线性传播（精确，不做线性化！） */
+F_err = df_err/d(δx);   /* 误差状态雅可比（δx ≈ 0，线性化超精确） */
+P = F_err * P * F_err' + Q;
+
+/* 更新 */
+H_err = dh/d(δx);
+K = P * H_err' * inv(H_err*P*H_err' + R);
+δx = K * (z - h(x_nom));        /* 估计误差 */
+x_nom = x_nom ⊕ δx;             /* 注入校正 */
+δx = 0;                          /* 重置误差状态 */
+P = (I - K*H_err) * P;           /* 可选：同时做 P 的重置变换 */</code></pre>
+
+<p>注意最关键的区别：名义状态的传播 <code>x_nom = f(x_nom, u)</code> 和标准 EKF 一样是用精确的非线性方程，但误差状态的雅可比 \(\mathbf{F}_{err}\) 是在 \(\delta\mathbf{x} \approx 0\) 处计算的——这意味着线性化点永远在"正确"的位置附近，不会随着状态漂移而恶化。</p>
+
 <h2>三、KF vs EKF 实时对比</h2>
 
 <p>下面的实验模拟无人机绕圈飞行，一个雷达站在原点测量到无人机的距离和角度。我们同时运行两个滤波器：</p>
@@ -1419,6 +1866,31 @@ $$\mathbf{H}_k = \begin{bmatrix}
 
   <div id="ch06_errPlot6" style="width:100%;height:200px;margin-top:8px;"></div>
 </div>
+
+<h2>三·五、可观测性分析——不是所有状态都看得见</h2>
+
+<p>在线性 KF 中，可观测性是由 \((\mathbf{F}, \mathbf{H})\) 决定的固定属性——要么可观测，要么不可观测。但在 EKF 中，情况更加微妙：<strong>可观测性取决于轨迹</strong>。</p>
+
+<p>这听起来很抽象，看几个飞控中的真实例子就懂了：</p>
+
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>直线飞行 + 仅 GPS 位置</strong>：航向角（yaw）<strong>不可观测</strong>。因为 GPS 只给位置不给朝向，而沿直线飞行时，你无法区分"机头朝前飞"和"机头歪着侧飞"——位置轨迹是一样的。</li>
+  <li><strong>悬停 + GPS 位置</strong>：速度是<strong>弱可观测</strong>的。位置测量可以慢慢推断出"速度为零"，但收敛很慢，因为静止时位置变化量几乎为零。</li>
+  <li><strong>匀速直线飞行</strong>：加速度偏差<strong>不可观测</strong>。因为偏差产生的效果和一个恒定的速度增量无法区分——需要变速或变向飞行才能让偏差"露出马脚"。</li>
+</ul>
+
+<div class="highlight-box">
+  <p style="margin:0;"><strong>实用判断法则：</strong>如果一个状态不可观测或弱可观测，它对应的 P 矩阵对角元素<strong>不会收敛</strong>——会持续增长或停留在很大的值。如果你在飞行日志中看到某个 P 对角元素一直不收敛，先别急着调 Q，很可能是可观测性的问题。</p>
+</div>
+
+<p>这就是为什么飞控需要这么多传感器的协同配合：</p>
+
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>磁力计</strong>：提供航向角的可观测性（在低速和悬停时尤其关键）</li>
+  <li><strong>GPS 速度</strong>（不仅是位置）：提供航向角在中高速飞行时的可观测性，同时加速速度状态的收敛</li>
+  <li><strong>初始化时的运动要求</strong>：PX4 要求解锁后先做一些运动（或等待一段时间），就是为了积累足够的可观测性来收敛偏差状态</li>
+  <li><strong>光流传感器</strong>：在无 GPS 环境中提供速度的可观测性，但需要已知高度（又一个可观测性约束）</li>
+</ul>
 
 <h2>四、EKF 的 C 语言实现要点</h2>
 
@@ -1472,9 +1944,20 @@ static inline float angle_wrap(float a) {
   </ul>
 
   <p style="margin-top:12px;"><strong>计算量对比</strong>：EKF 相比 KF 多了雅可比矩阵计算（对 4 维状态 2 维观测，多了约 8 次乘法加几次三角函数）。在 Cortex-M4F 上，一次 sqrtf + atan2f 大约 30~50 个时钟周期，微不足道。</p>
+
+  <p style="margin-top:14px;"><strong>迭代 EKF（IEKF）</strong>：标准 EKF 在更新步只线性化一次，但如果观测方程高度非线性，一次线性化可能不够准。IEKF 的做法是在更新步<strong>重复线性化 2-3 次</strong>：每次用更新后的 \(\hat{\mathbf{x}}\) 重新计算雅可比 \(\mathbf{H}_k\) 和新息，然后再做一次更新。</p>
+  <ul style="margin-left:18px;margin-top:6px;">
+    <li>对于高度非线性的观测方程（如 SLAM 中的相机投影模型、近距离雷达跟踪），IEKF 可以显著提高精度</li>
+    <li>代价：计算量翻 2-3 倍，但在 Cortex-M7@400MHz 上通常可以接受</li>
+    <li>收敛判据：当相邻两次迭代的状态变化量 \(\|\delta\mathbf{x}\|\) 小于阈值时停止</li>
+  </ul>
+  <p style="margin-top:8px;">更高级的替代方案：UKF（Unscented Kalman Filter）不需要手算雅可比，用 sigma 点采样来逼近非线性变换。代价是对 n 维状态需要传播 2n+1 个 sigma 点，但省掉了推导雅可比的人力成本——在快速原型开发阶段很有价值。</p>
 </div>
+
 </div>
 </section>
+
+
 <section id="ch07" class="chapter-section">
 <div class="container">
 <h1>第七章：嵌入式系统上的卡尔曼滤波</h1>
@@ -1523,7 +2006,183 @@ $$\mathbf{P} = (\mathbf{I}-\mathbf{K}\mathbf{H})\mathbf{P}(\mathbf{I}-\mathbf{K}
   <li>新息不应该有明显的自相关——如果有，说明 Q 或模型不对</li>
 </ul>
 
-<h2>三、故障诊断实验室</h2>
+<h2>三、系统化调参——飞控工程师的实战流程</h2>
+
+<p>在实际飞控开发中（PX4、ArduPilot），调参不是"拍脑袋猜"——而是一套可重复的工程流程。MIT 16.322 课程和工业界的经验总结为以下四步：</p>
+
+<h3>Step 1：确定 R（测量噪声）——让传感器告诉你</h3>
+
+<p>R 是最容易确定的参数，因为你可以直接测。让传感器<strong>静止</strong>，采集一段数据，计算方差，就是 R。</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li><strong>GPS</strong>：静置 10 分钟，记录位置，计算方差 → 通常 \(R \approx 2 \sim 5 \, \text{m}^2\)</li>
+  <li><strong>气压计</strong>：静置 5 分钟，计算高度方差 → 通常 \(R \approx 0.1 \sim 0.5 \, \text{m}^2\)</li>
+  <li><strong>IMU</strong>：使用 Allan 方差分析（见下节），提取噪声密度和偏差不稳定性</li>
+</ul>
+
+<pre><code>/* 在 MCU 上用 Welford 算法在线计算传感器方差 */
+typedef struct {
+    int    n;
+    float  mean;
+    float  M2;    /* 累积方差 */
+} Welford_t;
+
+void welford_update(Welford_t *w, float x) {
+    w->n++;
+    float delta = x - w->mean;
+    w->mean += delta / w->n;
+    float delta2 = x - w->mean;
+    w->M2 += delta * delta2;
+}
+
+float welford_variance(const Welford_t *w) {
+    return w->n > 1 ? w->M2 / (w->n - 1) : 0.0f;
+}</code></pre>
+
+<h3>Step 2：初始化 Q（过程噪声）——从传感器噪声推导</h3>
+
+<p>Q 没有 R 那么直观，但也不是完全靠猜。对于位置-速度模型，Q 来自加速度计噪声的积分。连续白噪声离散化公式：</p>
+
+$$Q_d = \int_0^{\Delta t} F(\tau) \cdot G \cdot q_c \cdot G^T \cdot F(\tau)^T \, d\tau$$
+
+<p>其中 \(q_c\) 是连续时间的功率谱密度。实用近似：</p>
+
+$$q_c \approx (\text{加速度计噪声密度})^2$$
+
+<p>对于 MEMS IMU（如 MPU6050）：噪声密度 ≈ 400μg/√Hz → \(q_c \approx (0.004)^2 = 1.6 \times 10^{-5} \, \text{m}^2/\text{s}^4\)</p>
+
+<p>对于匀速模型（位置+速度），离散化后：</p>
+
+$$Q_d = q_c \begin{bmatrix} \Delta t^3/3 & \Delta t^2/2 \\ \Delta t^2/2 & \Delta t \end{bmatrix}$$
+
+<h3>Step 3：用 NIS 在线验证——滤波器的"体温计"</h3>
+
+<p><strong>归一化新息平方</strong>（Normalized Innovation Squared, NIS）是判断调参是否正确的定量工具：</p>
+
+$$\text{NIS}_k = \nu_k^T S_k^{-1} \nu_k \sim \chi^2(m)$$
+
+<p>其中 \(m\) 是观测维数。正确调参时：</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li>\(\mathbb{E}[\text{NIS}] = m\)（观测维数）</li>
+  <li>NIS 持续 \(> m\) → R 太小或 Q 太小（滤波器过于自信）</li>
+  <li>NIS 持续 \(< m\) → R 太大或 Q 太大（滤波器过于保守）</li>
+  <li>用滑动窗口平均 NIS，和 \(m\) 比较，调整 Q 和 R 直到匹配</li>
+</ul>
+
+<h3>Step 4：动态验证——实际机动测试</h3>
+
+<p>静态验证通过后，还要做动态测试。做实际机动（转弯、加减速），观察跟踪误差：</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li>如果转弯时估计<strong>滞后</strong> → Q 太小，滤波器太相信模型，不愿接受新信息</li>
+  <li>如果直线飞行时估计<strong>抖动</strong> → Q 太大，滤波器太不相信模型，被噪声带着走</li>
+  <li>如果突然机动后估计<strong>长时间不收敛</strong> → P₀ 太小，或 Q 太小导致"锁死"</li>
+</ul>
+
+<div class="warn-box">
+  <strong>关键经验</strong>：先把 Q 设大一点，让滤波器"活"过来（宁可抖动也不要锁死），然后逐步减小 Q 直到 NIS ≈ m。这就是飞控工程师口中的"从松到紧"调参法。
+</div>
+
+<h2>四、Allan 方差——读懂 IMU 噪声的密码</h2>
+
+<p><strong>Allan 方差</strong>是 IMU 噪声分析的工业标准方法（IEEE Std 952-1997），也是读懂 IMU 数据手册的钥匙。</p>
+
+<p>基本思想：把传感器数据按不同的<strong>平均时间 \(\tau\)</strong> 分组，计算各组均值之差的方差。在 log-log 图上：x 轴是平均时间 \(\tau\)，y 轴是 Allan 偏差 \(\sigma(\tau)\)。</p>
+
+<p>不同斜率代表不同的噪声类型：</p>
+
+<table style="border-collapse:collapse;width:100%;margin:14px 0;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">斜率</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">噪声类型</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">物理含义</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">对 KF 的意义</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">斜率 = -1/2</td><td style="padding:6px 12px;border:1px solid var(--border);">白噪声 (ARW/VRW)</td><td style="padding:6px 12px;border:1px solid var(--border);">角度/速度随机游走</td><td style="padding:6px 12px;border:1px solid var(--border);"><strong>决定 Q 矩阵</strong></td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">斜率 = 0（平坦）</td><td style="padding:6px 12px;border:1px solid var(--border);">偏差不稳定性</td><td style="padding:6px 12px;border:1px solid var(--border);">传感器精度的"地板"</td><td style="padding:6px 12px;border:1px solid var(--border);">IMU 精度的下限</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">斜率 = +1/2</td><td style="padding:6px 12px;border:1px solid var(--border);">随机游走（偏差漂移）</td><td style="padding:6px 12px;border:1px solid var(--border);">偏差缓慢漂移</td><td style="padding:6px 12px;border:1px solid var(--border);">需要增加偏差状态来估计</td></tr>
+</tbody>
+</table>
+
+<p><strong>常见 IMU 的典型参数</strong>（陀螺仪）：</p>
+
+<table style="border-collapse:collapse;width:100%;margin:14px 0;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">型号</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">ARW (°/√hr)</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">偏差不稳定性 (°/hr)</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">等级</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">应用</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">MPU6050</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.3</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 10</td><td style="padding:6px 12px;border:1px solid var(--border);">消费级</td><td style="padding:6px 12px;border:1px solid var(--border);">玩具、简单平衡车</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">BMI088</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.09</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 3</td><td style="padding:6px 12px;border:1px solid var(--border);">工业级</td><td style="padding:6px 12px;border:1px solid var(--border);">无人机、机器人</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">ADIS16488</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.006</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.3</td><td style="padding:6px 12px;border:1px solid var(--border);">战术级</td><td style="padding:6px 12px;border:1px solid var(--border);">导弹制导、测绘</td></tr>
+</tbody>
+</table>
+
+<p>如何计算 Allan 方差：可以用 Python 的 <code>allantools</code> 库，或者在嵌入式端用 C 实现 log-binning 算法。静置 IMU 采集 1~2 小时数据即可画出完整的 Allan 方差曲线。</p>
+
+<h2>五、协方差匹配法——自动化调参</h2>
+
+<p>手动调 Q 和 R 虽然有效，但有没有<strong>自动化</strong>的方法？有。<strong>协方差匹配法</strong>（Covariance Matching / Autocovariance Method）就是其中之一：</p>
+
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li>采集新息序列 \(\{\nu_k\}\)</li>
+  <li>计算样本自协方差：\(C_0 = \frac{1}{N}\sum_{k=1}^{N} \nu_k \nu_k^T\)</li>
+  <li>理论上，\(C_0\) 应该等于 \(S = HPH^T + R\)</li>
+  <li>如果 \(C_0 > S\) → 说明实际新息方差大于模型预测 → <strong>增大 Q</strong>（或减小 R）</li>
+  <li>如果 \(C_0 < S\) → 说明实际新息方差小于模型预测 → <strong>减小 Q</strong>（或增大 R）</li>
+  <li>可以用简单的自适应循环自动调整</li>
+</ol>
+
+<pre><code>/* 在线协方差匹配：滑动窗口自适应 Q 调整 */
+#define COV_WINDOW 50
+
+typedef struct {
+    float innov_buf[COV_WINDOW];
+    int   head;
+    int   count;
+    float sum_sq;
+} CovMatch_t;
+
+void covmatch_init(CovMatch_t *cm) {
+    memset(cm, 0, sizeof(*cm));
+}
+
+/* 每次卡尔曼更新后调用：
+ * innov  = 本次新息
+ * S      = 本次新息协方差 HPH'+R
+ * Q_diag = Q 对角线指针，由此函数自动调整 */
+void covmatch_update(CovMatch_t *cm, float innov, float S,
+                     float *Q_diag, int n) {
+    /* 滑动窗口更新 */
+    if (cm->count >= COV_WINDOW)
+        cm->sum_sq -= cm->innov_buf[cm->head] *
+                      cm->innov_buf[cm->head];
+    cm->innov_buf[cm->head] = innov;
+    cm->sum_sq += innov * innov;
+    cm->head = (cm->head + 1) % COV_WINDOW;
+    if (cm->count < COV_WINDOW) cm->count++;
+
+    if (cm->count < COV_WINDOW) return;
+
+    float empirical_S = cm->sum_sq / COV_WINDOW;
+    float ratio = empirical_S / S;
+
+    /* ratio > 1 → 实际方差大于理论 → 增大 Q
+     * ratio < 1 → 实际方差小于理论 → 减小 Q */
+    float alpha = 0.01f;  /* 调整步长，越小越稳 */
+    float scale = 1.0f + alpha * (ratio - 1.0f);
+    scale = fmaxf(0.5f, fminf(2.0f, scale)); /* 限幅 */
+
+    for (int i = 0; i < n; i++)
+        Q_diag[i] *= scale;
+}</code></pre>
+
+<h2>六、故障诊断实验室</h2>
 
 <div class="interactive-box">
   <h3>🔬 故障诊断实验室</h3>
@@ -1573,7 +2232,7 @@ $$\mathbf{P} = (\mathbf{I}-\mathbf{K}\mathbf{H})\mathbf{P}(\mathbf{I}-\mathbf{K}
   <div id="ch07_nisPlot" style="width:100%;height:200px;margin-top:8px;"></div>
 </div>
 
-<h2>四、计算优化清单</h2>
+<h2>七、计算优化清单</h2>
 
 <h3>浮点 vs 定点</h3>
 <p>在没有 FPU 的 MCU（如 Cortex-M0/M0+）上，一次 float 乘法需要 ~50 个时钟周期（软件浮点），而 32 位整数乘法只需 1 个周期。对于 4 维状态的 KF，P 的更新涉及约 200 次乘法——差距从 200 到 10000 周期。</p>
@@ -1606,7 +2265,7 @@ typedef struct __attribute__((aligned(4))) {
     /* 总计: 96 字节 — 一个 cache line 就够了 */
 } KF2D_Compact_t;</code></pre>
 
-<h2>五、调试方法总结</h2>
+<h2>八、调试方法总结</h2>
 
 <table style="border-collapse:collapse;width:100%;margin:14px 0;">
 <thead><tr style="background:var(--primary-light);">
@@ -1664,9 +2323,30 @@ void kf1d_update(KF1D_t *kf, float z) {
     <li>4 维 EKF（含雅可比+三角函数）：约 15~25μs</li>
     <li>以上时间都远小于 1ms（1kHz 控制周期），所以卡尔曼滤波在飞控中完全可行</li>
   </ul>
+
+  <p style="margin-top:16px;"><strong>平方根滤波（Square Root Filter）</strong></p>
+  <p>存储 \(S\) 使得 \(P = SS^T\)，用 Cholesky 更新代替标准 P 更新。</p>
+  <ul style="margin-left:18px;">
+    <li>数值稳定性极佳——P <strong>永远</strong>正定（因为 \(SS^T\) 天生正定）</li>
+    <li>代价：实现复杂度增加约 2×，需要 Cholesky 分解和 rank-1 更新</li>
+    <li>推荐用于：航天级应用、长时间运行（数天/数周）的系统</li>
+    <li>条件数提升：\(\kappa(S) = \sqrt{\kappa(P)}\)，相当于有效精度翻倍</li>
+  </ul>
+
+  <p style="margin-top:16px;"><strong>UD 分解滤波（Bierman Filter）</strong></p>
+  <p>存储 \(P = UDU^T\)（U 为单位上三角矩阵，D 为对角矩阵）。</p>
+  <ul style="margin-left:18px;">
+    <li>Bierman 的 UD filter + Thornton 的 MWGS（Modified Weighted Gram-Schmidt）算法</li>
+    <li>在存储量几乎不增加的情况下保证正定性（U 和 D 共用 \(n(n+1)/2\) 个元素，和上三角存储一样）</li>
+    <li>NASA JPL 在深空探测器导航（旅行者号、卡西尼号）中使用此方法——连续运行数年不发散</li>
+    <li>比平方根滤波更节省计算量，是嵌入式高可靠场景的首选</li>
+  </ul>
 </div>
+
 </div>
 </section>
+
+
 <section id="ch08" class="chapter-section">
 <div class="container">
 <h1>第八章：更远的道路</h1>
@@ -1733,7 +2413,50 @@ void kf1d_update(KF1D_t *kf, float z) {
 </tbody>
 </table>
 
-<h2>二、UKF——不用算雅可比的妙招</h2>
+<h2>二、误差状态卡尔曼滤波（ESKF）——工业界的真正主角</h2>
+
+<p>教科书上花大量篇幅讲 EKF，但在真正的飞控代码里（PX4 的 <code>ecl/EKF</code>、ArduPilot 的 <code>AP_NavEKF3</code>），你看到的其实是 <strong>ESKF（Error-State Kalman Filter）</strong>。这不是巧合——ESKF 在工程上有决定性的优势。</p>
+
+<h3>核心思想：大的用非线性算，小的用线性化</h3>
+
+<p>ESKF 把状态分成两部分：</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li><strong>标称状态（Nominal State）</strong>：用精确的非线性方程传播。比如四元数积分，用的是精确的旋转矩阵，不做任何近似。</li>
+  <li><strong>误差状态（Error State）</strong>：标称状态和真实状态之间的小偏差。因为"小"，所以线性化很准确。</li>
+</ul>
+
+<p>打个比方：你开车去北京，里程表（IMU）一路记录行驶距离——这是<strong>标称状态</strong>的传播，完全按非线性的实际道路积分。偶尔路过一个路牌（GPS），你发现"差了200米"——这个200米就是<strong>误差状态</strong>。你只需要对这200米做卡尔曼更新，而不是对整个1000公里重新滤波。</p>
+
+<h3>四元数姿态估计中的 ESKF</h3>
+
+<p>这是 ESKF 最经典的应用。直接用 EKF 估计四元数有个麻烦：四元数有 4 个分量但只有 3 个自由度（因为 \(\|q\| = 1\) 约束），协方差矩阵会出现奇异性。ESKF 优雅地解决了这个问题：</p>
+
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>标称四元数</strong>：通过积分陀螺仪测量精确传播（四元数微分方程，不做近似）</li>
+  <li><strong>误差状态</strong>：3 维旋转误差向量 \(\delta\boldsymbol{\theta}\)（不是 4D 四元数！）→ 协方差矩阵是 3×3，没有奇异性</li>
+  <li><strong>卡尔曼更新</strong>：用加速度计/磁力计观测更新 \(\delta\boldsymbol{\theta}\)</li>
+  <li><strong>注入校正</strong>：\(q \leftarrow q \otimes \begin{bmatrix} 1 \\ \delta\boldsymbol{\theta}/2 \end{bmatrix}\)，然后重置 \(\delta\boldsymbol{\theta} = 0\)</li>
+</ol>
+
+<p>在对比表中增加 ESKF：</p>
+
+<table class="compare-table">
+<thead><tr>
+  <th>变体</th><th>核心思想</th><th>优点</th><th>缺点</th><th>典型应用</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><strong>ESKF</strong></td>
+  <td>分离标称/误差状态，只线性化小误差</td>
+  <td>线性化精度高；天然适配四元数；IMU 高频积分不经过 KF</td>
+  <td>实现复杂度略高；需要理解误差状态动力学</td>
+  <td>PX4/ArduPilot 飞控、VIO、GNSS/INS 组合导航</td>
+</tr>
+</tbody>
+</table>
+
+<h2>三、UKF——不用算雅可比的妙招</h2>
 
 <p>UKF（Unscented Kalman Filter）的核心思想是：与其线性化函数（EKF），不如直接用有代表性的采样点通过非线性函数，然后从输出重建统计量。</p>
 
@@ -1766,7 +2489,7 @@ void kf1d_update(KF1D_t *kf, float z) {
   <div id="ch08_ukfPlot" style="width:100%;height:380px;"></div>
 </div>
 
-<h2>三、应用场景速览</h2>
+<h2>四、应用场景速览</h2>
 
 <div class="card-grid">
 
@@ -1850,7 +2573,31 @@ void kf1d_update(KF1D_t *kf, float z) {
 
 </div>
 
-<h2>四、自适应卡尔曼滤波简介</h2>
+<h2>五、超越卡尔曼——因子图优化方法</h2>
+
+<p>学完卡尔曼家族，你可能觉得 EKF-SLAM 就是 SLAM 的终极方案。事实上，现代 SLAM 系统早已"毕业"了。</p>
+
+<p><strong>Google Cartographer</strong>、<strong>ORB-SLAM</strong>、<strong>VINS-Mono</strong>——当今最成功的 SLAM 系统都不用 EKF-SLAM。它们用的是<strong>因子图优化</strong>（Factor Graph Optimization），借助 iSAM、GTSAM、Ceres Solver 等工具实现。</p>
+
+<p>关键区别在于：</p>
+
+<table class="compare-table">
+<thead><tr>
+  <th>特性</th><th>卡尔曼滤波</th><th>因子图优化</th>
+</tr></thead>
+<tbody>
+  <tr><td>处理方式</td><td>在线、单次遍历——处理完一个时刻就丢弃</td><td>批处理——保留所有历史状态，可反复优化</td></tr>
+  <tr><td>回环检测</td><td>无法处理——过去的状态已经"凝固"</td><td>天然支持——检测到回环后重新优化整条轨迹</td></tr>
+  <tr><td>计算复杂度</td><td>\(O(n^2)\) per step（n = 状态维度）</td><td>利用稀疏性，增量优化高效</td></tr>
+  <tr><td>适用场景</td><td>实时状态估计（飞控、导航）</td><td>建图、SLAM、后处理</td></tr>
+</tbody>
+</table>
+
+<p>直觉：KF 就像用钢笔写字——写下去就改不了。因子图就像用铅笔——随时可以擦掉重写，发现之前写错了也能回头修正。</p>
+
+<p>在实践中，两者经常<strong>配合使用</strong>：KF（特别是 ESKF）负责 IMU 高频实时状态估计（飞控需要 400Hz 的姿态），因子图负责低频的地图优化和回环校正。</p>
+
+<h2>六、自适应卡尔曼滤波简介</h2>
 
 <p>标准 KF 假设 Q 和 R 是已知常数。但实际中噪声会变：GPS 在城市峡谷中精度急剧下降，电机在变速时过程噪声增大。</p>
 
@@ -1882,6 +2629,53 @@ $$\hat{R}_k = \frac{1}{W}\sum_{i=k-W+1}^{k} \nu_i \nu_i^T - HPH^T$$
   <div id="ch08_adaptPlot" style="width:100%;height:360px;"></div>
 </div>
 
+<h2>七、一个优美的数学巧合——KF 与 LQR 的对偶性</h2>
+
+<p>MIT 16.322 和 6.011 课程都会讲这个结果，因为它揭示了估计与控制之间的深层联系。</p>
+
+<p>先看两个看似无关的问题：</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li><strong>卡尔曼滤波</strong>：从含噪声的观测中估计状态 → 最小化<strong>估计误差</strong>的协方差</li>
+  <li><strong>LQR 最优控制</strong>：计算控制输入使系统跟踪目标 → 最小化<strong>跟踪误差</strong>的代价函数</li>
+</ul>
+
+<p>它们的核心方程竟然是<strong>同一个 Riccati 方程</strong>，只是矩阵做了转置！</p>
+
+<table class="compare-table">
+<thead><tr>
+  <th>卡尔曼滤波</th><th>对应关系</th><th>LQR 控制</th>
+</tr></thead>
+<tbody>
+  <tr><td>\(F\)（状态转移）</td><td>↔</td><td>\(F^T\)</td></tr>
+  <tr><td>\(H\)（观测矩阵）</td><td>↔</td><td>\(B^T\)（控制输入矩阵的转置）</td></tr>
+  <tr><td>\(Q\)（过程噪声）</td><td>↔</td><td>\(Q_{lqr}\)（状态代价矩阵）</td></tr>
+  <tr><td>\(R\)（测量噪声）</td><td>↔</td><td>\(R_{lqr}\)（控制代价矩阵）</td></tr>
+  <tr><td>\(P\)（误差协方差）</td><td>↔</td><td>\(P_{lqr}\)（代价矩阵）</td></tr>
+  <tr><td>\(K\)（卡尔曼增益）</td><td>↔</td><td>\(K_{lqr}\)（反馈增益）</td></tr>
+</tbody>
+</table>
+
+<p><strong>实际意义</strong>：如果你已经理解了其中一个，你就自动理解了另一个。</p>
+
+<p>在飞控系统中，这两者常常手拉手出现——这就是 <strong>LQG（Linear Quadratic Gaussian）</strong> 控制：</p>
+
+<div class="flow-box">
+  <span class="step" style="background:#dbeafe;">传感器数据</span>
+  <span class="arrow">→</span>
+  <span class="step" style="background:#dcfce7;">卡尔曼滤波（最优估计）</span>
+  <span class="arrow">→</span>
+  <span class="step" style="background:#fef3c7;">LQR 控制（最优控制）</span>
+  <span class="arrow">→</span>
+  <span class="step" style="background:#fce7f3;">执行器</span>
+</div>
+
+<p><strong>分离原理（Separation Principle）</strong>告诉我们：最优估计 + 最优控制 = 最优整体设计。你可以独立设计 KF 和 LQR，组合起来仍然是最优的。</p>
+
+<div class="warn-box" style="background:#eff6ff;border-color:#2563eb;">
+  <strong>重要限制</strong>：分离原理<strong>只在线性高斯系统</strong>中严格成立。对于非线性系统（EKF + 非线性控制），用估计值代替真实状态进行控制（即"确定性等价"原则）只是一种近似，不保证全局最优。但在实践中，这种近似通常工作得很好。
+</div>
+
 <div class="note">
   <h3>嵌入式开发者笔记</h3>
 
@@ -1905,9 +2699,20 @@ $$\hat{R}_k = \frac{1}{W}\sum_{i=k-W+1}^{k} \nu_i \nu_i^T - HPH^T$$
     <li>UKF 适合"懒得推雅可比"或者非线性很强的场景，但内存开销约 2×</li>
     <li>粒子滤波适合多模态分布（机器人绑架问题），但不适合嵌入式实时场景</li>
   </ul>
+
+  <p style="margin-top:16px;"><strong>真实飞控芯片与时间预算</strong></p>
+  <ul style="margin-left:18px;">
+    <li><strong>STM32F427</strong>（PX4 v5 Pixhawk 4）：Cortex-M4F @180MHz，1MB Flash，256KB RAM</li>
+    <li><strong>STM32H743</strong>（PX4 v6 Pixhawk 6X）：Cortex-M7 @480MHz，2MB Flash，1MB RAM，双精度 FPU</li>
+    <li><strong>NXP i.MX RT1062</strong>（Pixhawk 6C）：Cortex-M7 @600MHz，超大 RAM，适合复杂 EKF</li>
+  </ul>
+  <p>现代飞控在一个 2.5ms 的 tick（400Hz）内需要完成：EKF + 控制律 + 执行器混控 + 日志记录。EKF 通常占用其中 15~30% 的预算（约 400~750μs）。剩下的时间留给 PID/LQR 控制律、PWM 输出、SD 卡日志写入。时间预算是硬约束——超时就意味着控制延迟，严重时导致振荡甚至炸机。</p>
 </div>
+
 </div>
 </section>
+
+
 <section id="ch09" class="chapter-section">
 <div class="container">
 <h1>第九章：动手吧——建造你自己的卡尔曼滤波器</h1>
@@ -1942,6 +2747,8 @@ $$\hat{R}_k = \frac{1}{W}\sum_{i=k-W+1}^{k} \nu_i \nu_i^T - HPH^T$$
           <option value="pos_vel_2d">2D 位置-速度 (GPS+IMU)</option>
           <option value="temperature">温度估计</option>
           <option value="altitude">无人机定高 (气压+IMU)</option>
+          <option value="ahrs">AHRS 姿态估计 (四元数误差)</option>
+          <option value="battery_soc">电池 SOC 估计</option>
         </select>
       </div>
       <div class="form-col">
@@ -2030,10 +2837,14 @@ $$\hat{R}_k = \frac{1}{W}\sum_{i=k-W+1}^{k} \nu_i \nu_i^T - HPH^T$$
     <div id="ch09_dispR" style="flex:1;min-width:150px;background:var(--code-bg);border-radius:8px;padding:10px;font-family:monospace;font-size:.85em;white-space:pre;overflow-x:auto;"></div>
   </div>
 
-  <!-- Run button -->
-  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+  <!-- Run button and options -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
     <button class="action" id="ch09_runBtn" style="background:#16a34a;font-size:1em;padding:10px 28px;">▶ 运行滤波器</button>
     <button class="action" id="ch09_exportBtn" style="background:#7c3aed;font-size:1em;padding:10px 28px;">导出 C 代码</button>
+    <label style="display:flex;align-items:center;gap:6px;font-size:.9em;cursor:pointer;margin-left:8px;">
+      <input type="checkbox" id="ch09_mahaGate" style="width:16px;height:16px;">
+      启用异常值剔除 (Mahalanobis Gate)
+    </label>
   </div>
 
   <!-- Results -->
@@ -2044,6 +2855,7 @@ $$\hat{R}_k = \frac{1}{W}\sum_{i=k-W+1}^{k} \nu_i \nu_i^T - HPH^T$$
       <div class="stat-box"><div class="label">最大误差</div><div class="value" id="ch09_maxErrResult">-</div></div>
       <div class="stat-box"><div class="label">平均 K 范数</div><div class="value" id="ch09_avgKResult">-</div></div>
       <div class="stat-box"><div class="label">收敛步数</div><div class="value" id="ch09_convResult">-</div></div>
+      <div class="stat-box" id="ch09_rejectBox" style="display:none;"><div class="label">异常值剔除数</div><div class="value" id="ch09_rejectResult">-</div></div>
     </div>
     <div id="ch09_resultPlot" style="width:100%;height:400px;margin-top:12px;"></div>
     <div id="ch09_errorPlot" style="width:100%;height:200px;margin-top:8px;"></div>
@@ -2071,68 +2883,106 @@ $$\hat{R}_k = \frac{1}{W}\sum_{i=k-W+1}^{k} \nu_i \nu_i^T - HPH^T$$
     <li>在 release 模式下做一次运行时间测量，确保不超时</li>
   </ol>
 
+  <p style="margin-top:16px;"><strong>从沙盒到产品的真实案例——一个无人机定高滤波器的开发流程：</strong></p>
+  <ol style="margin-left:18px;">
+    <li><strong>在沙盒中验证滤波器结构和初始参数</strong>：选择"无人机定高"预设，用正弦信号模拟升降，观察 KF 跟踪效果。调整 Q 和 R 直到跟踪误差和响应速度令人满意。</li>
+    <li><strong>导出 C 代码，集成到 MCU 工程</strong>：点击"导出 C 代码"，将生成的 <code>kf_init()</code>、<code>kf_predict()</code>、<code>kf_update()</code> 复制到你的 STM32 工程中。</li>
+    <li><strong>在硬件上采集真实传感器数据</strong>：让无人机静置和简单升降，用串口将气压计和 IMU 数据以 CSV 格式输出到 SD 卡。</li>
+    <li><strong>在沙盒中重放真实数据</strong>：切换到"CSV 数据"标签页，上传刚采集的 CSV，用同样的 F/H/Q/R 运行。</li>
+    <li><strong>对比真实数据和仿真数据的滤波效果</strong>：如果真实数据的跟踪效果比仿真差很多，说明传感器噪声模型需要修正。</li>
+    <li><strong>微调 Q 和 R，用 NIS 验证</strong>：监测 NIS 是否接近观测维数 m。勾选 Mahalanobis Gate 可以自动剔除偶发的 GPS 多路径干扰。</li>
+    <li><strong>将最终参数写回固件</strong>：更新 <code>kf_init()</code> 中的 Q 和 R 矩阵值。</li>
+    <li><strong>在实际运行中监测 NIS，必要时在线自适应</strong>：部署后持续记录 NIS，如果环境变化（如从室外飞到室内），考虑启用自适应 Q 调整（参见第八章）。</li>
+  </ol>
+
   <p style="margin-top:12px;">恭喜你完成了整本教材！现在你已经掌握了卡尔曼滤波从理论到实践的核心知识。去造点东西吧。</p>
 </div>
+
 </div>
 </section>
 
+
+<footer>
+  卡尔曼滤波交互式教材 · 嵌入式开发者实战指南 · 所有交互式实验均在浏览器中运行
+</footer>
+
 <script>
-
-/* ============================================================
- * Master Tab Switching & Lazy Initialization
- * ============================================================ */
-var chapterInitialized = {};
-
-function switchTab(targetId) {
+/* ===== Tab Switching ===== */
+function switchTab(tabId) {
   document.querySelectorAll('.chapter-section').forEach(function(s) {
     s.classList.remove('active');
+    s.style.display = 'none';
   });
   document.querySelectorAll('.tab-nav-btn').forEach(function(b) {
     b.classList.remove('active');
   });
 
-  var section = document.getElementById(targetId);
+  var section = document.getElementById(tabId);
   if (section) {
+    section.style.display = 'block';
     section.classList.add('active');
   }
-  var btn = document.querySelector('.tab-nav-btn[data-target="' + targetId + '"]');
-  if (btn) {
-    btn.classList.add('active');
-    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }
+
+  document.querySelectorAll('.tab-nav-btn').forEach(function(b) {
+    if (b.getAttribute('data-target') === tabId) b.classList.add('active');
+  });
 
   window.scrollTo(0, 0);
 
-  if (targetId !== 'home') {
-    renderMathInElement(section, {
+  /* Lazy init chapter scripts */
+  if (tabId !== 'home' && typeof window['init_' + tabId] === 'function') {
+    window['init_' + tabId]();
+  }
+
+  /* Re-render KaTeX in the visible section */
+  if (section && typeof renderMathInElement === 'function') {
+    try {
+      renderMathInElement(section, {
+        delimiters: [
+          {left: "$$", right: "$$", display: true},
+          {left: "\\(", right: "\\)", display: false}
+        ]
+      });
+    } catch(e) {}
+  }
+}
+
+/* Tab button click handlers */
+document.querySelectorAll('.tab-nav-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    switchTab(this.getAttribute('data-target'));
+  });
+});
+
+/* Render KaTeX on home page at load */
+document.addEventListener("DOMContentLoaded", function() {
+  var home = document.getElementById('home');
+  if (home && typeof renderMathInElement === 'function') {
+    renderMathInElement(home, {
       delimiters: [
         {left: "$$", right: "$$", display: true},
         {left: "\\(", right: "\\)", display: false}
       ]
     });
   }
+});
 
-  if (!chapterInitialized[targetId] && typeof window['init_' + targetId] === 'function') {
-    window['init_' + targetId]();
-    chapterInitialized[targetId] = true;
-  }
+/* ===== Chapter Init Functions ===== */
 
-  setTimeout(function() {
-    window.dispatchEvent(new Event('resize'));
-  }, 100);
-}
+window.ch01_initialized = false;
+window.init_ch01 = function() {
+  if (window.ch01_initialized) return;
+  window.ch01_initialized = true;
 
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.tab-nav-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      switchTab(this.getAttribute('data-target'));
-    });
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: "$$", right: "$$", display: true},
+      {left: "\\(", right: "\\)", display: false}
+    ]
   });
 });
 
-
-/* ===== Chapter 01 ===== */
-window.init_ch01 = function() {
 /* ============================================================
  * Interactive Plot 1: Noise & Filter Comparison
  * ============================================================ */
@@ -2272,8 +3122,18 @@ window.init_ch01 = function() {
 })();
 };
 
-/* ===== Chapter 02 ===== */
+
+window.ch02_initialized = false;
 window.init_ch02 = function() {
+  if (window.ch02_initialized) return;
+  window.ch02_initialized = true;
+
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
 (function() {
   const vxSlider = document.getElementById('ch02_vxSlider');
   const vySlider = document.getElementById('ch02_vySlider');
@@ -2422,8 +3282,18 @@ window.init_ch02 = function() {
 })();
 };
 
-/* ===== Chapter 03 ===== */
+
+window.ch03_initialized = false;
 window.init_ch03 = function() {
+  if (window.ch03_initialized) return;
+  window.ch03_initialized = true;
+
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
 /* ============================================================
  * Gaussian Fusion Interactive
  * ============================================================ */
@@ -2497,6 +3367,57 @@ window.init_ch03 = function() {
     s => s.addEventListener('input', updateFusion)
   );
   updateFusion();
+})();
+
+/* ============================================================
+ * Information Bar Chart
+ * ============================================================ */
+(function() {
+  const sigPSlider = document.getElementById('ch03_infSigPSlider');
+  const sigZSlider = document.getElementById('ch03_infSigZSlider');
+
+  function updateInfoPlot() {
+    const sigP = parseFloat(sigPSlider.value);
+    const sigZ = parseFloat(sigZSlider.value);
+    document.getElementById('ch03_infSigPVal').textContent = sigP.toFixed(1);
+    document.getElementById('ch03_infSigZVal').textContent = sigZ.toFixed(1);
+
+    const infP = 1 / (sigP * sigP);
+    const infZ = 1 / (sigZ * sigZ);
+    const infPost = infP + infZ;
+    const sigPost = Math.sqrt(1 / infPost);
+
+    Plotly.react('ch03_infoPlot', [{
+      x: ['预测 (1/σ²_p)', '测量 (1/σ²_z)', '后验 (1/σ²_post)'],
+      y: [infP, infZ, infPost],
+      type: 'bar',
+      marker: {
+        color: ['rgba(37,99,235,0.7)', 'rgba(220,38,38,0.7)', 'rgba(124,58,237,0.85)']
+      },
+      text: [
+        'σ_p=' + sigP.toFixed(1),
+        'σ_z=' + sigZ.toFixed(1),
+        'σ_post=' + sigPost.toFixed(2)
+      ],
+      textposition: 'outside'
+    }], {
+      margin: {t: 30, r: 20, b: 50, l: 55},
+      yaxis: {title: '信息量 (1/σ²)'},
+      plot_bgcolor: '#fafafa',
+      font: {family: '-apple-system,sans-serif'},
+      showlegend: false,
+      annotations: [{
+        x: '后验 (1/σ²_post)', y: infPost,
+        text: (infP.toFixed(2) + ' + ' + infZ.toFixed(2) + ' = ' + infPost.toFixed(2)),
+        showarrow: true, arrowhead: 2, ax: 0, ay: -35,
+        font: {size: 12, color: '#7c3aed'}
+      }]
+    }, {responsive: true});
+  }
+
+  sigPSlider.addEventListener('input', updateInfoPlot);
+  sigZSlider.addEventListener('input', updateInfoPlot);
+  updateInfoPlot();
 })();
 
 /* ============================================================
@@ -2610,8 +3531,18 @@ window.init_ch03 = function() {
 })();
 };
 
-/* ===== Chapter 04 ===== */
+
+window.ch04_initialized = false;
 window.init_ch04 = function() {
+  if (window.ch04_initialized) return;
+  window.ch04_initialized = true;
+
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
 (function() {
   const predictBtn = document.getElementById('ch04_predictBtn');
   const updateBtn  = document.getElementById('ch04_updateBtn');
@@ -2806,8 +3737,18 @@ window.init_ch04 = function() {
 })();
 };
 
-/* ===== Chapter 05 ===== */
+
+window.ch05_initialized = false;
 window.init_ch05 = function() {
+  if (window.ch05_initialized) return;
+  window.ch05_initialized = true;
+
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
 (function(){
   /* Matrix utilities */
   function mat(r,c){return Array.from({length:r},()=>new Array(c).fill(0));}
@@ -2985,8 +3926,18 @@ window.init_ch05 = function() {
 })();
 };
 
-/* ===== Chapter 06 ===== */
+
+window.ch06_initialized = false;
 window.init_ch06 = function() {
+  if (window.ch06_initialized) return;
+  window.ch06_initialized = true;
+
+document.addEventListener("DOMContentLoaded", function(){
+  renderMathInElement(document.body,{
+    delimiters:[{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
 (function(){
   function mat(r,c){return Array.from({length:r},()=>new Array(c).fill(0));}
   function matMul(A,B){const m=A.length,n=B[0].length,p=B.length,C=mat(m,n);for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];return C;}
@@ -3180,8 +4131,18 @@ window.init_ch06 = function() {
 })();
 };
 
-/* ===== Chapter 07 ===== */
+
+window.ch07_initialized = false;
 window.init_ch07 = function() {
+  if (window.ch07_initialized) return;
+  window.ch07_initialized = true;
+
+document.addEventListener("DOMContentLoaded", function(){
+  renderMathInElement(document.body,{
+    delimiters:[{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
 (function(){
   function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 
@@ -3326,8 +4287,18 @@ window.init_ch07 = function() {
 })();
 };
 
-/* ===== Chapter 08 ===== */
+
+window.ch08_initialized = false;
 window.init_ch08 = function() {
+  if (window.ch08_initialized) return;
+  window.ch08_initialized = true;
+
+document.addEventListener("DOMContentLoaded", function(){
+  renderMathInElement(document.body,{
+    delimiters:[{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
 /* ============================================================
  * EKF vs UKF comparison
  * ============================================================ */
@@ -3485,16 +4456,26 @@ window.init_ch08 = function() {
 })();
 };
 
-/* ===== Chapter 09 ===== */
+
+window.ch09_initialized = false;
 window.init_ch09 = function() {
+  if (window.ch09_initialized) return;
+  window.ch09_initialized = true;
+
+document.addEventListener("DOMContentLoaded", function(){
+  renderMathInElement(document.body,{
+    delimiters:[{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
 (function(){
   /* ========== Tab switching ========== */
-  document.querySelectorAll('#ch09 .ch09-tab').forEach(tab=>{
+  document.querySelectorAll('.ch09-tab').forEach(tab=>{
     tab.addEventListener('click',function(){
-      document.querySelectorAll('#ch09 .ch09-tab').forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll('#ch09 .ch09-tab-content').forEach(c=>c.classList.remove('active'));
+      document.querySelectorAll('.ch09-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.ch09-tab-content').forEach(c=>c.classList.remove('active'));
       this.classList.add('active');
-      document.getElementById('ch09_tab-'+this.dataset.tab).classList.add('active');
+      document.getElementById('tab-'+this.dataset.tab).classList.add('active');
     });
   });
 
@@ -3581,6 +4562,22 @@ window.init_ch09 = function() {
       Q:[[0.0001,0,0],[0,0.01,0],[0,0,0.001]],
       R:[[0.5]],
       x0:[0,0,0],P0:50
+    },
+    ahrs:{
+      n:4,m:3,dt:0.005,
+      F:[[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],
+      H:[[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+      Q:[[1e-6,0,0,0],[0,1e-6,0,0],[0,0,1e-6,0],[0,0,0,1e-4]],
+      R:[[0.01,0,0],[0,0.01,0],[0,0,0.04]],
+      x0:[0,0,0,0],P0:1
+    },
+    battery_soc:{
+      n:2,m:1,dt:1,
+      F:[[1,0],[0,0.995]],
+      H:[[1,1]],
+      Q:[[1e-6,0],[0,1e-4]],
+      R:[[0.001]],
+      x0:[3.7,0],P0:1
     }
   };
 
@@ -3682,6 +4679,13 @@ window.init_ch09 = function() {
       });
     }
 
+    /* Mahalanobis gate config */
+    const useMahaGate=document.getElementById('ch09_mahaGate').checked;
+    const chi2Thresh=[0,6.63,9.21,11.34,13.28,15.09,16.81,18.48,20.09]; // chi2(m, 0.99)
+    const gateThresh=chi2Thresh[m]||6.63*m;
+    let rejectCount=0;
+    const rejectedIdx=[];
+
     /* Init KF */
     let x=cfg.x0.slice();
     if(x.length<n) x=x.concat(new Array(n-x.length).fill(0));
@@ -3702,18 +4706,36 @@ window.init_ch09 = function() {
         const PHt=matMul(PPred,transpose(H));
         const S=matAdd(matMul(H,PHt),R);
         const Si=invMat(S);
-        const K=matMul(PHt,Si);
 
         const Hx=matMul(H,xPred.map(v=>[v])).map(r=>r[0]);
         const innov=z.map((zi,i)=>zi-Hx[i]);
-        const correction=matMul(K,innov.map(v=>[v])).map(r=>r[0]);
-        x=xPred.map((v,i)=>v+correction[i]);
-        const IKH=matSub(eye(n),matMul(K,H));
-        P=matMul(IKH,PPred);
 
-        let kn=0;
-        K.forEach(r=>r.forEach(v=>kn+=v*v));
-        kNorms.push(Math.sqrt(kn));
+        /* Mahalanobis distance: d2 = innov' * S^{-1} * innov */
+        let gated=false;
+        if(useMahaGate){
+          const Sinv_innov=matMul(Si,innov.map(v=>[v])).map(r=>r[0]);
+          const d2=innov.reduce((s,v,i)=>s+v*Sinv_innov[i],0);
+          if(d2>gateThresh){
+            gated=true;
+            rejectCount++;
+            rejectedIdx.push(k);
+          }
+        }
+
+        if(!gated){
+          const K=matMul(PHt,Si);
+          const correction=matMul(K,innov.map(v=>[v])).map(r=>r[0]);
+          x=xPred.map((v,i)=>v+correction[i]);
+          const IKH=matSub(eye(n),matMul(K,H));
+          P=matMul(IKH,PPred);
+
+          let kn=0;
+          K.forEach(r=>r.forEach(v=>kn+=v*v));
+          kNorms.push(Math.sqrt(kn));
+        } else {
+          x=xPred;
+          P=PPred;
+        }
       } else {
         x=xPred;
         P=PPred;
@@ -3743,6 +4765,13 @@ window.init_ch09 = function() {
     document.getElementById('ch09_maxErrResult').textContent=maxErr.toFixed(4);
     document.getElementById('ch09_avgKResult').textContent=avgK.toFixed(4);
     document.getElementById('ch09_convResult').textContent=convStep;
+    const rejectBox=document.getElementById('ch09_rejectBox');
+    if(useMahaGate){
+      rejectBox.style.display='';
+      document.getElementById('ch09_rejectResult').textContent=rejectCount+' / '+simData.length;
+    } else {
+      rejectBox.style.display='none';
+    }
     document.getElementById('ch09_resultsSection').style.display='block';
 
     /* Plots */
@@ -3752,7 +4781,17 @@ window.init_ch09 = function() {
     const compIdx=0;
     traces.push({x:tArr,y:simData.map(d=>d.true?d.true[compIdx]:null),name:'真实值 (x₁)',line:{color:'#16a34a',width:2}});
     traces.push({x:tArr,y:estHist.map(e=>e[compIdx]),name:'KF 估计 (x₁)',line:{color:'#2563eb',width:2.5}});
-    if(m>=1) traces.push({x:tArr,y:simData.map(d=>d.meas?d.meas[0]:null),name:'测量 (z₁)',mode:'markers',marker:{color:'#dc2626',size:3,opacity:.4}});
+    if(m>=1){
+      const rejSet=new Set(rejectedIdx);
+      const acceptedT=[],acceptedZ=[],rejectedT=[],rejectedZ=[];
+      simData.forEach((d,k)=>{
+        if(!d.meas) return;
+        if(rejSet.has(k)){rejectedT.push(d.t);rejectedZ.push(d.meas[0]);}
+        else{acceptedT.push(d.t);acceptedZ.push(d.meas[0]);}
+      });
+      traces.push({x:acceptedT,y:acceptedZ,name:'测量 (z₁)',mode:'markers',marker:{color:'#dc2626',size:3,opacity:.4}});
+      if(rejectedT.length>0) traces.push({x:rejectedT,y:rejectedZ,name:'剔除 (异常值)',mode:'markers',marker:{color:'#9ca3af',size:5,opacity:.6,symbol:'x'}});
+    }
 
     if(n>=2 && m>=2){
       traces.push({x:tArr,y:simData.map(d=>d.true?d.true[1]:null),name:'真实值 (x₂)',line:{color:'#16a34a',width:1.5,dash:'dash'}});
