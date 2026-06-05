@@ -72,6 +72,33 @@ pre code{font-family:'SF Mono','Consolas','Menlo',monospace}
 
 <p>最终你应该更相信温度计（因为它更准），结果应该接近 25°C。但具体是多少？卡尔曼滤波给出了<strong>数学上最优的答案</strong>。</p>
 
+<h2>贝叶斯视角——卡尔曼滤波的"真正身份"</h2>
+
+<p>MIT 的课程（6.011, 16.322）在推导卡尔曼滤波时，不是从工程直觉出发，而是从<strong>贝叶斯定理</strong>开始：</p>
+
+$$p(x|z) \propto p(z|x) \cdot p(x)$$
+
+<p>翻译成人话：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>先验 \(p(x)\)</strong>：在看到测量之前，你对状态的信念（= 预测分布）</li>
+  <li><strong>似然 \(p(z|x)\)</strong>：如果状态是 \(x\)，观测到 \(z\) 的概率（= 测量模型）</li>
+  <li><strong>后验 \(p(x|z)\)</strong>：看到测量之后，你对状态的更新信念（= 融合结果）</li>
+</ul>
+
+<p>当先验和似然都是高斯分布时：</p>
+
+$$p(x) = \mathcal{N}(x;\, \hat{x}_{k|k-1},\, P_{k|k-1}), \quad p(z|x) = \mathcal{N}(z;\, Hx,\, R)$$
+
+<p>后验也是高斯分布（高斯的共轭性），而且后验的均值和方差<strong>恰好就是卡尔曼滤波更新公式</strong>！完整的贝叶斯后验写出来是：</p>
+
+$$p(x|z) \propto \mathcal{N}(z;\, Hx,\, R) \cdot \mathcal{N}(x;\, \hat{x}_{k|k-1},\, P_{k|k-1})$$
+
+<p>这揭示了卡尔曼滤波的真正身份：<strong>它不是一个工程经验公式，而是线性高斯系统下贝叶斯推断的精确解</strong>。</p>
+
+<div style="background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;font-size:1.05em;"><strong>关键推论</strong>：当系统是非线性的（如飞行器姿态动力学），或者噪声不是高斯的（如重尾噪声、多模态分布），卡尔曼滤波<strong>不再是最优的</strong>。这就是为什么存在 EKF（对非线性的妥协）、UKF（更好的非线性近似）和粒子滤波（完全抛弃高斯假设）。</p>
+</div>
+
 <h2>二、高斯分布的乘积——融合的数学</h2>
 
 <p>如果预测和测量都服从高斯分布：</p>
@@ -94,6 +121,31 @@ $$K = \frac{\sigma_p^2}{\sigma_p^2 + \sigma_z^2}$$
     <li>当测量很差（\(\sigma_z \to \infty\)）→ \(K \to 0\) → 完全相信预测</li>
     <li>融合后的不确定度 \(\sigma_{后验}\) <strong>永远比两个输入都小</strong>——信息只会增加！</li>
   </ul>
+</div>
+
+<div class="highlight-box">
+  <p style="margin:0;"><strong>信息永远增加——传感器融合的基本定理</strong></p>
+  <p style="margin:8px 0 0;">"融合后的不确定度永远不会大于任何一个输入的不确定度"——这不是巧合，而是数学定理。</p>
+  <p style="margin:8px 0 0;">用<strong>信息量</strong>（精度，\(1/\sigma^2\)）来理解更自然：</p>
+  $$\frac{1}{\sigma_{后验}^2} = \frac{1}{\sigma_p^2} + \frac{1}{\sigma_z^2}$$
+  <p style="margin:8px 0 0;">信息是<strong>相加</strong>的！即使一个传感器很差（信息量很小），它也在贡献正信息，融合后的总信息量一定更大。这就是 MIT 所说的<strong>"信息永不减少"原则</strong>（Information Never Decreases）。</p>
+  <p style="margin:8px 0 0;">这个视角也解释了为什么多传感器融合永远值得——哪怕加一个很差的传感器，它也只会让估计更好（最坏情况是几乎没帮助），绝不会让估计变差。</p>
+</div>
+
+<div class="interactive-box">
+  <h3>📊 交互实验：信息量可视化</h3>
+  <p style="font-size:.92em;color:var(--text-light);">观察预测、测量和融合后的信息量（\(1/\sigma^2\)）。注意后验信息量 = 预测信息量 + 测量信息量。</p>
+  <div class="controls">
+    <div class="control-group">
+      <label>预测 σ_p: <span class="val-display" id="infSigPVal">3.0</span></label>
+      <input type="range" id="infSigPSlider" min="0.5" max="8" step="0.1" value="3.0">
+    </div>
+    <div class="control-group">
+      <label>测量 σ_z: <span class="val-display" id="infSigZVal">1.5</span></label>
+      <input type="range" id="infSigZSlider" min="0.5" max="8" step="0.1" value="1.5">
+    </div>
+  </div>
+  <div id="infoPlot" style="width:100%;height:280px;"></div>
 </div>
 
 <h2>三、动手试一试</h2>
@@ -145,6 +197,24 @@ $$K = \frac{\sigma_p^2}{\sigma_p^2 + \sigma_z^2}$$
     </div>
   </div>
 </div>
+
+<h2>"呼吸的节奏"——预测-更新的宏观行为</h2>
+
+<p>如果你运行上面的交互实验足够多步，会发现一个有趣的现象：协方差 P 的"一胀一缩"逐渐趋于一个<strong>稳定的振幅</strong>。预测后 P 增大一点，更新后 P 缩回来一点，但两者之间的跳动幅度越来越小，最终几乎不变。</p>
+
+<p>这不是巧合。对于线性时不变系统（F, H, Q, R 都是常数），协方差 P 最终会收敛到<strong>代数 Riccati 方程</strong>（Algebraic Riccati Equation, ARE）的解：</p>
+
+$$\mathbf{P}_\infty = \mathbf{F}\mathbf{P}_\infty\mathbf{F}^T + \mathbf{Q} - \mathbf{F}\mathbf{P}_\infty\mathbf{H}^T(\mathbf{H}\mathbf{P}_\infty\mathbf{H}^T + \mathbf{R})^{-1}\mathbf{H}\mathbf{P}_\infty\mathbf{F}^T$$
+
+<p>对应的卡尔曼增益也收敛到一个常数 \(\mathbf{K}_\infty\)。这意味着：</p>
+
+<div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;font-size:1.05em;"><strong>工程捷径</strong>：在很多嵌入式系统中，可以离线预计算稳态增益 \(\mathbf{K}_\infty\)，然后在运行时直接用这个常数——<strong>省掉所有的协方差传播和矩阵求逆！</strong></p>
+  <p style="margin:8px 0 0;">更新公式退化为：\(\hat{x}_{k} = \mathbf{F}\hat{x}_{k-1} + \mathbf{K}_\infty(z_k - \mathbf{H}\mathbf{F}\hat{x}_{k-1})\)</p>
+  <p style="margin:8px 0 0;">计算量从矩阵运算降到简单的乘加——在 Cortex-M0 上也能轻松跑。</p>
+</div>
+
+<p>事实上，经典的<strong>互补滤波器</strong>（Complementary Filter）本质上就是一个特定 Q/R 比值下的稳态卡尔曼滤波器。所以如果有人告诉你"互补滤波 vs 卡尔曼滤波"是两种不同的方法——其实互补滤波是卡尔曼滤波的一个特例。</p>
 
 <h2>四、预测-更新循环的可视化</h2>
 
@@ -203,6 +273,10 @@ static void mat2_inv(const float A[2][2], float Ainv[2][2]) {
 }</code></pre>
 
   <p style="margin-top:10px;"><strong>定点数实现</strong>：如果你的 MCU 没有 FPU（比如 Cortex-M0），可以用 Q16.16 定点数表示 K。K 的范围总是 [0, 1]，非常适合定点表示。但要注意协方差矩阵的数值范围可能很大（位置单位是米的平方），需要仔细选择定点格式。</p>
+
+  <p style="margin-top:10px;"><strong>信息滤波器（Information Filter）</strong>：卡尔曼滤波有一个等价形式——用信息矩阵 \(\mathbf{P}^{-1}\) 代替协方差矩阵 \(\mathbf{P}\)。在这种形式下，多传感器融合变得极其简单：只需把各传感器的信息矩阵和信息向量<strong>相加</strong>即可。不需要复杂的串行融合顺序，也不需要处理跨传感器的相关性。</p>
+
+  <p style="margin-top:10px;"><strong>分布式传感器网络</strong>：在配备多个 GPS 接收机或多个 IMU 的系统中（如 PX4 支持 3 IMU 冗余），信息滤波器是首选，因为融合 = 简单的矩阵加法。PX4 的多 IMU 处理就使用了一种信息融合的变体——每个 IMU 独立产生信息贡献，最终汇总。这种架构天然支持传感器的热插拔和故障隔离。</p>
 </div>
 
 </div>
@@ -292,6 +366,57 @@ document.addEventListener("DOMContentLoaded", function() {
     s => s.addEventListener('input', updateFusion)
   );
   updateFusion();
+})();
+
+/* ============================================================
+ * Information Bar Chart
+ * ============================================================ */
+(function() {
+  const sigPSlider = document.getElementById('infSigPSlider');
+  const sigZSlider = document.getElementById('infSigZSlider');
+
+  function updateInfoPlot() {
+    const sigP = parseFloat(sigPSlider.value);
+    const sigZ = parseFloat(sigZSlider.value);
+    document.getElementById('infSigPVal').textContent = sigP.toFixed(1);
+    document.getElementById('infSigZVal').textContent = sigZ.toFixed(1);
+
+    const infP = 1 / (sigP * sigP);
+    const infZ = 1 / (sigZ * sigZ);
+    const infPost = infP + infZ;
+    const sigPost = Math.sqrt(1 / infPost);
+
+    Plotly.react('infoPlot', [{
+      x: ['预测 (1/σ²_p)', '测量 (1/σ²_z)', '后验 (1/σ²_post)'],
+      y: [infP, infZ, infPost],
+      type: 'bar',
+      marker: {
+        color: ['rgba(37,99,235,0.7)', 'rgba(220,38,38,0.7)', 'rgba(124,58,237,0.85)']
+      },
+      text: [
+        'σ_p=' + sigP.toFixed(1),
+        'σ_z=' + sigZ.toFixed(1),
+        'σ_post=' + sigPost.toFixed(2)
+      ],
+      textposition: 'outside'
+    }], {
+      margin: {t: 30, r: 20, b: 50, l: 55},
+      yaxis: {title: '信息量 (1/σ²)'},
+      plot_bgcolor: '#fafafa',
+      font: {family: '-apple-system,sans-serif'},
+      showlegend: false,
+      annotations: [{
+        x: '后验 (1/σ²_post)', y: infPost,
+        text: (infP.toFixed(2) + ' + ' + infZ.toFixed(2) + ' = ' + infPost.toFixed(2)),
+        showarrow: true, arrowhead: 2, ax: 0, ay: -35,
+        font: {size: 12, color: '#7c3aed'}
+      }]
+    }, {responsive: true});
+  }
+
+  sigPSlider.addEventListener('input', updateInfoPlot);
+  sigZSlider.addEventListener('input', updateInfoPlot);
+  updateInfoPlot();
 })();
 
 /* ============================================================

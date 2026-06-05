@@ -101,6 +101,34 @@ $$\mathbf{B} = \begin{bmatrix} \frac{1}{2}\Delta t^2 \\ \Delta t \end{bmatrix}, 
 
 <p>这就是高中物理的运动方程 \(x = x_0 + v_0 t + \frac{1}{2}at^2\)，只不过写成了矩阵的样子。</p>
 
+<h2>从连续时间到离散时间——工程中的第一步</h2>
+
+<p>物理学家喜欢用连续时间描述系统——微分方程既优雅又精确：</p>
+
+$$\dot{\mathbf{x}} = \mathbf{A}\mathbf{x} + \mathbf{B}u$$
+
+<p>但你的 MCU 不会微积分。它只能在离散的时刻（每隔 \(\Delta t\)）读一次传感器、算一次。所以工程实践中的第一步是把连续模型<strong>离散化</strong>：</p>
+
+$$\mathbf{F} = e^{\mathbf{A}\Delta t} \approx \mathbf{I} + \mathbf{A}\Delta t + \frac{(\mathbf{A}\Delta t)^2}{2!} + \cdots$$
+
+<p>这是矩阵指数（matrix exponential）的泰勒展开。在大多数嵌入式场景下，\(\Delta t\) 很小（1~10ms），只取前两项就够了：</p>
+
+$$\mathbf{F} \approx \mathbf{I} + \mathbf{A}\Delta t \quad \text{（一阶近似）}$$
+
+<p>来看一个好消息：对于匀速运动模型，连续时间矩阵是：</p>
+
+$$\mathbf{A} = \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix}$$
+
+<p>注意 \(\mathbf{A}^2 = \mathbf{0}\)（零矩阵），所以泰勒展开在第二项就精确截断了：</p>
+
+$$\mathbf{F} = \mathbf{I} + \mathbf{A}\Delta t = \begin{bmatrix} 1 & \Delta t \\ 0 & 1 \end{bmatrix}$$
+
+<p>这恰好就是上一节得到的 \(\mathbf{F}\)！对于这个特殊系统，一阶近似碰巧就是精确解。但并非所有系统都这么幸运。</p>
+
+<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
+  <p style="margin:0;"><strong>⚠️ 工程警告</strong>：对于快速动态系统（如电机转速控制，带宽 > 100Hz）或 \(\Delta t\) 较大的场景，一阶近似可能导致数值不稳定。症状是协方差 P 发散或状态估计振荡。此时应使用二阶甚至精确的矩阵指数。在 C 语言中，对小矩阵（2×2, 3×3）可以手动展开到二阶或三阶。</p>
+</div>
+
 <h2>三、观测方程——"我能看到什么？"</h2>
 
 <p>传感器不一定能直接看到所有状态。GPS 只给位置，不给速度；加速度计只给加速度，不给位置。</p>
@@ -188,6 +216,34 @@ $$\mathbf{F} = \begin{bmatrix} 1 & 0 & \Delta t & 0 \\ 0 & 1 & 0 & \Delta t \\ 0
   <div id="trajPlot" style="width:100%;height:480px;"></div>
 </div>
 
+<h2>可观测性——你的传感器能看到所有状态吗？</h2>
+
+<p>这是一个容易被初学者忽略但极其重要的问题：<strong>仅凭你的传感器和模型，你能估计出所有状态吗？</strong></p>
+
+<p>判断方法是构造<strong>可观测性矩阵</strong>（Observability Matrix）：</p>
+
+$$\mathcal{O} = \begin{bmatrix} \mathbf{H} \\ \mathbf{H}\mathbf{F} \\ \mathbf{H}\mathbf{F}^2 \\ \vdots \\ \mathbf{H}\mathbf{F}^{n-1} \end{bmatrix}$$
+
+<p>如果 \(\text{rank}(\mathcal{O}) = n\)（状态维度），则所有状态都是<strong>可观测的</strong>。</p>
+
+<h3>例子：GPS 只测位置，能估计速度吗？</h3>
+
+<p>对于二维无人机（状态 = [x, y, vx, vy]），GPS 只测位置：</p>
+
+$$\mathbf{H} = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \end{bmatrix}$$
+
+<p>构造可观测性矩阵（取前两个块就够了，因为 n=4, m=2）：</p>
+
+$$\mathcal{O} = \begin{bmatrix} \mathbf{H} \\ \mathbf{H}\mathbf{F} \end{bmatrix} = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 1 & 0 & \Delta t & 0 \\ 0 & 1 & 0 & \Delta t \end{bmatrix}$$
+
+<p>\(\text{rank}(\mathcal{O}) = 4\) → 所有状态可观测！即使 GPS 不直接测速度，因为 \(\mathbf{F}\) 把位置和速度耦合在一起（位置的变化蕴含了速度信息），滤波器可以从<strong>位置的变化率</strong>中推断出速度。</p>
+
+<h3>但有一个陷阱：弱可观测性</h3>
+
+<p>数学上可观测 ≠ 实际上估计得好。如果无人机静止不动，位置几乎不变，速度信息只能从噪声中微弱地体现——速度的<strong>协方差收敛极慢</strong>。这就是"弱可观测"。</p>
+
+<p>这也解释了为什么 PX4 飞控在初始化时要求你"fly around"（四处飞一飞）——只有在运动中，速度状态才能快速收敛，滤波器才能获得可靠的速度估计。同理，如果你的无人机只做匀速直线飞行，加速度偏差状态就是弱可观测的——需要机动飞行（转弯、加减速）来激发可观测性。</p>
+
 <div class="note">
   <h3>嵌入式开发者笔记</h3>
   <p><strong>Q 和 R 的确定方法</strong>：理论上 R 可以从传感器数据手册得到（但务必在实际安装条件下验证——在工作台上测和装到振动的机架上是两回事）。实际做法：</p>
@@ -215,6 +271,10 @@ static inline float var_get(const Variance_t *v) {
 }</code></pre>
 
   <p style="margin-top:10px;"><strong>状态向量维度的选择</strong>：每多加一维状态，协方差矩阵 P 就多一行一列。P 是 n×n 对称矩阵，存储量为 n(n+1)/2 个 float。4 维状态只需 10 个 float（40 字节），但 9 维就需要 45 个 float（180 字节）。在 Cortex-M0 上，这点内存可能就是关键瓶颈。</p>
+
+  <p style="margin-top:10px;"><strong>Allan 方差——IMU 噪声标定的标准工具</strong>：传感器数据手册上标注的<strong>噪声密度</strong>（Noise Density）就是 Allan 方差曲线在 \(\tau=1\) s 处的值。对于 MEMS 陀螺仪，关键参数是<strong>角度随机游走</strong>（ARW, Angular Random Walk），典型值为 0.1~1 °/√hr——这直接决定了你的过程噪声 \(\mathbf{Q}\) 中陀螺相关分量的大小。</p>
+
+  <p style="margin-top:10px;"><strong>实用标定方法</strong>：将 IMU 静置在稳定平面上，采集 1 小时以上的数据，然后用 Allan 方差分析工具（MATLAB 的 <code>allanvar</code> 或 Python 的 <code>allantools</code>）自动提取噪声参数。这比从数据手册抄参数可靠得多，因为实际安装环境（振动、温度）会显著改变噪声特性。</p>
 </div>
 
 </div>

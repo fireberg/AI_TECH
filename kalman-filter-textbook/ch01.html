@@ -109,6 +109,34 @@ pre code { font-family: 'SF Mono', 'Consolas', 'Menlo', monospace; }
 
 <p>这就是我们面对的核心问题：<strong>没有一个传感器是完美的</strong>，但我们能不能把它们的优势结合起来？</p>
 
+<h2>一个直觉类比：两台秤称体重</h2>
+
+<p>在正式讨论滤波器之前，先来看一个 MIT 课程（16.322 Stochastic Estimation and Control）中经典的直觉类比，它能帮你秒懂卡尔曼滤波的核心思想。</p>
+
+<p>假设你要称体重，手头有两台秤：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>浴室电子秤</strong>（便宜，噪声大）：显示 70.5 kg，标准差 \(\sigma_1 = 2\) kg</li>
+  <li><strong>医院体检秤</strong>（精确，但读数慢）：显示 68.2 kg，标准差 \(\sigma_2 = 0.5\) kg</li>
+</ul>
+
+<p>你该相信哪台？答案是：<strong>都不要 100% 相信，而是做加权平均</strong>。直觉告诉我们应该更相信精度高的那台。但"更相信多少"有一个数学上的最优解。</p>
+
+<p>最优的加权系数为：</p>
+
+$$w = \frac{\sigma_2^2}{\sigma_1^2 + \sigma_2^2} = \frac{0.25}{4 + 0.25} = 0.0588$$
+
+<p>最优融合结果：</p>
+
+$$\hat{x} = w \cdot x_1 + (1-w) \cdot x_2 = 0.059 \times 70.5 + 0.941 \times 68.2 \approx 68.34 \text{ kg}$$
+
+<p>注意，结果非常接近精确的那台秤——这完全符合直觉。而这个 \(w\)，<strong>就是一维卡尔曼增益</strong>。</p>
+
+<p>MIT 16.322 把这叫做<strong>最小方差无偏估计</strong>（Minimum Variance Unbiased Estimation, MVUE）。融合后的方差为：</p>
+
+$$\sigma_{融合}^2 = \frac{\sigma_1^2 \cdot \sigma_2^2}{\sigma_1^2 + \sigma_2^2} = \frac{4 \times 0.25}{4.25} \approx 0.235 \text{ kg}^2$$
+
+<p>融合后的标准差约 0.49 kg——比两台秤中最好的那台（0.5 kg）还要好！这不是魔法，这是<strong>信息叠加</strong>的必然结果。卡尔曼滤波只不过是把这个简单的道理推广到了多维、动态、递归的场景。</p>
+
 <h2>二、先试试最直觉的办法</h2>
 
 <p>学过信号处理的同学可能会说："加个滤波器不就行了？"好，我们来试试。</p>
@@ -168,6 +196,47 @@ $$\hat{x}_k = \alpha \cdot z_k + (1-\alpha) \cdot \hat{x}_{k-1}$$
 
 <p>卡尔曼滤波的回答是：<strong>谁更靠谱就更相信谁，而且靠谱程度可以用方差来量化</strong>。下一章我们会看到，它如何用一个优雅的数学框架回答这个问题。</p>
 
+<h2>为什么是递归的？——从最小二乘到卡尔曼</h2>
+
+<p>假设你有 1000 个 GPS 测量点，想估计无人机的轨迹。最直接的方法是<strong>批处理最小二乘</strong>：把 1000 个方程列出来，一次性解一个超大的矩阵方程。在 MATLAB 里这很自然，但在嵌入式系统里——你的 MCU 可能只有 64KB RAM，根本存不下所有历史数据。</p>
+
+<p>更聪明的做法是<strong>递归最小二乘</strong>（Recursive Least Squares, RLS）：每来一个新测量，就更新一次估计，然后<strong>丢掉原始数据</strong>。只需要存当前的估计值和一个协方差矩阵——内存消耗是常数。</p>
+
+<p>卡尔曼滤波 = 递归最小二乘 + <strong>动态模型</strong>（状态转移方程）。这是 MIT 课程反复强调的关键洞察：</p>
+
+<div style="background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;text-align:center;font-size:1.05em;"><strong>卡尔曼滤波不是"又一个滤波器"——它是一个最优递归状态估计器。</strong></p>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:14px 0;">
+  <tr style="background:var(--primary-light);">
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">方法</th>
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">数据需求</th>
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">内存</th>
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">有动态模型？</th>
+  </tr>
+  <tr>
+    <td style="padding:8px 14px;border:1px solid var(--border);">批处理最小二乘</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">所有历史数据</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">O(N)</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">否</td>
+  </tr>
+  <tr>
+    <td style="padding:8px 14px;border:1px solid var(--border);">递归最小二乘</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">只需当前测量</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">O(n²)</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">否</td>
+  </tr>
+  <tr>
+    <td style="padding:8px 14px;border:1px solid var(--border);font-weight:700;color:var(--primary);">卡尔曼滤波</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">只需当前测量</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">O(n²)</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);font-weight:700;color:#16a34a;">是！</td>
+  </tr>
+</table>
+
+<p>在嵌入式系统中，递归不是一种"可选的优化"——它是<strong>唯一可行的方案</strong>。你的 STM32 没有能力存储和回溯所有历史测量值。卡尔曼滤波的递归结构天然契合嵌入式系统的约束：固定内存、逐个处理、实时输出。</p>
+
 <h2>四、加速度二次积分的灾难</h2>
 
 <p>为了更直观地理解"为什么不能只用 IMU"，来看加速度二次积分求位置的误差增长。假设加速度计有一个恒定偏差 \(b\)（零偏）：</p>
@@ -208,6 +277,8 @@ $$x_{err}(t) = \frac{1}{2} b \cdot t^2$$
   <p><strong>均值滤波的内存代价</strong>：一个 N=64 窗口的 float32 均值滤波器需要 256 字节的环形缓冲区。在 STM32F103（只有 20KB SRAM）上，如果你对 6 轴 IMU 都做滤波，就要消耗近 1.5KB——这在小型 MCU 上是不可接受的。</p>
   <p style="margin-top:10px;"><strong>低通滤波的相位滞后</strong>：一阶 IIR 低通滤波器（即 EMA）在截止频率处有 45° 的相位滞后。对于 100Hz 采样、10Hz 截止的典型飞控配置，这意味着大约 25ms 的延迟。如果控制回路带宽接近 10Hz，这个滞后可能导致振荡。</p>
   <p style="margin-top:10px;"><strong>工程中的常见做法</strong>：IMU 数据先过一个简单的低通滤波去掉电机振动（通常切在 30~80Hz），然后送进卡尔曼滤波器。卡尔曼滤波不是要取代简单滤波，而是在简单滤波的基础上做<strong>多传感器融合</strong>。</p>
+
+  <p style="margin-top:10px;"><strong>真实飞控中的 EKF</strong>：PX4 和 ArduPilot 这两大开源飞控都使用扩展卡尔曼滤波（EKF）作为核心导航方案，而不是简单的互补滤波。ArduPilot 的 EKF3 在 STM32H7（Cortex-M7, 480MHz）上以 <strong>400Hz</strong> 运行，同时融合 3 个 IMU + 2 个 GPS + 磁力计 + 气压计的数据。为什么需要这么复杂？因为简单的滤波器无法处理<strong>异构传感器融合</strong>——不同传感器有不同的采样率（IMU 1kHz vs GPS 10Hz）、不同的噪声特性、不同的延迟，只有卡尔曼滤波框架能优雅地统一处理这些差异。</p>
 
   <pre><code>/* 嵌入式 C：一阶 IIR 低通滤波 —— 最省资源的预滤波 */
 typedef struct {
