@@ -90,6 +90,8 @@ button.action{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font
           <option value="pos_vel_2d">2D 位置-速度 (GPS+IMU)</option>
           <option value="temperature">温度估计</option>
           <option value="altitude">无人机定高 (气压+IMU)</option>
+          <option value="ahrs">AHRS 姿态估计 (四元数误差)</option>
+          <option value="battery_soc">电池 SOC 估计</option>
         </select>
       </div>
       <div class="form-col">
@@ -178,10 +180,14 @@ button.action{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font
     <div id="dispR" style="flex:1;min-width:150px;background:var(--code-bg);border-radius:8px;padding:10px;font-family:monospace;font-size:.85em;white-space:pre;overflow-x:auto;"></div>
   </div>
 
-  <!-- Run button -->
-  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+  <!-- Run button and options -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
     <button class="action" id="runBtn" style="background:#16a34a;font-size:1em;padding:10px 28px;">▶ 运行滤波器</button>
     <button class="action" id="exportBtn" style="background:#7c3aed;font-size:1em;padding:10px 28px;">导出 C 代码</button>
+    <label style="display:flex;align-items:center;gap:6px;font-size:.9em;cursor:pointer;margin-left:8px;">
+      <input type="checkbox" id="mahaGate" style="width:16px;height:16px;">
+      启用异常值剔除 (Mahalanobis Gate)
+    </label>
   </div>
 
   <!-- Results -->
@@ -192,6 +198,7 @@ button.action{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font
       <div class="stat-box"><div class="label">最大误差</div><div class="value" id="maxErrResult">-</div></div>
       <div class="stat-box"><div class="label">平均 K 范数</div><div class="value" id="avgKResult">-</div></div>
       <div class="stat-box"><div class="label">收敛步数</div><div class="value" id="convResult">-</div></div>
+      <div class="stat-box" id="rejectBox" style="display:none;"><div class="label">异常值剔除数</div><div class="value" id="rejectResult">-</div></div>
     </div>
     <div id="resultPlot" style="width:100%;height:400px;margin-top:12px;"></div>
     <div id="errorPlot" style="width:100%;height:200px;margin-top:8px;"></div>
@@ -217,6 +224,18 @@ button.action{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font
     <li>考虑用 Joseph 形式替换标准 P 更新以增强稳定性</li>
     <li>如果性能不够，用上三角存储 P 并展开矩阵运算</li>
     <li>在 release 模式下做一次运行时间测量，确保不超时</li>
+  </ol>
+
+  <p style="margin-top:16px;"><strong>从沙盒到产品的真实案例——一个无人机定高滤波器的开发流程：</strong></p>
+  <ol style="margin-left:18px;">
+    <li><strong>在沙盒中验证滤波器结构和初始参数</strong>：选择"无人机定高"预设，用正弦信号模拟升降，观察 KF 跟踪效果。调整 Q 和 R 直到跟踪误差和响应速度令人满意。</li>
+    <li><strong>导出 C 代码，集成到 MCU 工程</strong>：点击"导出 C 代码"，将生成的 <code>kf_init()</code>、<code>kf_predict()</code>、<code>kf_update()</code> 复制到你的 STM32 工程中。</li>
+    <li><strong>在硬件上采集真实传感器数据</strong>：让无人机静置和简单升降，用串口将气压计和 IMU 数据以 CSV 格式输出到 SD 卡。</li>
+    <li><strong>在沙盒中重放真实数据</strong>：切换到"CSV 数据"标签页，上传刚采集的 CSV，用同样的 F/H/Q/R 运行。</li>
+    <li><strong>对比真实数据和仿真数据的滤波效果</strong>：如果真实数据的跟踪效果比仿真差很多，说明传感器噪声模型需要修正。</li>
+    <li><strong>微调 Q 和 R，用 NIS 验证</strong>：监测 NIS 是否接近观测维数 m。勾选 Mahalanobis Gate 可以自动剔除偶发的 GPS 多路径干扰。</li>
+    <li><strong>将最终参数写回固件</strong>：更新 <code>kf_init()</code> 中的 Q 和 R 矩阵值。</li>
+    <li><strong>在实际运行中监测 NIS，必要时在线自适应</strong>：部署后持续记录 NIS，如果环境变化（如从室外飞到室内），考虑启用自适应 Q 调整（参见第八章）。</li>
   </ol>
 
   <p style="margin-top:12px;">恭喜你完成了整本教材！现在你已经掌握了卡尔曼滤波从理论到实践的核心知识。去造点东西吧。</p>
@@ -330,6 +349,22 @@ document.addEventListener("DOMContentLoaded", function(){
       Q:[[0.0001,0,0],[0,0.01,0],[0,0,0.001]],
       R:[[0.5]],
       x0:[0,0,0],P0:50
+    },
+    ahrs:{
+      n:4,m:3,dt:0.005,
+      F:[[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],
+      H:[[1,0,0,0],[0,1,0,0],[0,0,1,0]],
+      Q:[[1e-6,0,0,0],[0,1e-6,0,0],[0,0,1e-6,0],[0,0,0,1e-4]],
+      R:[[0.01,0,0],[0,0.01,0],[0,0,0.04]],
+      x0:[0,0,0,0],P0:1
+    },
+    battery_soc:{
+      n:2,m:1,dt:1,
+      F:[[1,0],[0,0.995]],
+      H:[[1,1]],
+      Q:[[1e-6,0],[0,1e-4]],
+      R:[[0.001]],
+      x0:[3.7,0],P0:1
     }
   };
 
@@ -431,6 +466,13 @@ document.addEventListener("DOMContentLoaded", function(){
       });
     }
 
+    /* Mahalanobis gate config */
+    const useMahaGate=document.getElementById('mahaGate').checked;
+    const chi2Thresh=[0,6.63,9.21,11.34,13.28,15.09,16.81,18.48,20.09]; // chi2(m, 0.99)
+    const gateThresh=chi2Thresh[m]||6.63*m;
+    let rejectCount=0;
+    const rejectedIdx=[];
+
     /* Init KF */
     let x=cfg.x0.slice();
     if(x.length<n) x=x.concat(new Array(n-x.length).fill(0));
@@ -451,18 +493,36 @@ document.addEventListener("DOMContentLoaded", function(){
         const PHt=matMul(PPred,transpose(H));
         const S=matAdd(matMul(H,PHt),R);
         const Si=invMat(S);
-        const K=matMul(PHt,Si);
 
         const Hx=matMul(H,xPred.map(v=>[v])).map(r=>r[0]);
         const innov=z.map((zi,i)=>zi-Hx[i]);
-        const correction=matMul(K,innov.map(v=>[v])).map(r=>r[0]);
-        x=xPred.map((v,i)=>v+correction[i]);
-        const IKH=matSub(eye(n),matMul(K,H));
-        P=matMul(IKH,PPred);
 
-        let kn=0;
-        K.forEach(r=>r.forEach(v=>kn+=v*v));
-        kNorms.push(Math.sqrt(kn));
+        /* Mahalanobis distance: d2 = innov' * S^{-1} * innov */
+        let gated=false;
+        if(useMahaGate){
+          const Sinv_innov=matMul(Si,innov.map(v=>[v])).map(r=>r[0]);
+          const d2=innov.reduce((s,v,i)=>s+v*Sinv_innov[i],0);
+          if(d2>gateThresh){
+            gated=true;
+            rejectCount++;
+            rejectedIdx.push(k);
+          }
+        }
+
+        if(!gated){
+          const K=matMul(PHt,Si);
+          const correction=matMul(K,innov.map(v=>[v])).map(r=>r[0]);
+          x=xPred.map((v,i)=>v+correction[i]);
+          const IKH=matSub(eye(n),matMul(K,H));
+          P=matMul(IKH,PPred);
+
+          let kn=0;
+          K.forEach(r=>r.forEach(v=>kn+=v*v));
+          kNorms.push(Math.sqrt(kn));
+        } else {
+          x=xPred;
+          P=PPred;
+        }
       } else {
         x=xPred;
         P=PPred;
@@ -492,6 +552,13 @@ document.addEventListener("DOMContentLoaded", function(){
     document.getElementById('maxErrResult').textContent=maxErr.toFixed(4);
     document.getElementById('avgKResult').textContent=avgK.toFixed(4);
     document.getElementById('convResult').textContent=convStep;
+    const rejectBox=document.getElementById('rejectBox');
+    if(useMahaGate){
+      rejectBox.style.display='';
+      document.getElementById('rejectResult').textContent=rejectCount+' / '+simData.length;
+    } else {
+      rejectBox.style.display='none';
+    }
     document.getElementById('resultsSection').style.display='block';
 
     /* Plots */
@@ -501,7 +568,17 @@ document.addEventListener("DOMContentLoaded", function(){
     const compIdx=0;
     traces.push({x:tArr,y:simData.map(d=>d.true?d.true[compIdx]:null),name:'真实值 (x₁)',line:{color:'#16a34a',width:2}});
     traces.push({x:tArr,y:estHist.map(e=>e[compIdx]),name:'KF 估计 (x₁)',line:{color:'#2563eb',width:2.5}});
-    if(m>=1) traces.push({x:tArr,y:simData.map(d=>d.meas?d.meas[0]:null),name:'测量 (z₁)',mode:'markers',marker:{color:'#dc2626',size:3,opacity:.4}});
+    if(m>=1){
+      const rejSet=new Set(rejectedIdx);
+      const acceptedT=[],acceptedZ=[],rejectedT=[],rejectedZ=[];
+      simData.forEach((d,k)=>{
+        if(!d.meas) return;
+        if(rejSet.has(k)){rejectedT.push(d.t);rejectedZ.push(d.meas[0]);}
+        else{acceptedT.push(d.t);acceptedZ.push(d.meas[0]);}
+      });
+      traces.push({x:acceptedT,y:acceptedZ,name:'测量 (z₁)',mode:'markers',marker:{color:'#dc2626',size:3,opacity:.4}});
+      if(rejectedT.length>0) traces.push({x:rejectedT,y:rejectedZ,name:'剔除 (异常值)',mode:'markers',marker:{color:'#9ca3af',size:5,opacity:.6,symbol:'x'}});
+    }
 
     if(n>=2 && m>=2){
       traces.push({x:tArr,y:simData.map(d=>d.true?d.true[1]:null),name:'真实值 (x₂)',line:{color:'#16a34a',width:1.5,dash:'dash'}});

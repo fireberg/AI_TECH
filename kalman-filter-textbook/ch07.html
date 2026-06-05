@@ -102,7 +102,183 @@ $$\mathbf{P} = (\mathbf{I}-\mathbf{K}\mathbf{H})\mathbf{P}(\mathbf{I}-\mathbf{K}
   <li>新息不应该有明显的自相关——如果有，说明 Q 或模型不对</li>
 </ul>
 
-<h2>三、故障诊断实验室</h2>
+<h2>三、系统化调参——飞控工程师的实战流程</h2>
+
+<p>在实际飞控开发中（PX4、ArduPilot），调参不是"拍脑袋猜"——而是一套可重复的工程流程。MIT 16.322 课程和工业界的经验总结为以下四步：</p>
+
+<h3>Step 1：确定 R（测量噪声）——让传感器告诉你</h3>
+
+<p>R 是最容易确定的参数，因为你可以直接测。让传感器<strong>静止</strong>，采集一段数据，计算方差，就是 R。</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li><strong>GPS</strong>：静置 10 分钟，记录位置，计算方差 → 通常 \(R \approx 2 \sim 5 \, \text{m}^2\)</li>
+  <li><strong>气压计</strong>：静置 5 分钟，计算高度方差 → 通常 \(R \approx 0.1 \sim 0.5 \, \text{m}^2\)</li>
+  <li><strong>IMU</strong>：使用 Allan 方差分析（见下节），提取噪声密度和偏差不稳定性</li>
+</ul>
+
+<pre><code>/* 在 MCU 上用 Welford 算法在线计算传感器方差 */
+typedef struct {
+    int    n;
+    float  mean;
+    float  M2;    /* 累积方差 */
+} Welford_t;
+
+void welford_update(Welford_t *w, float x) {
+    w->n++;
+    float delta = x - w->mean;
+    w->mean += delta / w->n;
+    float delta2 = x - w->mean;
+    w->M2 += delta * delta2;
+}
+
+float welford_variance(const Welford_t *w) {
+    return w->n > 1 ? w->M2 / (w->n - 1) : 0.0f;
+}</code></pre>
+
+<h3>Step 2：初始化 Q（过程噪声）——从传感器噪声推导</h3>
+
+<p>Q 没有 R 那么直观，但也不是完全靠猜。对于位置-速度模型，Q 来自加速度计噪声的积分。连续白噪声离散化公式：</p>
+
+$$Q_d = \int_0^{\Delta t} F(\tau) \cdot G \cdot q_c \cdot G^T \cdot F(\tau)^T \, d\tau$$
+
+<p>其中 \(q_c\) 是连续时间的功率谱密度。实用近似：</p>
+
+$$q_c \approx (\text{加速度计噪声密度})^2$$
+
+<p>对于 MEMS IMU（如 MPU6050）：噪声密度 ≈ 400μg/√Hz → \(q_c \approx (0.004)^2 = 1.6 \times 10^{-5} \, \text{m}^2/\text{s}^4\)</p>
+
+<p>对于匀速模型（位置+速度），离散化后：</p>
+
+$$Q_d = q_c \begin{bmatrix} \Delta t^3/3 & \Delta t^2/2 \\ \Delta t^2/2 & \Delta t \end{bmatrix}$$
+
+<h3>Step 3：用 NIS 在线验证——滤波器的"体温计"</h3>
+
+<p><strong>归一化新息平方</strong>（Normalized Innovation Squared, NIS）是判断调参是否正确的定量工具：</p>
+
+$$\text{NIS}_k = \nu_k^T S_k^{-1} \nu_k \sim \chi^2(m)$$
+
+<p>其中 \(m\) 是观测维数。正确调参时：</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li>\(\mathbb{E}[\text{NIS}] = m\)（观测维数）</li>
+  <li>NIS 持续 \(> m\) → R 太小或 Q 太小（滤波器过于自信）</li>
+  <li>NIS 持续 \(< m\) → R 太大或 Q 太大（滤波器过于保守）</li>
+  <li>用滑动窗口平均 NIS，和 \(m\) 比较，调整 Q 和 R 直到匹配</li>
+</ul>
+
+<h3>Step 4：动态验证——实际机动测试</h3>
+
+<p>静态验证通过后，还要做动态测试。做实际机动（转弯、加减速），观察跟踪误差：</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li>如果转弯时估计<strong>滞后</strong> → Q 太小，滤波器太相信模型，不愿接受新信息</li>
+  <li>如果直线飞行时估计<strong>抖动</strong> → Q 太大，滤波器太不相信模型，被噪声带着走</li>
+  <li>如果突然机动后估计<strong>长时间不收敛</strong> → P₀ 太小，或 Q 太小导致"锁死"</li>
+</ul>
+
+<div class="warn-box">
+  <strong>关键经验</strong>：先把 Q 设大一点，让滤波器"活"过来（宁可抖动也不要锁死），然后逐步减小 Q 直到 NIS ≈ m。这就是飞控工程师口中的"从松到紧"调参法。
+</div>
+
+<h2>四、Allan 方差——读懂 IMU 噪声的密码</h2>
+
+<p><strong>Allan 方差</strong>是 IMU 噪声分析的工业标准方法（IEEE Std 952-1997），也是读懂 IMU 数据手册的钥匙。</p>
+
+<p>基本思想：把传感器数据按不同的<strong>平均时间 \(\tau\)</strong> 分组，计算各组均值之差的方差。在 log-log 图上：x 轴是平均时间 \(\tau\)，y 轴是 Allan 偏差 \(\sigma(\tau)\)。</p>
+
+<p>不同斜率代表不同的噪声类型：</p>
+
+<table style="border-collapse:collapse;width:100%;margin:14px 0;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">斜率</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">噪声类型</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">物理含义</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">对 KF 的意义</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">斜率 = -1/2</td><td style="padding:6px 12px;border:1px solid var(--border);">白噪声 (ARW/VRW)</td><td style="padding:6px 12px;border:1px solid var(--border);">角度/速度随机游走</td><td style="padding:6px 12px;border:1px solid var(--border);"><strong>决定 Q 矩阵</strong></td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">斜率 = 0（平坦）</td><td style="padding:6px 12px;border:1px solid var(--border);">偏差不稳定性</td><td style="padding:6px 12px;border:1px solid var(--border);">传感器精度的"地板"</td><td style="padding:6px 12px;border:1px solid var(--border);">IMU 精度的下限</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">斜率 = +1/2</td><td style="padding:6px 12px;border:1px solid var(--border);">随机游走（偏差漂移）</td><td style="padding:6px 12px;border:1px solid var(--border);">偏差缓慢漂移</td><td style="padding:6px 12px;border:1px solid var(--border);">需要增加偏差状态来估计</td></tr>
+</tbody>
+</table>
+
+<p><strong>常见 IMU 的典型参数</strong>（陀螺仪）：</p>
+
+<table style="border-collapse:collapse;width:100%;margin:14px 0;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">型号</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">ARW (°/√hr)</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">偏差不稳定性 (°/hr)</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">等级</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">应用</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">MPU6050</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.3</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 10</td><td style="padding:6px 12px;border:1px solid var(--border);">消费级</td><td style="padding:6px 12px;border:1px solid var(--border);">玩具、简单平衡车</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">BMI088</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.09</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 3</td><td style="padding:6px 12px;border:1px solid var(--border);">工业级</td><td style="padding:6px 12px;border:1px solid var(--border);">无人机、机器人</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">ADIS16488</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.006</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.3</td><td style="padding:6px 12px;border:1px solid var(--border);">战术级</td><td style="padding:6px 12px;border:1px solid var(--border);">导弹制导、测绘</td></tr>
+</tbody>
+</table>
+
+<p>如何计算 Allan 方差：可以用 Python 的 <code>allantools</code> 库，或者在嵌入式端用 C 实现 log-binning 算法。静置 IMU 采集 1~2 小时数据即可画出完整的 Allan 方差曲线。</p>
+
+<h2>五、协方差匹配法——自动化调参</h2>
+
+<p>手动调 Q 和 R 虽然有效，但有没有<strong>自动化</strong>的方法？有。<strong>协方差匹配法</strong>（Covariance Matching / Autocovariance Method）就是其中之一：</p>
+
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li>采集新息序列 \(\{\nu_k\}\)</li>
+  <li>计算样本自协方差：\(C_0 = \frac{1}{N}\sum_{k=1}^{N} \nu_k \nu_k^T\)</li>
+  <li>理论上，\(C_0\) 应该等于 \(S = HPH^T + R\)</li>
+  <li>如果 \(C_0 > S\) → 说明实际新息方差大于模型预测 → <strong>增大 Q</strong>（或减小 R）</li>
+  <li>如果 \(C_0 < S\) → 说明实际新息方差小于模型预测 → <strong>减小 Q</strong>（或增大 R）</li>
+  <li>可以用简单的自适应循环自动调整</li>
+</ol>
+
+<pre><code>/* 在线协方差匹配：滑动窗口自适应 Q 调整 */
+#define COV_WINDOW 50
+
+typedef struct {
+    float innov_buf[COV_WINDOW];
+    int   head;
+    int   count;
+    float sum_sq;
+} CovMatch_t;
+
+void covmatch_init(CovMatch_t *cm) {
+    memset(cm, 0, sizeof(*cm));
+}
+
+/* 每次卡尔曼更新后调用：
+ * innov  = 本次新息
+ * S      = 本次新息协方差 HPH'+R
+ * Q_diag = Q 对角线指针，由此函数自动调整 */
+void covmatch_update(CovMatch_t *cm, float innov, float S,
+                     float *Q_diag, int n) {
+    /* 滑动窗口更新 */
+    if (cm->count >= COV_WINDOW)
+        cm->sum_sq -= cm->innov_buf[cm->head] *
+                      cm->innov_buf[cm->head];
+    cm->innov_buf[cm->head] = innov;
+    cm->sum_sq += innov * innov;
+    cm->head = (cm->head + 1) % COV_WINDOW;
+    if (cm->count < COV_WINDOW) cm->count++;
+
+    if (cm->count < COV_WINDOW) return;
+
+    float empirical_S = cm->sum_sq / COV_WINDOW;
+    float ratio = empirical_S / S;
+
+    /* ratio > 1 → 实际方差大于理论 → 增大 Q
+     * ratio < 1 → 实际方差小于理论 → 减小 Q */
+    float alpha = 0.01f;  /* 调整步长，越小越稳 */
+    float scale = 1.0f + alpha * (ratio - 1.0f);
+    scale = fmaxf(0.5f, fminf(2.0f, scale)); /* 限幅 */
+
+    for (int i = 0; i < n; i++)
+        Q_diag[i] *= scale;
+}</code></pre>
+
+<h2>六、故障诊断实验室</h2>
 
 <div class="interactive-box">
   <h3>🔬 故障诊断实验室</h3>
@@ -152,7 +328,7 @@ $$\mathbf{P} = (\mathbf{I}-\mathbf{K}\mathbf{H})\mathbf{P}(\mathbf{I}-\mathbf{K}
   <div id="nisPlot" style="width:100%;height:200px;margin-top:8px;"></div>
 </div>
 
-<h2>四、计算优化清单</h2>
+<h2>七、计算优化清单</h2>
 
 <h3>浮点 vs 定点</h3>
 <p>在没有 FPU 的 MCU（如 Cortex-M0/M0+）上，一次 float 乘法需要 ~50 个时钟周期（软件浮点），而 32 位整数乘法只需 1 个周期。对于 4 维状态的 KF，P 的更新涉及约 200 次乘法——差距从 200 到 10000 周期。</p>
@@ -185,7 +361,7 @@ typedef struct __attribute__((aligned(4))) {
     /* 总计: 96 字节 — 一个 cache line 就够了 */
 } KF2D_Compact_t;</code></pre>
 
-<h2>五、调试方法总结</h2>
+<h2>八、调试方法总结</h2>
 
 <table style="border-collapse:collapse;width:100%;margin:14px 0;">
 <thead><tr style="background:var(--primary-light);">
@@ -242,6 +418,24 @@ void kf1d_update(KF1D_t *kf, float z) {
     <li>9 维 KF，同平台：约 30~50μs</li>
     <li>4 维 EKF（含雅可比+三角函数）：约 15~25μs</li>
     <li>以上时间都远小于 1ms（1kHz 控制周期），所以卡尔曼滤波在飞控中完全可行</li>
+  </ul>
+
+  <p style="margin-top:16px;"><strong>平方根滤波（Square Root Filter）</strong></p>
+  <p>存储 \(S\) 使得 \(P = SS^T\)，用 Cholesky 更新代替标准 P 更新。</p>
+  <ul style="margin-left:18px;">
+    <li>数值稳定性极佳——P <strong>永远</strong>正定（因为 \(SS^T\) 天生正定）</li>
+    <li>代价：实现复杂度增加约 2×，需要 Cholesky 分解和 rank-1 更新</li>
+    <li>推荐用于：航天级应用、长时间运行（数天/数周）的系统</li>
+    <li>条件数提升：\(\kappa(S) = \sqrt{\kappa(P)}\)，相当于有效精度翻倍</li>
+  </ul>
+
+  <p style="margin-top:16px;"><strong>UD 分解滤波（Bierman Filter）</strong></p>
+  <p>存储 \(P = UDU^T\)（U 为单位上三角矩阵，D 为对角矩阵）。</p>
+  <ul style="margin-left:18px;">
+    <li>Bierman 的 UD filter + Thornton 的 MWGS（Modified Weighted Gram-Schmidt）算法</li>
+    <li>在存储量几乎不增加的情况下保证正定性（U 和 D 共用 \(n(n+1)/2\) 个元素，和上三角存储一样）</li>
+    <li>NASA JPL 在深空探测器导航（旅行者号、卡西尼号）中使用此方法——连续运行数年不发散</li>
+    <li>比平方根滤波更节省计算量，是嵌入式高可靠场景的首选</li>
   </ul>
 </div>
 
