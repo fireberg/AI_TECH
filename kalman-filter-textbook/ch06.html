@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第六章：当系统变"弯"了——EKF | 卡尔曼滤波交互式教材</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root{--primary:#2563eb;--primary-light:#dbeafe;--bg:#f8fafc;--card:#fff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--note-bg:#fffbeb;--note-border:#f59e0b;--code-bg:#f1f5f9}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+nav a{color:var(--primary);text-decoration:none;font-weight:600;font-size:.95em}
+.container{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:2em;margin-bottom:8px;color:var(--primary)}
+.chapter-meta{color:var(--text-light);margin-bottom:28px;font-size:.95em}
+h2{font-size:1.4em;margin:36px 0 14px;color:#0f172a;border-left:4px solid var(--primary);padding-left:12px}
+h3{font-size:1.15em;margin:24px 0 10px}
+p{margin-bottom:14px}
+.objective{background:var(--primary-light);border-radius:10px;padding:20px 24px;margin-bottom:28px}
+.objective h3{margin-top:0;color:var(--primary)}
+.interactive-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px}
+.control-group{display:flex;flex-direction:column;gap:4px}
+.control-group label{font-size:.85em;color:var(--text-light);font-weight:600}
+.control-group input[type="range"]{width:160px}
+.val-display{display:inline-block;min-width:36px;text-align:center;background:var(--code-bg);border-radius:4px;padding:1px 6px;font-family:'SF Mono',monospace;font-size:.85em}
+pre{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:18px 20px;overflow-x:auto;font-size:.88em;line-height:1.6;margin:14px 0}
+pre code{font-family:'SF Mono','Consolas','Menlo',monospace}
+.note{background:var(--note-bg);border-left:4px solid var(--note-border);border-radius:0 8px 8px 0;padding:20px 24px;margin:32px 0}
+.note h3{color:#92400e;margin-top:0}
+.note h3::before{content:"🔧 "}
+.highlight-box{background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0}
+.stats-row{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.stat-box{background:var(--code-bg);border-radius:8px;padding:8px 14px;flex:1;min-width:120px}
+.stat-box .label{font-size:.78em;color:var(--text-light)}
+.stat-box .value{font-family:'SF Mono',monospace;font-weight:700;font-size:.95em}
+button.action{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-weight:600;color:#fff;font-size:.92em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+@media(max-width:600px){.controls{flex-direction:column}.control-group input[type="range"]{width:100%}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="ch05.html">← 上一章</a>
+  <span style="font-weight:700;font-size:.95em;">第六章</span>
+  <a href="ch07.html">下一章 →</a>
+</nav>
+
+<div class="container">
+<h1>第六章：当系统变"弯"了</h1>
+<p class="chapter-meta">扩展卡尔曼滤波（EKF）——处理非线性的工程利器</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>理解为什么线性卡尔曼滤波无法处理非线性观测</li>
+    <li>掌握 EKF 的核心思想：局部线性化 + 雅可比矩阵</li>
+    <li>对比 KF 和 EKF 在非线性场景下的表现差异</li>
+  </ul>
+</div>
+
+<h2>一、为什么需要 EKF？</h2>
+
+<p>在第五章中，我们假设 GPS 直接给出了 \((x, y)\) 坐标——这是一个线性的观测关系。但在很多实际场景中，传感器的输出和状态之间是<strong>非线性</strong>的：</p>
+
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>雷达测距测角</strong>：测量的是距离 \(r = \sqrt{x^2 + y^2}\) 和角度 \(\theta = \arctan(y/x)\)，而不是 x, y</li>
+  <li><strong>GPS 伪距</strong>：实际测量的是到每颗卫星的距离，需要经过非线性方程解算</li>
+  <li><strong>磁力计</strong>：磁场方向和机体姿态之间是三角函数关系</li>
+</ul>
+
+<p>这时候观测方程变成：</p>
+
+$$\mathbf{z}_k = h(\mathbf{x}_k) + \mathbf{v}_k$$
+
+<p>注意这里的 \(h(\cdot)\) 是一个<strong>非线性函数</strong>，不再是简单的矩阵乘法 \(\mathbf{H}\mathbf{x}\)。标准卡尔曼滤波的公式直接用不了了。</p>
+
+<h2>二、EKF 的核心思想：在当前点展开</h2>
+
+<p>EKF 的处理方式简单粗暴但有效：在当前估计点对非线性函数做<strong>一阶泰勒展开</strong>（线性化），然后用标准卡尔曼滤波的公式。</p>
+
+<p>具体来说，对于观测函数 \(h(\mathbf{x})\)，在当前预测值 \(\hat{\mathbf{x}}_{k|k-1}\) 处求<strong>雅可比矩阵</strong>：</p>
+
+$$\mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}=\hat{\mathbf{x}}_{k|k-1}}$$
+
+<p>然后用这个局部线性化的 \(\mathbf{H}_k\) 代替常数矩阵 H，其余步骤和标准 KF 一样——就这么简单。</p>
+
+<h3>雷达测距测角的例子</h3>
+
+<p>状态 \(\mathbf{x} = [x, y, v_x, v_y]^T\)，观测 \(\mathbf{z} = [r, \theta]^T\)：</p>
+
+$$h(\mathbf{x}) = \begin{bmatrix} \sqrt{x^2 + y^2} \\ \arctan(y / x) \end{bmatrix}$$
+
+<p>雅可比矩阵：</p>
+
+$$\mathbf{H}_k = \begin{bmatrix}
+\frac{x}{\sqrt{x^2+y^2}} & \frac{y}{\sqrt{x^2+y^2}} & 0 & 0 \\
+\frac{-y}{x^2+y^2} & \frac{x}{x^2+y^2} & 0 & 0
+\end{bmatrix}$$
+
+<div class="highlight-box">
+  <p style="margin:0;"><strong>EKF 的改动很小：</strong></p>
+  <ol style="margin:8px 0 0 18px;">
+    <li>预测步：不变（如果状态方程是线性的）</li>
+    <li>更新步：把 \(\mathbf{H}\) 替换为 \(\mathbf{H}_k\)（在当前估计点算的雅可比），把 \(\mathbf{H}\mathbf{x}\) 替换为 \(h(\mathbf{x})\)</li>
+    <li>新息变成 \(\mathbf{z}_k - h(\hat{\mathbf{x}}_{k|k-1})\) 而不是 \(\mathbf{z}_k - \mathbf{H}\hat{\mathbf{x}}_{k|k-1}\)</li>
+  </ol>
+</div>
+
+<h2>三、KF vs EKF 实时对比</h2>
+
+<p>下面的实验模拟无人机绕圈飞行，一个雷达站在原点测量到无人机的距离和角度。我们同时运行两个滤波器：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>线性 KF</strong>（错误使用）：假装观测是直接的 (x, y)，但实际数据是 (r, θ) 转换来的（引入了额外误差）</li>
+  <li><strong>EKF</strong>（正确方法）：直接在 (r, θ) 空间做更新</li>
+</ul>
+
+<div class="interactive-box">
+  <h3>🎛️ 交互实验：KF vs EKF 对比</h3>
+  <p style="font-size:.92em;color:var(--text-light);">无人机绕圈飞行，雷达在原点测距测角。调节参数观察两种方法的表现差异，特别注意大半径和大噪声时的区别。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>轨迹半径 (m): <span class="val-display" id="radiusVal">30</span></label>
+      <input type="range" id="radiusSlider" min="10" max="80" step="1" value="30">
+    </div>
+    <div class="control-group">
+      <label>距离噪声 σ_r (m): <span class="val-display" id="sigRVal">2.0</span></label>
+      <input type="range" id="sigRSlider" min="0.5" max="10" step="0.5" value="2.0">
+    </div>
+    <div class="control-group">
+      <label>角度噪声 σ_θ (°): <span class="val-display" id="sigTVal">3.0</span></label>
+      <input type="range" id="sigTSlider" min="0.5" max="15" step="0.5" value="3.0">
+    </div>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>过程噪声 q: <span class="val-display" id="qVal6">0.5</span></label>
+      <input type="range" id="qSlider6" min="0.01" max="3" step="0.01" value="0.5">
+    </div>
+    <div class="control-group" style="flex-direction:row;gap:8px;align-items:flex-end;">
+      <button class="action" id="startBtn6" style="background:#16a34a;">开始</button>
+      <button class="action" id="pauseBtn6" style="background:#f59e0b;color:#000;">暂停</button>
+      <button class="action" id="resetBtn6" style="background:#64748b;">重置</button>
+    </div>
+  </div>
+
+  <div id="ekfPlot" style="width:100%;height:480px;"></div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="label">KF RMS 误差 (m)</div><div class="value" id="kfRms" style="color:#f59e0b;">-</div></div>
+    <div class="stat-box"><div class="label">EKF RMS 误差 (m)</div><div class="value" id="ekfRms" style="color:#7c3aed;">-</div></div>
+    <div class="stat-box"><div class="label">EKF 优势</div><div class="value" id="advantage">-</div></div>
+    <div class="stat-box"><div class="label">步数</div><div class="value" id="stepVal6">0</div></div>
+  </div>
+
+  <div id="errPlot6" style="width:100%;height:200px;margin-top:8px;"></div>
+</div>
+
+<h2>四、EKF 的 C 语言实现要点</h2>
+
+<pre><code>/* EKF 雷达观测更新 —— 关键差异标注 */
+void ekf_radar_update(KF2D_t *kf, float r_meas, float theta_meas) {
+    float x = kf->x[0], y = kf->x[1];
+    float r_pred = sqrtf(x*x + y*y);
+    float theta_pred = atan2f(y, x);
+
+    /* 防止 r_pred 为零导致除零 */
+    if (r_pred < 1e-6f) r_pred = 1e-6f;
+
+    /* EKF 关键：在当前估计点计算雅可比 */
+    float H[2][4] = {
+        { x/r_pred,        y/r_pred,       0, 0 },
+        { -y/(r_pred*r_pred), x/(r_pred*r_pred), 0, 0 }
+    };
+
+    /* 新息 = 实测 - h(x_pred)，注意角度要归一化 */
+    float innov[2] = {
+        r_meas - r_pred,
+        angle_wrap(theta_meas - theta_pred)  /* 关键！ */
+    };
+
+    /* 后续步骤和标准 KF 完全一样：算 S, K, 更新 x 和 P */
+    /* ... */
+}
+
+/* 角度归一化到 [-π, π] —— EKF 处理角度时必须做 */
+static inline float angle_wrap(float a) {
+    while (a >  M_PI) a -= 2*M_PI;
+    while (a < -M_PI) a += 2*M_PI;
+    return a;
+}</code></pre>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+
+  <p><strong>雅可比矩阵的计算策略</strong></p>
+  <ul style="margin-left:18px;margin-top:8px;">
+    <li><strong>解析法</strong>：手动推导，效率最高，适合固定的观测模型。大部分飞控项目用这种。</li>
+    <li><strong>数值法</strong>：用 \(\frac{\partial h}{\partial x_i} \approx \frac{h(x+\delta e_i) - h(x-\delta e_i)}{2\delta}\)，实现简单但计算量翻倍。调试阶段好用。</li>
+    <li><strong>自动微分</strong>：在 PC 端用 AD 工具生成 C 代码，然后移植到嵌入式。适合复杂模型。</li>
+  </ul>
+
+  <p style="margin-top:12px;"><strong>EKF 的常见坑</strong></p>
+  <ul style="margin-left:18px;">
+    <li><strong>角度跳变</strong>：当 θ 从 π 跳到 -π 时，新息会爆表。必须做角度归一化。</li>
+    <li><strong>线性化误差</strong>：如果系统高度非线性（比如目标在雷达正上方），EKF 可能发散。这时考虑 UKF。</li>
+    <li><strong>atan2 vs atan</strong>：永远用 atan2(y,x)，不要用 atan(y/x)。后者分不清象限，而且 x=0 时除零。</li>
+  </ul>
+
+  <p style="margin-top:12px;"><strong>计算量对比</strong>：EKF 相比 KF 多了雅可比矩阵计算（对 4 维状态 2 维观测，多了约 8 次乘法加几次三角函数）。在 Cortex-M4F 上，一次 sqrtf + atan2f 大约 30~50 个时钟周期，微不足道。</p>
+</div>
+
+</div>
+
+<nav style="background:var(--card);border-top:1px solid var(--border);padding:16px 20px;display:flex;justify-content:space-between;">
+  <a href="ch05.html" style="color:var(--primary);text-decoration:none;font-weight:600;">← 第五章</a>
+  <a href="ch07.html" style="color:var(--primary);text-decoration:none;font-weight:600;">第七章：工程实战清单 →</a>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  renderMathInElement(document.body,{
+    delimiters:[{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
+(function(){
+  function mat(r,c){return Array.from({length:r},()=>new Array(c).fill(0));}
+  function matMul(A,B){const m=A.length,n=B[0].length,p=B.length,C=mat(m,n);for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];return C;}
+  function matAdd(A,B){return A.map((r,i)=>r.map((v,j)=>v+B[i][j]));}
+  function matSub(A,B){return A.map((r,i)=>r.map((v,j)=>v-B[i][j]));}
+  function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+  function eye(n){const I=mat(n,n);for(let i=0;i<n;i++)I[i][i]=1;return I;}
+  function diagMat(n,v){const M=mat(n,n);for(let i=0;i<n;i++)M[i][i]=v;return M;}
+  function inv2x2(M){const d=M[0][0]*M[1][1]-M[0][1]*M[1][0],id=1/d;return[[M[1][1]*id,-M[0][1]*id],[-M[1][0]*id,M[0][0]*id]];}
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+  function angleWrap(a){while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a;}
+
+  const dt=0.02,n=4,gpsInterval=10;
+
+  function buildQ(dt,q){
+    const d3=dt*dt*dt/3,d2=dt*dt/2,d1=dt;
+    return[[q*d3,0,q*d2,0],[0,q*d3,0,q*d2],[q*d2,0,q*d1,0],[0,q*d2,0,q*d1]];
+  }
+
+  let animId,running=false,step,data;
+
+  function initSim(){
+    if(animId){cancelAnimationFrame(animId);animId=null;}
+    running=false; step=0;
+    const radius=parseFloat(document.getElementById('radiusSlider').value);
+    const q=parseFloat(document.getElementById('qSlider6').value);
+
+    const F=[[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]];
+    const B=[[.5*dt*dt,0],[0,.5*dt*dt],[dt,0],[0,dt]];
+    const Q=buildQ(dt,q);
+    const HLin=[[1,0,0,0],[0,1,0,0]];
+
+    data={
+      radius, omega:0.3, t:0,
+      F, B, Q, HLin,
+      kfX:[radius,0,0,radius*0.3*0.7], kfP:diagMat(4,50),
+      ekfX:[radius,0,0,radius*0.3*0.7], ekfP:diagMat(4,50),
+      trueX:[], trueY:[], kfEstX:[], kfEstY:[], ekfEstX:[], ekfEstY:[],
+      measX:[], measY:[],
+      kfErr:[], ekfErr:[]
+    };
+    updatePlots();
+  }
+
+  function simStep(){
+    const d=data;
+    const sigR=parseFloat(document.getElementById('sigRSlider').value);
+    const sigT=parseFloat(document.getElementById('sigTSlider').value)*Math.PI/180;
+    const q=parseFloat(document.getElementById('qSlider6').value);
+    d.Q=buildQ(dt,q);
+
+    d.t+=dt;
+    const trueX=d.radius*Math.cos(d.omega*d.t);
+    const trueY=d.radius*0.7*Math.sin(d.omega*d.t);
+    const trueAx=-d.radius*d.omega*d.omega*Math.cos(d.omega*d.t);
+    const trueAy=-d.radius*0.7*d.omega*d.omega*Math.sin(d.omega*d.t);
+    const imuAx=trueAx+0.5*gauss();
+    const imuAy=trueAy+0.5*gauss();
+
+    d.trueX.push(trueX); d.trueY.push(trueY);
+
+    /* Predict both filters identically */
+    function doPredict(x,P){
+      const nx=[
+        x[0]+x[2]*dt+.5*imuAx*dt*dt,
+        x[1]+x[3]*dt+.5*imuAy*dt*dt,
+        x[2]+imuAx*dt,
+        x[3]+imuAy*dt
+      ];
+      const nP=matAdd(matMul(matMul(d.F,P),transpose(d.F)),d.Q);
+      return{x:nx,P:nP};
+    }
+
+    let kfR=doPredict(d.kfX,d.kfP);
+    d.kfX=kfR.x; d.kfP=kfR.P;
+    let ekfR=doPredict(d.ekfX,d.ekfP);
+    d.ekfX=ekfR.x; d.ekfP=ekfR.P;
+
+    /* Measurement update */
+    if(step%gpsInterval===0){
+      const trueR=Math.sqrt(trueX*trueX+trueY*trueY);
+      const trueTheta=Math.atan2(trueY,trueX);
+      const measR=trueR+sigR*gauss();
+      const measTheta=trueTheta+sigT*gauss();
+
+      /* Convert to XY for display and naive KF */
+      const measXY_x=measR*Math.cos(measTheta);
+      const measXY_y=measR*Math.sin(measTheta);
+      d.measX.push(measXY_x); d.measY.push(measXY_y);
+
+      /* --- Naive Linear KF: update with converted (x,y) --- */
+      const RLin=[[sigR*sigR+trueR*trueR*sigT*sigT,0],[0,sigR*sigR+trueR*trueR*sigT*sigT]];
+      const PHt_kf=matMul(d.kfP,transpose(d.HLin));
+      const S_kf=matAdd(matMul(d.HLin,PHt_kf),RLin);
+      const Si_kf=inv2x2(S_kf);
+      const K_kf=matMul(PHt_kf,Si_kf);
+      const inn_kf=[measXY_x-d.kfX[0],measXY_y-d.kfX[1]];
+      for(let i=0;i<4;i++) d.kfX[i]+=K_kf[i][0]*inn_kf[0]+K_kf[i][1]*inn_kf[1];
+      d.kfP=matMul(matSub(eye(4),matMul(K_kf,d.HLin)),d.kfP);
+
+      /* --- EKF: update directly in (r, theta) space --- */
+      const ex=d.ekfX[0],ey=d.ekfX[1];
+      const rPred=Math.sqrt(ex*ex+ey*ey)||1e-6;
+      const tPred=Math.atan2(ey,ex);
+      const rSq=rPred*rPred;
+
+      const Hj=[
+        [ex/rPred, ey/rPred, 0, 0],
+        [-ey/rSq, ex/rSq, 0, 0]
+      ];
+      const R_ekf=[[sigR*sigR,0],[0,sigT*sigT]];
+      const PHt_e=matMul(d.ekfP,transpose(Hj));
+      const S_e=matAdd(matMul(Hj,PHt_e),R_ekf);
+      const Si_e=inv2x2(S_e);
+      const K_e=matMul(PHt_e,Si_e);
+      const inn_e=[measR-rPred,angleWrap(measTheta-tPred)];
+      for(let i=0;i<4;i++) d.ekfX[i]+=K_e[i][0]*inn_e[0]+K_e[i][1]*inn_e[1];
+      d.ekfP=matMul(matSub(eye(4),matMul(K_e,Hj)),d.ekfP);
+    }
+
+    d.kfEstX.push(d.kfX[0]); d.kfEstY.push(d.kfX[1]);
+    d.ekfEstX.push(d.ekfX[0]); d.ekfEstY.push(d.ekfX[1]);
+
+    const kfE=Math.sqrt((d.kfX[0]-trueX)**2+(d.kfX[1]-trueY)**2);
+    const ekfE=Math.sqrt((d.ekfX[0]-trueX)**2+(d.ekfX[1]-trueY)**2);
+    d.kfErr.push(kfE); d.ekfErr.push(ekfE);
+
+    step++;
+    document.getElementById('stepVal6').textContent=step;
+    if(d.kfErr.length>10){
+      const kfRms=Math.sqrt(d.kfErr.reduce((s,e)=>s+e*e,0)/d.kfErr.length);
+      const ekfRms=Math.sqrt(d.ekfErr.reduce((s,e)=>s+e*e,0)/d.ekfErr.length);
+      document.getElementById('kfRms').textContent=kfRms.toFixed(2);
+      document.getElementById('ekfRms').textContent=ekfRms.toFixed(2);
+      const adv=((kfRms-ekfRms)/kfRms*100);
+      document.getElementById('advantage').textContent=(adv>0?'+':'')+adv.toFixed(1)+'%';
+    }
+  }
+
+  function updatePlots(){
+    const d=data;
+    Plotly.react('ekfPlot',[
+      {x:d.trueX,y:d.trueY,name:'真实轨迹',mode:'lines',line:{color:'#16a34a',width:2}},
+      {x:d.kfEstX,y:d.kfEstY,name:'线性 KF（转换后XY）',mode:'lines',line:{color:'#f59e0b',width:2,dash:'dash'}},
+      {x:d.ekfEstX,y:d.ekfEstY,name:'EKF（极坐标更新）',mode:'lines',line:{color:'#7c3aed',width:2.5}},
+      {x:d.measX,y:d.measY,name:'雷达测量(转换)',mode:'markers',marker:{color:'#dc2626',size:4,opacity:.5}},
+      {x:[0],y:[0],name:'雷达站',mode:'markers',marker:{color:'#0f172a',size:12,symbol:'star'}}
+    ],{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'X (m)',scaleanchor:'y'},
+      yaxis:{title:'Y (m)'},
+      legend:{x:0,y:1.15,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    Plotly.react('errPlot6',[
+      {y:d.kfErr,name:'KF 误差',line:{color:'#f59e0b',width:1.5}},
+      {y:d.ekfErr,name:'EKF 误差',line:{color:'#7c3aed',width:1.5}}
+    ],{
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'步数'},yaxis:{title:'误差 (m)'},
+      legend:{x:0,y:1.1,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+  }
+
+  function animate(){
+    if(!running)return;
+    for(let i=0;i<3;i++) simStep();
+    if(step%6===0) updatePlots();
+    animId=requestAnimationFrame(animate);
+  }
+
+  document.getElementById('startBtn6').addEventListener('click',()=>{
+    if(!data.trueX) initSim();
+    running=true;animate();
+  });
+  document.getElementById('pauseBtn6').addEventListener('click',()=>{running=false;});
+  document.getElementById('resetBtn6').addEventListener('click',initSim);
+
+  ['radiusSlider','sigRSlider','sigTSlider','qSlider6'].forEach(id=>{
+    document.getElementById(id).addEventListener('input',function(){
+      const map={radiusSlider:'radiusVal',sigRSlider:'sigRVal',sigTSlider:'sigTVal',qSlider6:'qVal6'};
+      document.getElementById(map[id]).textContent=parseFloat(this.value).toFixed(id==='radiusSlider'?0:1);
+    });
+  });
+
+  initSim();
+})();
+</script>
+</body>
+</html>

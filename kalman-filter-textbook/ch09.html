@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第九章：动手吧——卡尔曼滤波器沙盒 | 卡尔曼滤波交互式教材</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root{--primary:#2563eb;--primary-light:#dbeafe;--bg:#f8fafc;--card:#fff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--note-bg:#fffbeb;--note-border:#f59e0b;--code-bg:#f1f5f9}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+nav a{color:var(--primary);text-decoration:none;font-weight:600;font-size:.95em}
+.container{max-width:960px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:2em;margin-bottom:8px;color:var(--primary)}
+.chapter-meta{color:var(--text-light);margin-bottom:28px;font-size:.95em}
+h2{font-size:1.4em;margin:36px 0 14px;color:#0f172a;border-left:4px solid var(--primary);padding-left:12px}
+h3{font-size:1.15em;margin:24px 0 10px}
+p{margin-bottom:14px}
+.objective{background:var(--primary-light);border-radius:10px;padding:20px 24px;margin-bottom:28px}
+.objective h3{margin-top:0;color:var(--primary)}
+.sandbox{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0}
+.form-row{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;align-items:flex-start}
+.form-col{flex:1;min-width:220px}
+.form-col label{display:block;font-size:.88em;color:var(--text-light);font-weight:600;margin-bottom:4px}
+.form-col select,.form-col input[type="number"]{width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.92em;font-family:inherit}
+textarea.matrix-input{width:100%;height:72px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:'SF Mono','Consolas',monospace;font-size:.88em;resize:vertical}
+textarea.matrix-input.tall{height:100px}
+pre{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:18px 20px;overflow-x:auto;font-size:.85em;line-height:1.5;margin:14px 0;position:relative}
+pre code{font-family:'SF Mono','Consolas','Menlo',monospace}
+.copy-btn{position:absolute;top:8px;right:8px;padding:4px 12px;background:rgba(255,255,255,.15);color:#e2e8f0;border:none;border-radius:4px;cursor:pointer;font-size:.82em}
+.copy-btn:hover{background:rgba(255,255,255,.25)}
+.note{background:var(--note-bg);border-left:4px solid var(--note-border);border-radius:0 8px 8px 0;padding:20px 24px;margin:32px 0}
+.note h3{color:#92400e;margin-top:0}
+.note h3::before{content:"🔧 "}
+.stats-row{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.stat-box{background:var(--code-bg);border-radius:8px;padding:8px 14px;flex:1;min-width:120px}
+.stat-box .label{font-size:.78em;color:var(--text-light)}
+.stat-box .value{font-family:'SF Mono',monospace;font-weight:700;font-size:.95em}
+button.action{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font-weight:600;color:#fff;font-size:.95em}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 18px;cursor:pointer;font-weight:600;font-size:.92em;color:var(--text-light);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+@media(max-width:600px){.form-row{flex-direction:column}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="ch08.html">← 上一章</a>
+  <span style="font-weight:700;font-size:.95em;">第九章</span>
+  <a href="index.html">目录</a>
+</nav>
+
+<div class="container">
+<h1>第九章：动手吧——建造你自己的卡尔曼滤波器</h1>
+<p class="chapter-meta">全功能在线沙盒：自定义矩阵、模拟数据、一键运行、导出 C 代码</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>搭建一个全功能的卡尔曼滤波在线实验台</li>
+    <li>支持自定义 F、H、Q、R 矩阵，或从预设场景选择</li>
+    <li>生成模拟数据（正弦、阶跃、随机游走），或上传 CSV</li>
+    <li>一键导出可移植的 C 语言代码</li>
+  </ul>
+</div>
+
+<div class="sandbox">
+  <h2 style="border:none;padding:0;margin:0 0 16px;">🧪 卡尔曼滤波器沙盒</h2>
+
+  <!-- Step 1: Choose scenario -->
+  <div class="tabs" id="mainTabs">
+    <div class="tab active" data-tab="preset">预设场景</div>
+    <div class="tab" data-tab="custom">自定义矩阵</div>
+    <div class="tab" data-tab="csv">CSV 数据</div>
+  </div>
+
+  <div class="tab-content active" id="tab-preset">
+    <div class="form-row">
+      <div class="form-col">
+        <label>选择场景:</label>
+        <select id="presetSelect">
+          <option value="pos_vel_1d">1D 位置-速度 (GPS)</option>
+          <option value="pos_vel_2d">2D 位置-速度 (GPS+IMU)</option>
+          <option value="temperature">温度估计</option>
+          <option value="altitude">无人机定高 (气压+IMU)</option>
+        </select>
+      </div>
+      <div class="form-col">
+        <label>信号类型:</label>
+        <select id="signalType">
+          <option value="sine">正弦波</option>
+          <option value="step">阶跃信号</option>
+          <option value="ramp">斜坡</option>
+          <option value="random_walk">随机游走</option>
+        </select>
+      </div>
+      <div class="form-col">
+        <label>仿真步数:</label>
+        <input type="number" id="simSteps" value="200" min="50" max="2000" step="50">
+      </div>
+    </div>
+    <button class="action" id="loadPreset" style="background:var(--primary);">加载预设</button>
+  </div>
+
+  <div class="tab-content" id="tab-custom">
+    <p style="font-size:.9em;color:var(--text-light);margin-bottom:12px;">输入矩阵，每行用逗号分隔，行之间换行。例如 2×2 单位矩阵: "1,0\n0,1"</p>
+    <div class="form-row">
+      <div class="form-col">
+        <label>状态维度 n:</label>
+        <input type="number" id="dimN" value="2" min="1" max="8">
+      </div>
+      <div class="form-col">
+        <label>观测维度 m:</label>
+        <input type="number" id="dimM" value="1" min="1" max="8">
+      </div>
+      <div class="form-col">
+        <label>时间步长 dt:</label>
+        <input type="number" id="customDt" value="0.1" min="0.001" max="1" step="0.001">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-col">
+        <label>F (n×n):</label>
+        <textarea class="matrix-input" id="matF">1, 0.1
+0, 1</textarea>
+      </div>
+      <div class="form-col">
+        <label>H (m×n):</label>
+        <textarea class="matrix-input" id="matH">1, 0</textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-col">
+        <label>Q (n×n):</label>
+        <textarea class="matrix-input" id="matQ">0.001, 0
+0, 0.1</textarea>
+      </div>
+      <div class="form-col">
+        <label>R (m×m):</label>
+        <textarea class="matrix-input" id="matR">4</textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-col">
+        <label>初始状态 x₀ (n×1):</label>
+        <textarea class="matrix-input" id="matX0" style="height:40px">0, 0</textarea>
+      </div>
+      <div class="form-col">
+        <label>初始 P₀ (对角值):</label>
+        <input type="number" id="customP0" value="100" min="0.1" max="10000">
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-csv">
+    <p style="font-size:.9em;color:var(--text-light);margin-bottom:12px;">
+      上传 CSV 文件：第一列为时间戳，后续列为观测值。确保已在"自定义矩阵"标签页设置好 F、H、Q、R。
+    </p>
+    <input type="file" id="csvFile" accept=".csv,.txt" style="margin-bottom:12px;">
+    <div id="csvPreview" style="font-size:.85em;color:var(--text-light);"></div>
+  </div>
+
+  <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+
+  <!-- Current matrices display -->
+  <h3>当前矩阵配置</h3>
+  <div id="matrixDisplay" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+    <div id="dispF" style="flex:1;min-width:150px;background:var(--code-bg);border-radius:8px;padding:10px;font-family:monospace;font-size:.85em;white-space:pre;overflow-x:auto;"></div>
+    <div id="dispH" style="flex:1;min-width:150px;background:var(--code-bg);border-radius:8px;padding:10px;font-family:monospace;font-size:.85em;white-space:pre;overflow-x:auto;"></div>
+    <div id="dispQ" style="flex:1;min-width:150px;background:var(--code-bg);border-radius:8px;padding:10px;font-family:monospace;font-size:.85em;white-space:pre;overflow-x:auto;"></div>
+    <div id="dispR" style="flex:1;min-width:150px;background:var(--code-bg);border-radius:8px;padding:10px;font-family:monospace;font-size:.85em;white-space:pre;overflow-x:auto;"></div>
+  </div>
+
+  <!-- Run button -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="action" id="runBtn" style="background:#16a34a;font-size:1em;padding:10px 28px;">▶ 运行滤波器</button>
+    <button class="action" id="exportBtn" style="background:#7c3aed;font-size:1em;padding:10px 28px;">导出 C 代码</button>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection" style="display:none;margin-top:24px;">
+    <h3>滤波结果</h3>
+    <div class="stats-row">
+      <div class="stat-box"><div class="label">位置 RMS 误差</div><div class="value" id="rmsResult">-</div></div>
+      <div class="stat-box"><div class="label">最大误差</div><div class="value" id="maxErrResult">-</div></div>
+      <div class="stat-box"><div class="label">平均 K 范数</div><div class="value" id="avgKResult">-</div></div>
+      <div class="stat-box"><div class="label">收敛步数</div><div class="value" id="convResult">-</div></div>
+    </div>
+    <div id="resultPlot" style="width:100%;height:400px;margin-top:12px;"></div>
+    <div id="errorPlot" style="width:100%;height:200px;margin-top:8px;"></div>
+  </div>
+
+  <!-- C code output -->
+  <div id="codeSection" style="display:none;margin-top:24px;">
+    <h3>生成的 C 代码</h3>
+    <p style="font-size:.9em;color:var(--text-light);">以下代码可直接复制到你的嵌入式工程中。包含初始化和滤波器运行函数。</p>
+    <pre id="cCodeBlock"><code id="cCodeContent"></code><button class="copy-btn" id="copyBtn">复制</button></pre>
+  </div>
+</div>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+  <p><strong>从沙盒到产品的迁移清单：</strong></p>
+  <ol style="margin-left:18px;">
+    <li>用沙盒确定 F、H、Q、R 的初始值</li>
+    <li>导出 C 代码，集成到你的 MCU 工程</li>
+    <li>在真实硬件上采集传感器数据，用 Welford 算法计算 R（参见第二章）</li>
+    <li>在线调 Q：太小跟不上 → 增大；估计抖动 → 减小</li>
+    <li>监测新息序列和 NIS（参见第七章），确保滤波器健康</li>
+    <li>考虑用 Joseph 形式替换标准 P 更新以增强稳定性</li>
+    <li>如果性能不够，用上三角存储 P 并展开矩阵运算</li>
+    <li>在 release 模式下做一次运行时间测量，确保不超时</li>
+  </ol>
+
+  <p style="margin-top:12px;">恭喜你完成了整本教材！现在你已经掌握了卡尔曼滤波从理论到实践的核心知识。去造点东西吧。</p>
+</div>
+
+</div>
+
+<nav style="background:var(--card);border-top:1px solid var(--border);padding:16px 20px;display:flex;justify-content:space-between;">
+  <a href="ch08.html" style="color:var(--primary);text-decoration:none;font-weight:600;">← 第八章</a>
+  <a href="index.html" style="color:var(--primary);text-decoration:none;font-weight:600;">返回目录</a>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  renderMathInElement(document.body,{
+    delimiters:[{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
+(function(){
+  /* ========== Tab switching ========== */
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click',function(){
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById('tab-'+this.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ========== Matrix utilities ========== */
+  function parseMat(str){
+    return str.trim().split('\n').map(r=>r.split(',').map(v=>parseFloat(v.trim())));
+  }
+  function matStr(name,M){
+    if(!M||!M.length) return name+' = []';
+    return name+' =\n'+M.map(r=>'  ['+r.map(v=>v.toFixed(4).padStart(9)).join(',')+']').join('\n');
+  }
+  function mat(r,c){return Array.from({length:r},()=>new Array(c).fill(0));}
+  function matMul(A,B){const m=A.length,n=B[0].length,p=B.length,C=mat(m,n);for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];return C;}
+  function matAdd(A,B){return A.map((r,i)=>r.map((v,j)=>v+B[i][j]));}
+  function matSub(A,B){return A.map((r,i)=>r.map((v,j)=>v-B[i][j]));}
+  function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+  function eye(n){const I=mat(n,n);for(let i=0;i<n;i++)I[i][i]=1;return I;}
+  function diagMat(n,v){const M=mat(n,n);for(let i=0;i<n;i++)M[i][i]=v;return M;}
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  function invMat(M){
+    const n=M.length;
+    const aug=M.map((r,i)=>[...r,...eye(n)[i]]);
+    for(let i=0;i<n;i++){
+      let maxR=i;
+      for(let j=i+1;j<n;j++) if(Math.abs(aug[j][i])>Math.abs(aug[maxR][i])) maxR=j;
+      [aug[i],aug[maxR]]=[aug[maxR],aug[i]];
+      const pivot=aug[i][i];
+      if(Math.abs(pivot)<1e-12) continue;
+      for(let j=0;j<2*n;j++) aug[i][j]/=pivot;
+      for(let j=0;j<n;j++){
+        if(j===i) continue;
+        const f=aug[j][i];
+        for(let k=0;k<2*n;k++) aug[j][k]-=f*aug[i][k];
+      }
+    }
+    return aug.map(r=>r.slice(n));
+  }
+
+  /* ========== Current config ========== */
+  let cfg={
+    n:2, m:1, dt:0.1,
+    F:[[1,0.1],[0,1]],
+    H:[[1,0]],
+    Q:[[0.001,0],[0,0.1]],
+    R:[[4]],
+    x0:[0,0],
+    P0:100
+  };
+  let csvData=null;
+
+  function updateDisplay(){
+    document.getElementById('dispF').textContent=matStr('F',cfg.F);
+    document.getElementById('dispH').textContent=matStr('H',cfg.H);
+    document.getElementById('dispQ').textContent=matStr('Q',cfg.Q);
+    document.getElementById('dispR').textContent=matStr('R',cfg.R);
+  }
+
+  /* ========== Presets ========== */
+  const presets={
+    pos_vel_1d:{
+      n:2,m:1,dt:0.1,
+      F:[[1,0.1],[0,1]],H:[[1,0]],
+      Q:[[0.0008,0.005],[0.005,0.1]],R:[[4]],
+      x0:[0,0],P0:100
+    },
+    pos_vel_2d:{
+      n:4,m:2,dt:0.1,
+      F:[[1,0,0.1,0],[0,1,0,0.1],[0,0,1,0],[0,0,0,1]],
+      H:[[1,0,0,0],[0,1,0,0]],
+      Q:[[0.0008,0,0.005,0],[0,0.0008,0,0.005],[0.005,0,0.1,0],[0,0.005,0,0.1]],
+      R:[[9,0],[0,9]],
+      x0:[0,0,1,0.5],P0:100
+    },
+    temperature:{
+      n:1,m:1,dt:1,
+      F:[[1]],H:[[1]],Q:[[0.01]],R:[[1]],
+      x0:[20],P0:10
+    },
+    altitude:{
+      n:3,m:1,dt:0.02,
+      F:[[1,0.02,0.0002],[0,1,0.02],[0,0,1]],
+      H:[[1,0,0]],
+      Q:[[0.0001,0,0],[0,0.01,0],[0,0,0.001]],
+      R:[[0.5]],
+      x0:[0,0,0],P0:50
+    }
+  };
+
+  document.getElementById('loadPreset').addEventListener('click',function(){
+    const key=document.getElementById('presetSelect').value;
+    cfg={...presets[key]};
+    document.getElementById('matF').value=cfg.F.map(r=>r.join(', ')).join('\n');
+    document.getElementById('matH').value=cfg.H.map(r=>r.join(', ')).join('\n');
+    document.getElementById('matQ').value=cfg.Q.map(r=>r.join(', ')).join('\n');
+    document.getElementById('matR').value=cfg.R.map(r=>r.join(', ')).join('\n');
+    document.getElementById('matX0').value=cfg.x0.join(', ');
+    document.getElementById('customP0').value=cfg.P0;
+    document.getElementById('dimN').value=cfg.n;
+    document.getElementById('dimM').value=cfg.m;
+    document.getElementById('customDt').value=cfg.dt;
+    updateDisplay();
+  });
+
+  /* ========== Read custom matrices ========== */
+  function readCustom(){
+    cfg.n=parseInt(document.getElementById('dimN').value);
+    cfg.m=parseInt(document.getElementById('dimM').value);
+    cfg.dt=parseFloat(document.getElementById('customDt').value);
+    cfg.F=parseMat(document.getElementById('matF').value);
+    cfg.H=parseMat(document.getElementById('matH').value);
+    cfg.Q=parseMat(document.getElementById('matQ').value);
+    cfg.R=parseMat(document.getElementById('matR').value);
+    cfg.x0=document.getElementById('matX0').value.split(',').map(v=>parseFloat(v.trim()));
+    cfg.P0=parseFloat(document.getElementById('customP0').value);
+    updateDisplay();
+  }
+
+  /* ========== CSV loading ========== */
+  document.getElementById('csvFile').addEventListener('change',function(e){
+    const file=e.target.files[0];
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      const lines=ev.target.result.trim().split('\n');
+      csvData=lines.map(l=>l.split(',').map(v=>parseFloat(v.trim()))).filter(r=>r.every(v=>!isNaN(v)));
+      document.getElementById('csvPreview').textContent=`已加载 ${csvData.length} 行, ${csvData[0].length} 列 (第一列时间戳, 后续为观测)`;
+    };
+    reader.readAsText(file);
+  });
+
+  /* ========== Generate signal ========== */
+  function generateSignal(steps,type,n){
+    const data=[];
+    for(let k=0;k<steps;k++){
+      const t=k*cfg.dt;
+      let vals;
+      if(n<=2){
+        let pos;
+        if(type==='sine') pos=10*Math.sin(0.5*t);
+        else if(type==='step') pos=t>steps*cfg.dt*0.3?5:0;
+        else if(type==='ramp') pos=0.5*t;
+        else pos=(data.length>0?data[data.length-1].true[0]:0)+0.3*gauss();
+        vals=[pos, n>1?(type==='sine'?5*Math.cos(0.5*t):0.5):undefined].filter(v=>v!==undefined);
+      } else {
+        let px,py;
+        if(type==='sine'){px=15*Math.cos(0.3*t);py=10*Math.sin(0.3*t);}
+        else if(type==='step'){px=t>3?8:0;py=t>5?5:0;}
+        else if(type==='ramp'){px=0.5*t;py=0.3*t;}
+        else{
+          const prev=data.length>0?data[data.length-1].true:[0,0,0,0];
+          px=prev[0]+prev[2]*cfg.dt+gauss()*0.1;
+          py=prev[1]+prev[3]*cfg.dt+gauss()*0.1;
+        }
+        const vx=n>2?(type==='sine'?-4.5*Math.sin(0.3*t):0.5):0;
+        const vy=n>3?(type==='sine'?3*Math.cos(0.3*t):0.3):0;
+        vals=[px,py,vx,vy].slice(0,n);
+      }
+      data.push({t, true:vals});
+    }
+    return data;
+  }
+
+  /* ========== Run KF ========== */
+  document.getElementById('runBtn').addEventListener('click',function(){
+    readCustom();
+    const steps=parseInt(document.getElementById('simSteps').value)||200;
+    const sigType=document.getElementById('signalType').value;
+    const n=cfg.n, m=cfg.m;
+
+    let simData;
+    if(csvData){
+      simData=csvData.map((r,i)=>({t:r[0],true:r.slice(1),meas:r.slice(1)}));
+    } else {
+      simData=generateSignal(steps,sigType,n);
+      simData.forEach(d=>{
+        const z=[];
+        for(let i=0;i<m;i++){
+          const Hrow=cfg.H[i];
+          let hx=0;
+          for(let j=0;j<n;j++) hx+=Hrow[j]*(d.true[j]||0);
+          z.push(hx+Math.sqrt(cfg.R[i][i])*gauss());
+        }
+        d.meas=z;
+      });
+    }
+
+    /* Init KF */
+    let x=cfg.x0.slice();
+    if(x.length<n) x=x.concat(new Array(n-x.length).fill(0));
+    let P=diagMat(n,cfg.P0);
+    const F=cfg.F, H=cfg.H, Q=cfg.Q, R=cfg.R;
+
+    const estHist=[], kNorms=[], errHist=[];
+
+    for(let k=0;k<simData.length;k++){
+      /* Predict */
+      const xVec=x.map(v=>[v]);
+      const xPred=matMul(F,xVec).map(r=>r[0]);
+      let PPred=matAdd(matMul(matMul(F,P),transpose(F)),Q);
+
+      /* Update */
+      const z=simData[k].meas;
+      if(z&&z.length===m){
+        const PHt=matMul(PPred,transpose(H));
+        const S=matAdd(matMul(H,PHt),R);
+        const Si=invMat(S);
+        const K=matMul(PHt,Si);
+
+        const Hx=matMul(H,xPred.map(v=>[v])).map(r=>r[0]);
+        const innov=z.map((zi,i)=>zi-Hx[i]);
+        const correction=matMul(K,innov.map(v=>[v])).map(r=>r[0]);
+        x=xPred.map((v,i)=>v+correction[i]);
+        const IKH=matSub(eye(n),matMul(K,H));
+        P=matMul(IKH,PPred);
+
+        let kn=0;
+        K.forEach(r=>r.forEach(v=>kn+=v*v));
+        kNorms.push(Math.sqrt(kn));
+      } else {
+        x=xPred;
+        P=PPred;
+      }
+
+      estHist.push(x.slice());
+      if(simData[k].true){
+        const e=Math.sqrt(simData[k].true.reduce((s,v,i)=>{
+          const diff=(v||0)-(x[i]||0);
+          return i<m?s+diff*diff:s;
+        },0));
+        errHist.push(e);
+      }
+    }
+
+    /* Stats */
+    const rms=Math.sqrt(errHist.reduce((s,e)=>s+e*e,0)/errHist.length);
+    const maxErr=Math.max(...errHist);
+    const avgK=kNorms.length?kNorms.reduce((s,v)=>s+v,0)/kNorms.length:0;
+    let convStep=errHist.length;
+    const steadyErr=rms*1.5;
+    for(let i=0;i<errHist.length;i++){
+      if(errHist.slice(i,i+10).every(e=>e<steadyErr)){convStep=i;break;}
+    }
+
+    document.getElementById('rmsResult').textContent=rms.toFixed(4);
+    document.getElementById('maxErrResult').textContent=maxErr.toFixed(4);
+    document.getElementById('avgKResult').textContent=avgK.toFixed(4);
+    document.getElementById('convResult').textContent=convStep;
+    document.getElementById('resultsSection').style.display='block';
+
+    /* Plots */
+    const tArr=simData.map(d=>d.t);
+    const traces=[];
+
+    const compIdx=0;
+    traces.push({x:tArr,y:simData.map(d=>d.true?d.true[compIdx]:null),name:'真实值 (x₁)',line:{color:'#16a34a',width:2}});
+    traces.push({x:tArr,y:estHist.map(e=>e[compIdx]),name:'KF 估计 (x₁)',line:{color:'#2563eb',width:2.5}});
+    if(m>=1) traces.push({x:tArr,y:simData.map(d=>d.meas?d.meas[0]:null),name:'测量 (z₁)',mode:'markers',marker:{color:'#dc2626',size:3,opacity:.4}});
+
+    if(n>=2 && m>=2){
+      traces.push({x:tArr,y:simData.map(d=>d.true?d.true[1]:null),name:'真实值 (x₂)',line:{color:'#16a34a',width:1.5,dash:'dash'}});
+      traces.push({x:tArr,y:estHist.map(e=>e[1]),name:'KF 估计 (x₂)',line:{color:'#2563eb',width:1.5,dash:'dash'}});
+    }
+
+    Plotly.react('resultPlot',traces,{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'状态值'},
+      legend:{x:0,y:1.15,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    Plotly.react('errorPlot',[{
+      x:tArr,y:errHist,name:'估计误差',
+      line:{color:'#dc2626',width:1.5},fill:'tozeroy',fillcolor:'rgba(220,38,38,0.1)'
+    }],{
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'误差'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      showlegend:false
+    },{responsive:true});
+  });
+
+  /* ========== Export C code ========== */
+  document.getElementById('exportBtn').addEventListener('click',function(){
+    readCustom();
+    const n=cfg.n, m=cfg.m;
+
+    function matToC(name,M,r,c){
+      let s=`    float ${name}[${r}][${c}] = {\n`;
+      s+=M.map(row=>'        {'+row.map(v=>v.toFixed(6)+'f').join(', ')+'}').join(',\n');
+      return s+'\n    };';
+    }
+    function vecToC(name,V){
+      return `    float ${name}[${V.length}] = {${V.map(v=>v.toFixed(6)+'f').join(', ')}};`;
+    }
+
+    const code=`/* ===== 自动生成的卡尔曼滤波器 C 代码 =====
+ * 状态维度 n = ${n}, 观测维度 m = ${m}
+ * dt = ${cfg.dt}
+ * 由卡尔曼滤波交互式教材沙盒生成
+ */
+
+#include <string.h>
+
+#define KF_N ${n}
+#define KF_M ${m}
+
+typedef struct {
+    float x[KF_N];
+    float P[KF_N][KF_N];
+    float F[KF_N][KF_N];
+    float H[KF_M][KF_N];
+    float Q[KF_N][KF_N];
+    float R[KF_M][KF_M];
+    float K[KF_N][KF_M];
+} KF_t;
+
+static void mat_mul_nn(const float A[KF_N][KF_N], const float B[KF_N][KF_N], float C[KF_N][KF_N]) {
+    float tmp[KF_N][KF_N] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            for (int k = 0; k < KF_N; k++)
+                tmp[i][j] += A[i][k] * B[k][j];
+    memcpy(C, tmp, sizeof(tmp));
+}
+
+void kf_init(KF_t *kf) {
+${matToC('F', cfg.F, n, n)}
+    memcpy(kf->F, F, sizeof(F));
+
+${matToC('H', cfg.H, m, n)}
+    memcpy(kf->H, H, sizeof(H));
+
+${matToC('Q', cfg.Q, n, n)}
+    memcpy(kf->Q, Q, sizeof(Q));
+
+${matToC('R', cfg.R, m, m)}
+    memcpy(kf->R, R, sizeof(R));
+
+${vecToC('x0', cfg.x0)}
+    memcpy(kf->x, x0, sizeof(x0));
+
+    memset(kf->P, 0, sizeof(kf->P));
+    for (int i = 0; i < KF_N; i++)
+        kf->P[i][i] = ${cfg.P0.toFixed(1)}f;
+}
+
+void kf_predict(KF_t *kf) {
+    /* x = F * x */
+    float x_new[KF_N] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            x_new[i] += kf->F[i][j] * kf->x[j];
+    memcpy(kf->x, x_new, sizeof(x_new));
+
+    /* P = F * P * F' + Q */
+    float FP[KF_N][KF_N] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            for (int k = 0; k < KF_N; k++)
+                FP[i][j] += kf->F[i][k] * kf->P[k][j];
+
+    float FPFt[KF_N][KF_N] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            for (int k = 0; k < KF_N; k++)
+                FPFt[i][j] += FP[i][k] * kf->F[j][k];
+
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            kf->P[i][j] = FPFt[i][j] + kf->Q[i][j];
+}
+
+void kf_update(KF_t *kf, const float z[KF_M]) {
+    /* S = H * P * H' + R */
+    float PHt[KF_N][KF_M] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_M; j++)
+            for (int k = 0; k < KF_N; k++)
+                PHt[i][j] += kf->P[i][k] * kf->H[j][k];
+
+    float S[KF_M][KF_M] = {0};
+    for (int i = 0; i < KF_M; i++)
+        for (int j = 0; j < KF_M; j++) {
+            for (int k = 0; k < KF_N; k++)
+                S[i][j] += kf->H[i][k] * PHt[k][j];
+            S[i][j] += kf->R[i][j];
+        }
+
+    /* S inverse (for m <= 2, use direct formula) */
+    float Si[KF_M][KF_M];
+${m === 1 ? `    Si[0][0] = 1.0f / S[0][0];` :
+  m === 2 ? `    float det = S[0][0]*S[1][1] - S[0][1]*S[1][0];
+    float inv_det = 1.0f / det;
+    Si[0][0] =  S[1][1] * inv_det;
+    Si[0][1] = -S[0][1] * inv_det;
+    Si[1][0] = -S[1][0] * inv_det;
+    Si[1][1] =  S[0][0] * inv_det;` :
+  `    /* TODO: implement general matrix inverse for m>${m} */`}
+
+    /* K = PHt * Si */
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_M; j++) {
+            kf->K[i][j] = 0;
+            for (int k = 0; k < KF_M; k++)
+                kf->K[i][j] += PHt[i][k] * Si[k][j];
+        }
+
+    /* x = x + K * (z - H*x) */
+    float innov[KF_M];
+    for (int i = 0; i < KF_M; i++) {
+        innov[i] = z[i];
+        for (int j = 0; j < KF_N; j++)
+            innov[i] -= kf->H[i][j] * kf->x[j];
+    }
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_M; j++)
+            kf->x[i] += kf->K[i][j] * innov[j];
+
+    /* P = (I - K*H) * P */
+    float IKH[KF_N][KF_N] = {0};
+    for (int i = 0; i < KF_N; i++) IKH[i][i] = 1.0f;
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            for (int k = 0; k < KF_M; k++)
+                IKH[i][j] -= kf->K[i][k] * kf->H[k][j];
+
+    float P_new[KF_N][KF_N] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            for (int k = 0; k < KF_N; k++)
+                P_new[i][j] += IKH[i][k] * kf->P[k][j];
+    memcpy(kf->P, P_new, sizeof(P_new));
+}
+
+/* 用法示例:
+ * KF_t kf;
+ * kf_init(&kf);
+ * while (1) {
+ *     kf_predict(&kf);
+ *     float z[KF_M] = { read_sensor() };
+ *     kf_update(&kf, z);
+ *     float est = kf.x[0];
+ * }
+ */`;
+
+    document.getElementById('cCodeContent').textContent=code;
+    document.getElementById('codeSection').style.display='block';
+    document.getElementById('codeSection').scrollIntoView({behavior:'smooth'});
+  });
+
+  /* Copy button */
+  document.getElementById('copyBtn').addEventListener('click',function(){
+    navigator.clipboard.writeText(document.getElementById('cCodeContent').textContent).then(()=>{
+      this.textContent='已复制!';
+      setTimeout(()=>this.textContent='复制',1500);
+    });
+  });
+
+  /* Init display */
+  updateDisplay();
+})();
+</script>
+</body>
+</html>

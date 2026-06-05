@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第八章：更远的道路 | 卡尔曼滤波交互式教材</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root{--primary:#2563eb;--primary-light:#dbeafe;--bg:#f8fafc;--card:#fff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--note-bg:#fffbeb;--note-border:#f59e0b;--code-bg:#f1f5f9}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+nav a{color:var(--primary);text-decoration:none;font-weight:600;font-size:.95em}
+.container{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:2em;margin-bottom:8px;color:var(--primary)}
+.chapter-meta{color:var(--text-light);margin-bottom:28px;font-size:.95em}
+h2{font-size:1.4em;margin:36px 0 14px;color:#0f172a;border-left:4px solid var(--primary);padding-left:12px}
+h3{font-size:1.15em;margin:24px 0 10px}
+p{margin-bottom:14px}
+.objective{background:var(--primary-light);border-radius:10px;padding:20px 24px;margin-bottom:28px}
+.objective h3{margin-top:0;color:var(--primary)}
+.interactive-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px}
+.control-group{display:flex;flex-direction:column;gap:4px}
+.control-group label{font-size:.85em;color:var(--text-light);font-weight:600}
+.control-group input[type="range"]{width:160px}
+.control-group select{padding:4px 8px;border-radius:6px;border:1px solid var(--border)}
+.val-display{display:inline-block;min-width:36px;text-align:center;background:var(--code-bg);border-radius:4px;padding:1px 6px;font-family:'SF Mono',monospace;font-size:.85em}
+pre{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:18px 20px;overflow-x:auto;font-size:.88em;line-height:1.6;margin:14px 0}
+pre code{font-family:'SF Mono','Consolas','Menlo',monospace}
+.note{background:var(--note-bg);border-left:4px solid var(--note-border);border-radius:0 8px 8px 0;padding:20px 24px;margin:32px 0}
+.note h3{color:#92400e;margin-top:0}
+.note h3::before{content:"🔧 "}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:20px 0}
+.app-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;transition:box-shadow .2s}
+.app-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.app-card h4{color:var(--primary);margin-bottom:8px;font-size:1.05em}
+.app-card .specs{font-size:.82em;color:var(--text-light);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.compare-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+.compare-table th,.compare-table td{padding:10px 14px;border:1px solid var(--border);text-align:left}
+.compare-table th{background:var(--primary-light);font-weight:700}
+.compare-table tr:nth-child(even){background:#f8fafc}
+.flow-box{background:var(--code-bg);border-radius:10px;padding:20px;margin:16px 0;text-align:center}
+.flow-box .step{display:inline-block;padding:8px 16px;margin:4px;border-radius:6px;font-weight:600;font-size:.9em}
+.flow-box .arrow{color:var(--text-light);margin:0 4px;font-size:1.2em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+button.action{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-weight:600;color:#fff;font-size:.92em}
+@media(max-width:600px){.controls{flex-direction:column}.control-group input[type="range"]{width:100%}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="ch07.html">← 上一章</a>
+  <span style="font-weight:700;font-size:.95em;">第八章</span>
+  <a href="ch09.html">下一章 →</a>
+</nav>
+
+<div class="container">
+<h1>第八章：更远的道路</h1>
+<p class="chapter-meta">其他卡尔曼变体与应用场景速览</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>了解 UKF、信息滤波、自适应卡尔曼等主要变体的适用场景</li>
+    <li>速览电机控制、无人机定高、SLAM 等典型应用</li>
+    <li>知道在不同场景下该选择哪种滤波器</li>
+  </ul>
+</div>
+
+<h2>一、卡尔曼滤波家族</h2>
+
+<table class="compare-table">
+<thead><tr>
+  <th>变体</th><th>核心思想</th><th>优点</th><th>缺点</th><th>典型应用</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><strong>KF</strong></td>
+  <td>线性系统 + 高斯噪声</td>
+  <td>最优解、计算简单</td>
+  <td>仅限线性系统</td>
+  <td>惯导预积分、温度滤波</td>
+</tr>
+<tr>
+  <td><strong>EKF</strong></td>
+  <td>一阶泰勒展开线性化</td>
+  <td>实现简单、计算可控</td>
+  <td>高度非线性时精度差</td>
+  <td>GPS/INS 融合、姿态估计</td>
+</tr>
+<tr>
+  <td><strong>UKF</strong></td>
+  <td>Sigma 点采样传递</td>
+  <td>无需雅可比、二阶精度</td>
+  <td>需存储 2n+1 个 sigma 点</td>
+  <td>姿态估计、目标跟踪</td>
+</tr>
+<tr>
+  <td><strong>信息滤波</strong></td>
+  <td>用信息矩阵(P⁻¹)代替协方差</td>
+  <td>多传感器融合更自然</td>
+  <td>预测步需要矩阵求逆</td>
+  <td>分布式传感器网络</td>
+</tr>
+<tr>
+  <td><strong>自适应 KF</strong></td>
+  <td>在线调整 Q 或 R</td>
+  <td>应对未知/变化噪声</td>
+  <td>可能不收敛</td>
+  <td>环境变化的导航系统</td>
+</tr>
+<tr>
+  <td><strong>平方根 KF</strong></td>
+  <td>Cholesky 分解 P=SS'</td>
+  <td>数值稳定性极佳</td>
+  <td>实现复杂度高</td>
+  <td>航天、高精度导航</td>
+</tr>
+</tbody>
+</table>
+
+<h2>二、UKF——不用算雅可比的妙招</h2>
+
+<p>UKF（Unscented Kalman Filter）的核心思想是：与其线性化函数（EKF），不如直接用有代表性的采样点通过非线性函数，然后从输出重建统计量。</p>
+
+<p>具体步骤：</p>
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li>生成 \(2n+1\) 个 Sigma 点：\(\chi_0 = \mu\)，\(\chi_i = \mu \pm \sqrt{(n+\lambda)P}\)</li>
+  <li>每个点通过非线性函数：\(\gamma_i = f(\chi_i)\)</li>
+  <li>从输出计算加权均值和协方差</li>
+</ol>
+
+<div class="interactive-box">
+  <h3>📊 交互对比：EKF vs UKF</h3>
+  <p style="font-size:.92em;color:var(--text-light);">一个简单的非线性变换示例：高斯分布通过 \(y = x^2 + 0.2x^3\)。观察 EKF（线性化）和 UKF（sigma点）对输出分布的估计差异。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>输入均值 μ: <span class="val-display" id="ukfMuVal">2.0</span></label>
+      <input type="range" id="ukfMuSlider" min="-3" max="5" step="0.1" value="2.0">
+    </div>
+    <div class="control-group">
+      <label>输入标准差 σ: <span class="val-display" id="ukfSigVal">1.0</span></label>
+      <input type="range" id="ukfSigSlider" min="0.1" max="3" step="0.1" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button class="action" id="ukfRunBtn" style="background:var(--primary);">计算</button>
+    </div>
+  </div>
+
+  <div id="ukfPlot" style="width:100%;height:380px;"></div>
+</div>
+
+<h2>三、应用场景速览</h2>
+
+<div class="card-grid">
+
+  <div class="app-card">
+    <h4>电机转子位置估计</h4>
+    <p>无传感器（Sensorless）电机控制：用反电动势观测器估计转子角度和转速，替代昂贵的编码器。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">电压/电流 →</span>
+      <span class="step" style="background:#dcfce7;">电机模型(EKF) →</span>
+      <span class="step" style="background:#fef3c7;">θ, ω</span>
+    </div>
+    <div class="specs">
+      状态: [θ, ω, id, iq] | 更新率: 10~20kHz | 模型: 非线性(EKF)
+    </div>
+  </div>
+
+  <div class="app-card">
+    <h4>无人机定高</h4>
+    <p>融合气压计（慢但稳定）和加速度计（快但飘），估计海拔高度和垂直速度。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">气压计 + IMU →</span>
+      <span class="step" style="background:#dcfce7;">KF 融合 →</span>
+      <span class="step" style="background:#fef3c7;">高度, vz</span>
+    </div>
+    <div class="specs">
+      状态: [h, vz, bias] | 更新率: 100Hz(IMU) + 25Hz(baro) | 线性 KF
+    </div>
+  </div>
+
+  <div class="app-card">
+    <h4>扫地机器人 SLAM</h4>
+    <p>同时定位与建图：用激光雷达或视觉构建环境地图，同时估计机器人位姿。EKF-SLAM 是早期经典方法。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">LiDAR/视觉 →</span>
+      <span class="step" style="background:#dcfce7;">EKF-SLAM →</span>
+      <span class="step" style="background:#fef3c7;">位姿 + 地图</span>
+    </div>
+    <div class="specs">
+      状态: [x,y,θ,landmarks...] | 更新率: 5~30Hz | 状态维度可达 100+
+    </div>
+  </div>
+
+  <div class="app-card">
+    <h4>电池 SOC 估计</h4>
+    <p>通过电压和电流测量，估计电池荷电状态（State of Charge）。等效电路模型非线性，常用 EKF。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">V, I →</span>
+      <span class="step" style="background:#dcfce7;">EKF + 电池模型 →</span>
+      <span class="step" style="background:#fef3c7;">SOC%</span>
+    </div>
+    <div class="specs">
+      状态: [SOC, V_RC1, V_RC2] | 更新率: 1~10Hz | EKF/UKF
+    </div>
+  </div>
+
+  <div class="app-card">
+    <h4>AHRS 姿态估计</h4>
+    <p>融合陀螺仪、加速度计、磁力计估计 roll/pitch/yaw。Madgwick/Mahony 是简化版，完整版用 EKF/UKF。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">9-axis IMU →</span>
+      <span class="step" style="background:#dcfce7;">EKF(四元数) →</span>
+      <span class="step" style="background:#fef3c7;">姿态角</span>
+    </div>
+    <div class="specs">
+      状态: [q0,q1,q2,q3,bias_gx,gy,gz] | 更新率: 200~1000Hz | 非线性
+    </div>
+  </div>
+
+  <div class="app-card">
+    <h4>目标跟踪（雷达）</h4>
+    <p>从雷达回波中跟踪飞行器或导弹的位置和速度。典型的多目标跟踪场景需要数据关联 + KF。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">r,θ 测量 →</span>
+      <span class="step" style="background:#dcfce7;">数据关联+EKF →</span>
+      <span class="step" style="background:#fef3c7;">航迹</span>
+    </div>
+    <div class="specs">
+      状态: [x,y,z,vx,vy,vz] | 更新率: 1~20Hz | Singer/IMM 模型
+    </div>
+  </div>
+
+</div>
+
+<h2>四、自适应卡尔曼滤波简介</h2>
+
+<p>标准 KF 假设 Q 和 R 是已知常数。但实际中噪声会变：GPS 在城市峡谷中精度急剧下降，电机在变速时过程噪声增大。</p>
+
+<p><strong>简单方法：基于新息的自适应</strong></p>
+
+<p>监测新息序列的实际方差，和理论方差 \(S = HPH^T + R\) 比较。如果实际方差明显大于理论值，说明 R 被低估了（或 Q 被低估了），动态调整：</p>
+
+$$\hat{R}_k = \frac{1}{W}\sum_{i=k-W+1}^{k} \nu_i \nu_i^T - HPH^T$$
+
+<div class="interactive-box">
+  <h3>📊 交互实验：自适应 KF vs 固定 KF</h3>
+  <p style="font-size:.92em;color:var(--text-light);">信号在第 100 步时噪声突然增大 5 倍。观察固定参数 KF 和自适应 KF 的表现差异。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>自适应窗口 W: <span class="val-display" id="adaptWVal">20</span></label>
+      <input type="range" id="adaptWSlider" min="5" max="50" step="1" value="20">
+    </div>
+    <div class="control-group">
+      <label>噪声跳变倍数: <span class="val-display" id="jumpVal">5</span></label>
+      <input type="range" id="jumpSlider" min="2" max="20" step="1" value="5">
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button class="action" id="adaptRunBtn" style="background:var(--primary);">运行</button>
+    </div>
+  </div>
+
+  <div id="adaptPlot" style="width:100%;height:360px;"></div>
+</div>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+
+  <p><strong>不同场景的循环时间预算</strong></p>
+
+  <table class="compare-table" style="font-size:.88em;">
+  <thead><tr><th>应用</th><th>更新频率</th><th>状态维度</th><th>时间预算</th><th>推荐 MCU</th></tr></thead>
+  <tbody>
+    <tr><td>电机 FOC</td><td>10~20kHz</td><td>4~6</td><td>10~50μs</td><td>Cortex-M4F+</td></tr>
+    <tr><td>飞控姿态</td><td>200~1000Hz</td><td>7~10</td><td>100~500μs</td><td>Cortex-M4F</td></tr>
+    <tr><td>导航 GPS+INS</td><td>100Hz(P) + 10Hz(U)</td><td>9~15</td><td>1~5ms</td><td>Cortex-M7 / A系</td></tr>
+    <tr><td>SLAM</td><td>5~30Hz</td><td>50~1000</td><td>10~100ms</td><td>Cortex-A / x86</td></tr>
+    <tr><td>电池 SOC</td><td>1~10Hz</td><td>2~3</td><td>100ms+</td><td>任意 MCU</td></tr>
+  </tbody>
+  </table>
+
+  <p style="margin-top:12px;"><strong>选型建议</strong></p>
+  <ul style="margin-left:18px;">
+    <li>能用 KF 就用 KF（观测模型是线性的时候）</li>
+    <li>EKF 是 80% 场景的默认选择，雅可比手动推导一次后代码很简洁</li>
+    <li>UKF 适合"懒得推雅可比"或者非线性很强的场景，但内存开销约 2×</li>
+    <li>粒子滤波适合多模态分布（机器人绑架问题），但不适合嵌入式实时场景</li>
+  </ul>
+</div>
+
+</div>
+
+<nav style="background:var(--card);border-top:1px solid var(--border);padding:16px 20px;display:flex;justify-content:space-between;">
+  <a href="ch07.html" style="color:var(--primary);text-decoration:none;font-weight:600;">← 第七章</a>
+  <a href="ch09.html" style="color:var(--primary);text-decoration:none;font-weight:600;">第九章：动手沙盒 →</a>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  renderMathInElement(document.body,{
+    delimiters:[{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
+/* ============================================================
+ * EKF vs UKF comparison
+ * ============================================================ */
+(function(){
+  const muSlider=document.getElementById('ukfMuSlider');
+  const sigSlider=document.getElementById('ukfSigSlider');
+
+  function f(x){return x*x+0.2*x*x*x;} // nonlinear transform
+  function df(x){return 2*x+0.6*x*x;}   // derivative for EKF
+
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  function compute(){
+    const mu=parseFloat(muSlider.value), sig=parseFloat(sigSlider.value);
+    document.getElementById('ukfMuVal').textContent=mu.toFixed(1);
+    document.getElementById('ukfSigVal').textContent=sig.toFixed(1);
+
+    /* Monte Carlo "truth" */
+    const N=5000,samples=[];
+    for(let i=0;i<N;i++) samples.push(f(mu+sig*gauss()));
+    const mcMean=samples.reduce((s,v)=>s+v,0)/N;
+    const mcVar=samples.reduce((s,v)=>s+(v-mcMean)**2,0)/N;
+
+    /* EKF: linearize at mu */
+    const ekfMean=f(mu);
+    const ekfVar=df(mu)**2*sig*sig;
+
+    /* UKF: 3 sigma points (n=1) */
+    const lambda=2; // kappa=2 for n=1
+    const sp=[mu, mu+Math.sqrt((1+lambda))*sig, mu-Math.sqrt((1+lambda))*sig];
+    const w0=lambda/(1+lambda), w1=1/(2*(1+lambda));
+    const weights=[w0,w1,w1];
+    const transformed=sp.map(f);
+    const ukfMean=weights[0]*transformed[0]+weights[1]*transformed[1]+weights[2]*transformed[2];
+    const ukfVar=weights.reduce((s,w,i)=>s+w*(transformed[i]-ukfMean)**2,0);
+
+    /* Plot output distributions */
+    function gaussian(x,m,s){return Math.exp(-0.5*((x-m)/s)**2)/(s*Math.sqrt(2*Math.PI));}
+    const lo=Math.min(mcMean-3*Math.sqrt(mcVar),ekfMean-3*Math.sqrt(ekfVar));
+    const hi=Math.max(mcMean+3*Math.sqrt(mcVar),ekfMean+3*Math.sqrt(ekfVar));
+    const xArr=[],yMC=[],yEKF=[],yUKF=[];
+    for(let i=0;i<=300;i++){
+      const x=lo+(hi-lo)*i/300;
+      xArr.push(x);
+      yEKF.push(gaussian(x,ekfMean,Math.sqrt(ekfVar)));
+      yUKF.push(gaussian(x,ukfMean,Math.sqrt(Math.max(0.001,ukfVar))));
+    }
+
+    /* Histogram from MC */
+    Plotly.react('ukfPlot',[
+      {x:samples,type:'histogram',histnorm:'probability density',name:'蒙特卡洛 (真实)',marker:{color:'rgba(22,163,74,0.3)'},nbinsx:60},
+      {x:xArr,y:yEKF,name:'EKF 估计',line:{color:'#f59e0b',width:2.5}},
+      {x:xArr,y:yUKF,name:'UKF 估计',line:{color:'#7c3aed',width:2.5}}
+    ],{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'输出 y = x² + 0.2x³'},
+      yaxis:{title:'概率密度'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      annotations:[
+        {x:0.02,y:0.98,xref:'paper',yref:'paper',text:`MC: μ=${mcMean.toFixed(2)} σ=${Math.sqrt(mcVar).toFixed(2)}<br>EKF: μ=${ekfMean.toFixed(2)} σ=${Math.sqrt(ekfVar).toFixed(2)}<br>UKF: μ=${ukfMean.toFixed(2)} σ=${Math.sqrt(Math.max(0,ukfVar)).toFixed(2)}`,showarrow:false,font:{size:12,family:'SF Mono,monospace'},bgcolor:'rgba(255,255,255,0.8)',borderpad:6}
+      ]
+    },{responsive:true});
+  }
+
+  document.getElementById('ukfRunBtn').addEventListener('click',compute);
+  muSlider.addEventListener('input',()=>{document.getElementById('ukfMuVal').textContent=parseFloat(muSlider.value).toFixed(1);});
+  sigSlider.addEventListener('input',()=>{document.getElementById('ukfSigVal').textContent=parseFloat(sigSlider.value).toFixed(1);});
+  compute();
+})();
+
+/* ============================================================
+ * Adaptive KF demo
+ * ============================================================ */
+(function(){
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  function runAdaptive(){
+    const W=parseInt(document.getElementById('adaptWSlider').value);
+    const jump=parseInt(document.getElementById('jumpSlider').value);
+    document.getElementById('adaptWVal').textContent=W;
+    document.getElementById('jumpVal').textContent=jump;
+
+    const dt=0.1, steps=300, baseR=1.0, q=0.5;
+    const jumpStep=100;
+
+    let x=0,v=1;
+    /* Fixed KF */
+    let fkX=0,fkP=10,fkR=baseR*baseR;
+    /* Adaptive KF */
+    let akX=0,akP=10,akR=baseR*baseR;
+    const innovBuf=[];
+
+    const trueArr=[],fkArr=[],akArr=[],measArr=[],tArr=[],rAdaptArr=[];
+
+    for(let k=0;k<steps;k++){
+      x+=v*dt+Math.sqrt(q)*gauss()*dt;
+      v+=0.2*Math.sin(k*0.03)*dt;
+
+      const currentR=k>=jumpStep?baseR*jump:baseR;
+      const z=x+currentR*gauss();
+
+      tArr.push(k*dt);
+      trueArr.push(x);
+      measArr.push(z);
+
+      /* Fixed KF */
+      fkP+=q*dt;
+      let fkS=fkP+baseR*baseR;
+      let fkK=fkP/fkS;
+      fkX+=fkK*(z-fkX);
+      fkP*=(1-fkK);
+      fkArr.push(fkX);
+
+      /* Adaptive KF */
+      akP+=q*dt;
+      const innov=z-akX;
+      innovBuf.push(innov*innov);
+      if(innovBuf.length>W) innovBuf.shift();
+
+      if(innovBuf.length>=W){
+        const empiricalS=innovBuf.reduce((s,v)=>s+v,0)/innovBuf.length;
+        akR=Math.max(0.01,empiricalS-akP);
+      }
+      rAdaptArr.push(Math.sqrt(akR));
+
+      let akS=akP+akR;
+      let akK=akP/akS;
+      akX+=akK*(z-akX);
+      akP*=(1-akK);
+      akArr.push(akX);
+    }
+
+    Plotly.react('adaptPlot',[
+      {x:tArr,y:trueArr,name:'真实值',line:{color:'#16a34a',width:2}},
+      {x:tArr,y:fkArr,name:'固定 KF',line:{color:'#f59e0b',width:2,dash:'dash'}},
+      {x:tArr,y:akArr,name:'自适应 KF',line:{color:'#7c3aed',width:2.5}},
+      {x:tArr,y:measArr,name:'测量',mode:'markers',marker:{color:'#dc2626',size:3,opacity:.3}}
+    ],{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'位置'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      shapes:[{type:'line',x0:jumpStep*dt,x1:jumpStep*dt,y0:0,y1:1,yref:'paper',line:{color:'#dc2626',dash:'dot',width:2}}],
+      annotations:[{x:jumpStep*dt,y:1.05,yref:'paper',text:'噪声跳变',showarrow:false,font:{color:'#dc2626',size:11}}]
+    },{responsive:true});
+  }
+
+  document.getElementById('adaptRunBtn').addEventListener('click',runAdaptive);
+  document.getElementById('adaptWSlider').addEventListener('input',function(){document.getElementById('adaptWVal').textContent=this.value;});
+  document.getElementById('jumpSlider').addEventListener('input',function(){document.getElementById('jumpVal').textContent=this.value;});
+  runAdaptive();
+})();
+</script>
+</body>
+</html>
