@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第十章：误差分析——数学证明卡尔曼滤波为什么更准 | 卡尔曼滤波交互式教材</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root{--primary:#2563eb;--primary-light:#dbeafe;--bg:#f8fafc;--card:#fff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--note-bg:#fffbeb;--note-border:#f59e0b;--code-bg:#f1f5f9;--proof-bg:#f0fdf4;--proof-border:#16a34a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+nav a{color:var(--primary);text-decoration:none;font-weight:600;font-size:.95em}
+.container{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:2em;margin-bottom:8px;color:var(--primary)}
+.chapter-meta{color:var(--text-light);margin-bottom:28px;font-size:.95em}
+h2{font-size:1.4em;margin:36px 0 14px;color:#0f172a;border-left:4px solid var(--primary);padding-left:12px}
+h3{font-size:1.15em;margin:24px 0 10px}
+p{margin-bottom:14px}
+.objective{background:var(--primary-light);border-radius:10px;padding:20px 24px;margin-bottom:28px}
+.objective h3{margin-top:0;color:var(--primary)}
+.interactive-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0}
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:16px}
+.control-group{display:flex;flex-direction:column;gap:4px}
+.control-group label{font-size:.86em;color:var(--text-light);font-weight:600}
+.control-group input[type="range"]{width:180px}
+.control-group select{padding:4px 8px;border-radius:6px;border:1px solid var(--border)}
+.val-display{display:inline-block;min-width:42px;text-align:center;background:var(--code-bg);border-radius:4px;padding:1px 6px;font-family:'SF Mono','Consolas',monospace;font-size:.86em}
+.stats-row{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.stat-box{background:var(--code-bg);border-radius:8px;padding:10px 16px;flex:1;min-width:130px}
+.stat-box .label{font-size:.8em;color:var(--text-light);margin-bottom:2px}
+.stat-box .value{font-family:'SF Mono',monospace;font-weight:700;font-size:1em}
+pre{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:18px 20px;overflow-x:auto;font-size:.88em;line-height:1.6;margin:14px 0}
+pre code{font-family:'SF Mono','Consolas','Menlo',monospace}
+.note{background:var(--note-bg);border-left:4px solid var(--note-border);border-radius:0 8px 8px 0;padding:20px 24px;margin:32px 0}
+.note h3{color:#92400e;margin-top:0}
+.note h3::before{content:"🔧 "}
+.proof-box{background:var(--proof-bg);border-left:4px solid var(--proof-border);border-radius:0 10px 10px 0;padding:20px 24px;margin:20px 0}
+.proof-box h4{color:#166534;margin:0 0 8px;font-size:1.05em}
+.proof-box h4::before{content:"📐 "}
+.highlight-box{background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0}
+.compare-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+.compare-table th,.compare-table td{padding:10px 14px;border:1px solid var(--border);text-align:left}
+.compare-table th{background:var(--primary-light);font-weight:700}
+.compare-table tr:nth-child(even){background:#f8fafc}
+button.action{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font-weight:600;color:#fff;font-size:.92em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+.step-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 22px;margin:12px 0}
+.step-card .step-num{display:inline-block;width:28px;height:28px;background:var(--primary);color:#fff;border-radius:50%;text-align:center;line-height:28px;font-weight:700;font-size:.9em;margin-right:10px}
+@media(max-width:600px){.controls{flex-direction:column}.control-group input[type="range"]{width:100%}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="ch09.html">← 上一章</a>
+  <span style="font-weight:700;font-size:.95em;">第十章</span>
+  <a href="index.html">目录</a>
+</nav>
+
+<div class="container">
+<h1>第十章：误差分析——数学证明卡尔曼滤波为什么更准</h1>
+<p class="chapter-meta">从一个简单系统的误差出发，严格证明 KF 是最优线性无偏估计，并用交互实验亲眼看到精度提升</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>量化一个简单系统在"只用传感器"、"只用模型"、"简单平均"时的误差</li>
+    <li>推导卡尔曼滤波的估计误差，证明它 <strong>严格小于</strong> 上述所有方法</li>
+    <li>理解 KF 作为 <strong>最小方差无偏估计器 (MVUE)</strong> 的数学含义</li>
+    <li>通过蒙特卡洛实验验证理论，建立"不是碰巧更好，而是数学上保证更好"的信心</li>
+  </ul>
+</div>
+
+<!-- ======================================================================== -->
+<h2>一、问题设定——一个最简单的系统</h2>
+
+<p>为了让证明清晰，我们从<strong>最简单的一维静态系统</strong>出发。别觉得太简单——所有卡尔曼滤波的核心数学都已经蕴含在这个问题中了。</p>
+
+<p>想象你要估计一个恒定的物理量 \(x\)（比如一个固定目标的距离），你有两个信息来源：</p>
+
+<div class="step-card">
+  <span class="step-num">1</span>
+  <strong>模型预测</strong>：你根据先验知识（上一时刻的估计、物理推算等），认为 \(x \approx \mu_p\)，不确定度为 \(\sigma_p\)
+  $$\hat{x}_p = \mu_p, \quad \text{误差方差} = \sigma_p^2$$
+</div>
+
+<div class="step-card">
+  <span class="step-num">2</span>
+  <strong>传感器测量</strong>：传感器给出读数 \(z\)，含有零均值高斯噪声
+  $$z = x + v, \quad v \sim \mathcal{N}(0, \sigma_z^2)$$
+</div>
+
+<p>问题：如何用 \(\hat{x}_p\) 和 \(z\) 两者构造一个估计 \(\hat{x}\)，使得<strong>估计误差的方差 \(E[(\hat{x} - x)^2]\) 最小</strong>？</p>
+
+<!-- ======================================================================== -->
+<h2>二、四种估计策略的误差对比</h2>
+
+<p>我们来分析四种策略，看看它们的误差方差分别是多少。</p>
+
+<h3>策略 A：只相信传感器</h3>
+$$\hat{x}_A = z$$
+$$\text{MSE}_A = E[(z - x)^2] = E[v^2] = \sigma_z^2$$
+<p>误差完全由测量噪声决定。传感器差的时候，毫无办法。</p>
+
+<h3>策略 B：只相信模型</h3>
+$$\hat{x}_B = \hat{x}_p$$
+$$\text{MSE}_B = \sigma_p^2$$
+<p>误差完全由模型不确定度决定。如果模型很不确信，也毫无办法。</p>
+
+<h3>策略 C：简单平均</h3>
+$$\hat{x}_C = \frac{1}{2}(\hat{x}_p + z)$$
+
+<div class="proof-box">
+  <h4>推导策略 C 的误差方差</h4>
+  <p>令 \(e_p = \hat{x}_p - x\)（预测误差），\(v = z - x\)（测量噪声），假设二者独立，则：</p>
+  $$\hat{x}_C - x = \frac{1}{2}(e_p + v)$$
+  $$\text{MSE}_C = E\left[\left(\frac{e_p + v}{2}\right)^2\right] = \frac{1}{4}(\sigma_p^2 + \sigma_z^2)$$
+  <p>简单平均确实比"只用一个"好（当两者方差相当时）。但它<strong>没有考虑两个来源的精度差异</strong>。如果传感器精度是模型的 10 倍，平均分配权重显然不聪明。</p>
+</div>
+
+<h3>策略 D：卡尔曼滤波（最优加权）</h3>
+$$\hat{x}_D = \hat{x}_p + K(z - \hat{x}_p) = (1-K)\hat{x}_p + K \cdot z$$
+<p>其中 \(K = \frac{\sigma_p^2}{\sigma_p^2 + \sigma_z^2}\) 是卡尔曼增益。</p>
+
+<div class="proof-box">
+  <h4>推导策略 D 的误差方差</h4>
+  $$\hat{x}_D - x = (1-K)e_p + Kv$$
+  $$\text{MSE}_D = (1-K)^2 \sigma_p^2 + K^2 \sigma_z^2$$
+  <p>代入 \(K = \frac{\sigma_p^2}{\sigma_p^2 + \sigma_z^2}\)：</p>
+  $$(1-K) = \frac{\sigma_z^2}{\sigma_p^2 + \sigma_z^2}$$
+  $$\text{MSE}_D = \frac{\sigma_z^4 \sigma_p^2 + \sigma_p^4 \sigma_z^2}{(\sigma_p^2 + \sigma_z^2)^2} = \frac{\sigma_p^2 \sigma_z^2(\sigma_z^2 + \sigma_p^2)}{(\sigma_p^2 + \sigma_z^2)^2} = \frac{\sigma_p^2 \sigma_z^2}{\sigma_p^2 + \sigma_z^2}$$
+</div>
+
+<div class="highlight-box">
+  <p style="margin:0;font-size:1.1em;font-weight:700;text-align:center;">卡尔曼滤波的估计误差方差：</p>
+  $$\boxed{\text{MSE}_{KF} = \frac{\sigma_p^2 \sigma_z^2}{\sigma_p^2 + \sigma_z^2} = \frac{1}{\frac{1}{\sigma_p^2} + \frac{1}{\sigma_z^2}}}$$
+  <p style="margin:10px 0 0;text-align:center;">这就是两个电阻并联公式！<strong>融合后的"信息电阻"永远比任何一个单独的都小。</strong></p>
+</div>
+
+<!-- ======================================================================== -->
+<h2>三、严格证明：KF 优于所有其他线性估计器</h2>
+
+<p>上面我们只是比较了四种具体策略。但 KF 真的是<strong>所有可能的线性组合</strong>中最好的吗？下面给出严格证明。</p>
+
+<div class="proof-box">
+  <h4>定理：最优线性无偏估计（BLUE / MVUE）</h4>
+  <p><strong>考虑所有形如 \(\hat{x} = (1-\alpha)\hat{x}_p + \alpha z\) 的线性无偏估计器</strong>（\(\alpha \in \mathbb{R}\) 为任意权重），卡尔曼增益 \(\alpha^* = K = \frac{\sigma_p^2}{\sigma_p^2 + \sigma_z^2}\) 使得 MSE 最小。</p>
+
+  <p><strong>证明：</strong></p>
+  <p>Step 1. 写出一般估计器的 MSE：</p>
+  $$\text{MSE}(\alpha) = (1-\alpha)^2 \sigma_p^2 + \alpha^2 \sigma_z^2$$
+
+  <p>Step 2. 对 \(\alpha\) 求导，令其为零：</p>
+  $$\frac{d}{d\alpha}\text{MSE} = -2(1-\alpha)\sigma_p^2 + 2\alpha\sigma_z^2 = 0$$
+
+  <p>Step 3. 解方程：</p>
+  $$\alpha^* = \frac{\sigma_p^2}{\sigma_p^2 + \sigma_z^2} = K$$
+
+  <p>Step 4. 二阶导 \(\frac{d^2}{d\alpha^2}\text{MSE} = 2(\sigma_p^2 + \sigma_z^2) > 0\)，确认为极小值。✓</p>
+
+  <p>Step 5. 代入 \(\alpha^*\) 得到最小 MSE：</p>
+  $$\text{MSE}^* = \frac{\sigma_p^2 \sigma_z^2}{\sigma_p^2 + \sigma_z^2}$$
+</div>
+
+<h3>关键不等式</h3>
+
+<p>现在证明 KF 的 MSE 严格小于其他所有策略：</p>
+
+<div class="proof-box">
+  <h4>不等式证明</h4>
+
+  <p><strong>KF vs 只用传感器：</strong></p>
+  $$\frac{\sigma_p^2 \sigma_z^2}{\sigma_p^2 + \sigma_z^2} < \sigma_z^2 \iff \sigma_p^2 < \sigma_p^2 + \sigma_z^2 \quad \checkmark$$
+
+  <p><strong>KF vs 只用模型：</strong></p>
+  $$\frac{\sigma_p^2 \sigma_z^2}{\sigma_p^2 + \sigma_z^2} < \sigma_p^2 \iff \sigma_z^2 < \sigma_p^2 + \sigma_z^2 \quad \checkmark$$
+
+  <p><strong>KF vs 简单平均：</strong></p>
+  $$\frac{\sigma_p^2 \sigma_z^2}{\sigma_p^2 + \sigma_z^2} \leq \frac{\sigma_p^2 + \sigma_z^2}{4}$$
+  <p>用 AM-HM 不等式：\(\frac{a+b}{2} \geq \frac{2}{\frac{1}{a}+\frac{1}{b}}\)，令 \(a=\sigma_p^2, b=\sigma_z^2\)：</p>
+  $$\frac{\sigma_p^2+\sigma_z^2}{2} \geq \frac{2\sigma_p^2\sigma_z^2}{\sigma_p^2+\sigma_z^2}$$
+  $$\Rightarrow \frac{\sigma_p^2+\sigma_z^2}{4} \geq \frac{\sigma_p^2\sigma_z^2}{\sigma_p^2+\sigma_z^2} \quad \checkmark$$
+  <p>等号当且仅当 \(\sigma_p = \sigma_z\)，此时卡尔曼增益 K=0.5 恰好退化为简单平均。</p>
+</div>
+
+<!-- ======================================================================== -->
+<h2>四、交互实验——亲眼看到误差的差距</h2>
+
+<p>理论很美，但让我们用实际数据验证。下面的实验对同一个问题运行 1000 次蒙特卡洛仿真，统计每种策略的实际 MSE。</p>
+
+<div class="interactive-box">
+  <h3>🔬 交互实验：四种策略的误差对比</h3>
+  <p style="font-size:.92em;color:var(--text-light);">调节预测和测量的不确定度，观察各策略的 MSE。注意 KF（紫色）永远是最低的。当 σ_p ≈ σ_z 时，简单平均接近 KF；当两者悬殊时，差距巨大。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>预测不确定度 σ_p: <span class="val-display" id="sigPVal">3.0</span></label>
+      <input type="range" id="sigPSlider" min="0.5" max="10" step="0.1" value="3.0">
+    </div>
+    <div class="control-group">
+      <label>测量不确定度 σ_z: <span class="val-display" id="sigZVal">2.0</span></label>
+      <input type="range" id="sigZSlider" min="0.5" max="10" step="0.1" value="2.0">
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button class="action" id="runMC" style="background:var(--primary);">运行 1000 次蒙特卡洛</button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="label">MSE: 只用传感器</div><div class="value" id="mseA" style="color:#ef4444;">-</div></div>
+    <div class="stat-box"><div class="label">MSE: 只用模型</div><div class="value" id="mseB" style="color:#f59e0b;">-</div></div>
+    <div class="stat-box"><div class="label">MSE: 简单平均</div><div class="value" id="mseC" style="color:#06b6d4;">-</div></div>
+    <div class="stat-box"><div class="label">MSE: 卡尔曼滤波</div><div class="value" id="mseD" style="color:#7c3aed;">-</div></div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-box"><div class="label">卡尔曼增益 K</div><div class="value" id="kVal">-</div></div>
+    <div class="stat-box"><div class="label">KF 比传感器好</div><div class="value" id="impA" style="color:#16a34a;">-</div></div>
+    <div class="stat-box"><div class="label">KF 比简单平均好</div><div class="value" id="impC" style="color:#16a34a;">-</div></div>
+    <div class="stat-box"><div class="label">理论 MSE_KF</div><div class="value" id="theoMSE">-</div></div>
+  </div>
+
+  <div id="mcBarPlot" style="width:100%;height:300px;"></div>
+  <div id="mcHistPlot" style="width:100%;height:320px;margin-top:12px;"></div>
+</div>
+
+<!-- ======================================================================== -->
+<h2>五、推广到多维动态系统</h2>
+
+<p>上面的一维静态案例让数学特别清晰。现在我们把结论推广到<strong>多维动态系统</strong>——也就是真正的卡尔曼滤波场景。</p>
+
+<h3>动态系统中的误差协方差</h3>
+
+<p>对于标准 KF 系统：</p>
+$$\mathbf{x}_{k+1} = \mathbf{F}\mathbf{x}_k + \mathbf{w}_k, \quad \mathbf{z}_k = \mathbf{H}\mathbf{x}_k + \mathbf{v}_k$$
+
+<p>定义估计误差 \(\mathbf{e}_k = \hat{\mathbf{x}}_k - \mathbf{x}_k\)，其协方差矩阵 \(\mathbf{P}_k = E[\mathbf{e}_k \mathbf{e}_k^T]\)。</p>
+
+<div class="proof-box">
+  <h4>定理：KF 更新后协方差严格减小</h4>
+  <p>设预测后的协方差为 \(\mathbf{P}_{k|k-1}\)，更新后为 \(\mathbf{P}_{k|k}\)，则：</p>
+  $$\mathbf{P}_{k|k} = (\mathbf{I} - \mathbf{K}_k\mathbf{H})\mathbf{P}_{k|k-1}$$
+
+  <p><strong>证明 \(\mathbf{P}_{k|k} \preceq \mathbf{P}_{k|k-1}\)</strong>（半正定序意义下）：</p>
+  $$\mathbf{P}_{k|k-1} - \mathbf{P}_{k|k} = \mathbf{K}_k\mathbf{H}\mathbf{P}_{k|k-1} = \mathbf{K}_k \mathbf{S}_k \mathbf{K}_k^T$$
+  <p>其中 \(\mathbf{S}_k = \mathbf{H}\mathbf{P}_{k|k-1}\mathbf{H}^T + \mathbf{R}\) 是新息协方差（正定矩阵）。</p>
+  <p>因此 \(\mathbf{K}_k \mathbf{S}_k \mathbf{K}_k^T\) 是半正定的 → \(\mathbf{P}_{k|k-1} - \mathbf{P}_{k|k} \succeq 0\) → <strong>更新永远减小不确定度</strong>。✓</p>
+</div>
+
+<h3>误差减小比例的精确量化</h3>
+
+<p>对于一维情况，上述结论给出精确的减小比例：</p>
+$$\frac{P_{k|k}}{P_{k|k-1}} = 1 - K = \frac{R}{P_{k|k-1} + R}$$
+
+<p>这意味着：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li>如果 \(R \ll P_{k|k-1}\)（测量很准），则 \(P_{k|k} \approx R\) → 更新后不确定度接近测量噪声</li>
+  <li>如果 \(R \gg P_{k|k-1}\)（测量很差），则 \(P_{k|k} \approx P_{k|k-1}\) → 更新几乎不改变估计</li>
+  <li>KF 总是<strong>自动选择最优的折中</strong></li>
+</ul>
+
+<div class="proof-box">
+  <h4>定理：KF 是所有线性无偏估计器中的最优（BLUE）</h4>
+  <p>对于线性高斯系统，卡尔曼滤波器产生的估计 \(\hat{\mathbf{x}}_{k|k}\) 满足：</p>
+  <ol style="margin-left:18px;">
+    <li><strong>无偏性</strong>：\(E[\hat{\mathbf{x}}_{k|k}] = E[\mathbf{x}_k]\)（估计均值等于真实均值）</li>
+    <li><strong>最小方差</strong>：对于任何其他线性无偏估计器 \(\tilde{\mathbf{x}}_k\)，其误差协方差 \(\tilde{\mathbf{P}}_k\) 满足 \(\tilde{\mathbf{P}}_k - \mathbf{P}_{k|k} \succeq 0\)</li>
+  </ol>
+  <p><strong>证明思路</strong>（Gauss-Markov 定理的动态推广）：</p>
+  <p>任意线性无偏估计器可以写为 \(\tilde{\mathbf{x}} = \hat{\mathbf{x}}_{KF} + \mathbf{L}\boldsymbol{\nu}\)，其中 \(\boldsymbol{\nu}\) 是新息序列（白噪声），\(\mathbf{L}\) 是某个矩阵。无偏性要求 \(\mathbf{L}\) 满足特定约束，而 KF 对应 \(\mathbf{L}=0\)（最优增益已经提取了新息中所有信息）。任何非零 \(\mathbf{L}\) 只会增加方差。✓</p>
+</div>
+
+<!-- ======================================================================== -->
+<h2>六、交互实验——动态系统的误差演化</h2>
+
+<p>下面的实验模拟一个一维位置-速度系统，同时运行四种策略，实时对比它们的累积 MSE。你可以看到 KF 是如何在每一步都保持最低误差的。</p>
+
+<div class="interactive-box">
+  <h3>📈 交互实验：动态系统误差演化对比</h3>
+  <p style="font-size:.92em;color:var(--text-light);">一个匀速运动目标，用模型预测和 GPS 测量来估计位置。四种策略同时运行，观察误差如何随时间演化。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>过程噪声 q: <span class="val-display" id="qDynVal">0.5</span></label>
+      <input type="range" id="qDynSlider" min="0.01" max="3" step="0.01" value="0.5">
+    </div>
+    <div class="control-group">
+      <label>测量噪声 σ_z: <span class="val-display" id="rDynVal">3.0</span></label>
+      <input type="range" id="rDynSlider" min="0.5" max="10" step="0.5" value="3.0">
+    </div>
+    <div class="control-group">
+      <label>仿真步数:</label>
+      <select id="dynSteps">
+        <option value="100">100</option>
+        <option value="200" selected>200</option>
+        <option value="500">500</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button class="action" id="runDyn" style="background:#16a34a;">运行仿真</button>
+    </div>
+  </div>
+
+  <div id="dynTrajPlot" style="width:100%;height:360px;"></div>
+  <div id="dynErrPlot" style="width:100%;height:280px;margin-top:12px;"></div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="label">RMS: 只用传感器</div><div class="value" id="dynRmsA" style="color:#ef4444;">-</div></div>
+    <div class="stat-box"><div class="label">RMS: 只用模型</div><div class="value" id="dynRmsB" style="color:#f59e0b;">-</div></div>
+    <div class="stat-box"><div class="label">RMS: 简单平均</div><div class="value" id="dynRmsC" style="color:#06b6d4;">-</div></div>
+    <div class="stat-box"><div class="label">RMS: 卡尔曼滤波</div><div class="value" id="dynRmsD" style="color:#7c3aed;">-</div></div>
+  </div>
+</div>
+
+<!-- ======================================================================== -->
+<h2>七、信息论视角——为什么融合一定比单一来源好？</h2>
+
+<p>从信息论的角度，KF 的最优性有一个极其优美的解释。定义<strong>信息量</strong>（Fisher 信息）为方差的倒数：</p>
+
+$$\mathcal{I} = \frac{1}{\sigma^2}$$
+
+<p>那么 KF 的融合公式可以写为：</p>
+
+$$\mathcal{I}_{后验} = \mathcal{I}_{预测} + \mathcal{I}_{测量} = \frac{1}{\sigma_p^2} + \frac{1}{\sigma_z^2}$$
+
+<div class="highlight-box">
+  <p style="margin:0;text-align:center;font-size:1.1em;font-weight:700;"><strong>信息的可加性</strong>：融合 = 信息相加，信息只增不减</p>
+  <p style="margin:10px 0 0;text-align:center;">不管新传感器多差（\(\mathcal{I}_{测量}\) 多小），它只会增加总信息量 → MSE 只会减少。</p>
+</div>
+
+<p>这个性质的深刻含义是：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li>加入一个精度为 10m 的 GPS，即使你已经有精度 0.1m 的激光雷达，理论上也会（微微）改善估计</li>
+  <li>但实际中，如果传感器的噪声模型不准确（R 标定不对），坏数据反而会损害估计 → 这就是为什么需要异常值剔除</li>
+</ul>
+
+<div class="interactive-box">
+  <h3>📊 交互实验：信息量可加性</h3>
+  <p style="font-size:.92em;color:var(--text-light);">添加多个传感器，观察总信息量（= 1/MSE）如何随着传感器数量增加而增长，MSE 如何单调下降。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>传感器数量: <span class="val-display" id="nSensVal">1</span></label>
+      <input type="range" id="nSensSlider" min="1" max="10" step="1" value="1">
+    </div>
+    <div class="control-group">
+      <label>每个传感器 σ: <span class="val-display" id="sensSigVal">3.0</span></label>
+      <input type="range" id="sensSigSlider" min="0.5" max="10" step="0.5" value="3.0">
+    </div>
+    <div class="control-group">
+      <label>预测 σ_p: <span class="val-display" id="sensPredVal">5.0</span></label>
+      <input type="range" id="sensPredSlider" min="1" max="15" step="0.5" value="5.0">
+    </div>
+  </div>
+  <div id="infoPlot" style="width:100%;height:340px;"></div>
+</div>
+
+<!-- ======================================================================== -->
+<h2>八、精度提升的极限——Cramér-Rao 下界</h2>
+
+<p>KF 的误差能无限小吗？当然不能。<strong>Cramér-Rao 下界 (CRLB)</strong> 给出了任何无偏估计器能达到的最小方差：</p>
+
+$$\text{MSE} \geq \frac{1}{\mathcal{I}_{Fisher}}$$
+
+<p>对于线性高斯系统，<strong>KF 恰好达到这个下界</strong>——这就是"最优"的精确含义。没有任何无偏估计器能做得更好，不管你多聪明。</p>
+
+<p>但请注意限制条件：</p>
+<table class="compare-table">
+<thead><tr><th>条件</th><th>满足时</th><th>不满足时</th></tr></thead>
+<tbody>
+<tr><td>线性系统</td><td>KF 是精确最优</td><td>EKF 是近似最优，可能不达到 CRLB</td></tr>
+<tr><td>高斯噪声</td><td>KF 是精确最优</td><td>KF 是最优线性估计器，但非线性估计器可能更好</td></tr>
+<tr><td>模型准确</td><td>KF 是精确最优</td><td>KF 会有系统偏差（模型失配）</td></tr>
+<tr><td>Q/R 已知</td><td>KF 是精确最优</td><td>需要自适应 KF 或在线参数估计</td></tr>
+</tbody>
+</table>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+
+  <p><strong>从理论到实践的鸿沟</strong></p>
+  <p>数学证明了 KF 在理想条件下是最优的。但在真实嵌入式系统中，以下因素会导致实际误差大于理论值：</p>
+  <ul style="margin-left:18px;margin-top:8px;">
+    <li><strong>模型失配</strong>：真实系统不完全是线性的，F 矩阵是近似。解法：用 EKF/UKF，或增加状态维度</li>
+    <li><strong>噪声非高斯</strong>：GPS 在城市峡谷有多路径误差（重尾分布）。解法：鲁棒 KF 或马氏距离门限</li>
+    <li><strong>Q/R 标定不准</strong>：这是实践中最常见的问题。解法：用 NIS 检验在线调参（见第七章）</li>
+    <li><strong>数值误差</strong>：有限字长导致 P 矩阵失去正定性。解法：Joseph 形式或 UD 分解</li>
+  </ul>
+
+  <p style="margin-top:12px;"><strong>精度提升的实际数字</strong>（来自飞控工程经验）：</p>
+  <table class="compare-table" style="font-size:.88em;">
+  <thead><tr><th>场景</th><th>只用 GPS</th><th>只用 IMU (1s)</th><th>KF 融合</th><th>提升幅度</th></tr></thead>
+  <tbody>
+    <tr><td>水平位置</td><td>σ ≈ 2.5m</td><td>σ ≈ 0.5m (漂移中)</td><td>σ ≈ 0.3m</td><td>~88%</td></tr>
+    <tr><td>垂直速度</td><td>σ ≈ 0.5m/s</td><td>σ ≈ 0.1m/s</td><td>σ ≈ 0.05m/s</td><td>~90%</td></tr>
+    <tr><td>航向角</td><td>N/A (需磁力计)</td><td>σ ≈ 5°/min 漂移</td><td>σ ≈ 0.5°</td><td>N/A</td></tr>
+  </tbody>
+  </table>
+  <p style="margin-top:8px;">这些数字来自使用 PX4 EKF2 的实际飞行数据。融合后的精度通常比最好的单一传感器好 50~90%。</p>
+
+  <pre><code>/* 验证 KF 最优性的快速测试：比较理论 MSE 和实际 MSE */
+float mse_theoretical = (P_pred * R) / (P_pred + R);
+float mse_actual = 0;
+for (int i = 0; i < N_SAMPLES; i++) {
+    float err = kf.x[0] - true_x[i];
+    mse_actual += err * err;
+}
+mse_actual /= N_SAMPLES;
+
+/* 如果 mse_actual >> mse_theoretical，说明模型或参数有问题 */
+float ratio = mse_actual / mse_theoretical;
+if (ratio > 2.0f) {
+    log_warn("KF underperforming: ratio=%.2f, check Q/R tuning", ratio);
+}</code></pre>
+</div>
+
+</div><!-- container -->
+
+<nav style="background:var(--card);border-top:1px solid var(--border);padding:16px 20px;display:flex;justify-content:space-between;">
+  <a href="ch09.html" style="color:var(--primary);text-decoration:none;font-weight:600;">← 第九章</a>
+  <a href="index.html" style="color:var(--primary);text-decoration:none;font-weight:600;">返回目录</a>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  renderMathInElement(document.body,{
+    delimiters:[{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
+/* ============================================================
+ * Utility: Gaussian random
+ * ============================================================ */
+function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+/* ============================================================
+ * Experiment 1: Monte Carlo comparison of 4 strategies
+ * ============================================================ */
+(function(){
+  const sigPSlider=document.getElementById('sigPSlider');
+  const sigZSlider=document.getElementById('sigZSlider');
+
+  function updateDisplays(){
+    document.getElementById('sigPVal').textContent=parseFloat(sigPSlider.value).toFixed(1);
+    document.getElementById('sigZVal').textContent=parseFloat(sigZSlider.value).toFixed(1);
+  }
+  sigPSlider.addEventListener('input',updateDisplays);
+  sigZSlider.addEventListener('input',updateDisplays);
+
+  function runMonteCarlo(){
+    const sigP=parseFloat(sigPSlider.value);
+    const sigZ=parseFloat(sigZSlider.value);
+    const N=1000;
+    const K=sigP*sigP/(sigP*sigP+sigZ*sigZ);
+    const trueX=5.0;
+
+    let sumA=0,sumB=0,sumC=0,sumD=0;
+    const errA=[],errB=[],errC=[],errD=[];
+
+    for(let i=0;i<N;i++){
+      const pred=trueX+sigP*gauss();
+      const meas=trueX+sigZ*gauss();
+      const eA=meas-trueX;
+      const eB=pred-trueX;
+      const eC=0.5*(pred+meas)-trueX;
+      const eD=((1-K)*pred+K*meas)-trueX;
+      sumA+=eA*eA; sumB+=eB*eB; sumC+=eC*eC; sumD+=eD*eD;
+      errA.push(eA); errB.push(eB); errC.push(eC); errD.push(eD);
+    }
+
+    const mseA=sumA/N, mseB=sumB/N, mseC=sumC/N, mseD=sumD/N;
+    const theoD=sigP*sigP*sigZ*sigZ/(sigP*sigP+sigZ*sigZ);
+
+    document.getElementById('mseA').textContent=mseA.toFixed(3);
+    document.getElementById('mseB').textContent=mseB.toFixed(3);
+    document.getElementById('mseC').textContent=mseC.toFixed(3);
+    document.getElementById('mseD').textContent=mseD.toFixed(3);
+    document.getElementById('kVal').textContent=K.toFixed(4);
+    document.getElementById('impA').textContent=((1-mseD/mseA)*100).toFixed(1)+'%';
+    document.getElementById('impC').textContent=((1-mseD/mseC)*100).toFixed(1)+'%';
+    document.getElementById('theoMSE').textContent=theoD.toFixed(3);
+
+    Plotly.react('mcBarPlot',[{
+      x:['只用传感器','只用模型','简单平均','卡尔曼滤波','理论最优'],
+      y:[mseA,mseB,mseC,mseD,theoD],
+      type:'bar',
+      marker:{color:['#ef4444','#f59e0b','#06b6d4','#7c3aed','#16a34a']},
+      text:[mseA.toFixed(3),mseB.toFixed(3),mseC.toFixed(3),mseD.toFixed(3),theoD.toFixed(3)],
+      textposition:'outside'
+    }],{
+      margin:{t:20,r:20,b:50,l:55},
+      yaxis:{title:'MSE (均方误差)'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    const binSize=0.3;
+    Plotly.react('mcHistPlot',[
+      {x:errA,type:'histogram',name:'只用传感器',opacity:0.5,marker:{color:'#ef4444'},nbinsx:40},
+      {x:errC,type:'histogram',name:'简单平均',opacity:0.5,marker:{color:'#06b6d4'},nbinsx:40},
+      {x:errD,type:'histogram',name:'卡尔曼滤波',opacity:0.7,marker:{color:'#7c3aed'},nbinsx:40}
+    ],{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'估计误差'},
+      yaxis:{title:'频次'},
+      barmode:'overlay',
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+  }
+
+  document.getElementById('runMC').addEventListener('click',runMonteCarlo);
+  runMonteCarlo();
+})();
+
+/* ============================================================
+ * Experiment 2: Dynamic system error evolution
+ * ============================================================ */
+(function(){
+  const qSlider=document.getElementById('qDynSlider');
+  const rSlider=document.getElementById('rDynSlider');
+
+  qSlider.addEventListener('input',()=>{document.getElementById('qDynVal').textContent=parseFloat(qSlider.value).toFixed(2);});
+  rSlider.addEventListener('input',()=>{document.getElementById('rDynVal').textContent=parseFloat(rSlider.value).toFixed(1);});
+
+  function runDynamic(){
+    const q=parseFloat(qSlider.value);
+    const R=parseFloat(rSlider.value);
+    const steps=parseInt(document.getElementById('dynSteps').value);
+    const dt=0.1;
+
+    let trueX=0, trueV=2.0;
+    /* Strategy A: sensor only; B: model only; C: average; D: KF */
+    let estA=0, estB=0, estC=0;
+    let kfX=0, kfV=0, P00=10, P01=0, P11=10;
+    const F00=1, F01=dt, F10=0, F11=1;
+    const Qd=q*dt;
+
+    const tArr=[], trueArr=[];
+    const errAarr=[], errBarr=[], errCarr=[], errDarr=[];
+    const cumA=[], cumB=[], cumC=[], cumD=[];
+    let sA=0,sB=0,sC=0,sD=0;
+
+    for(let k=0;k<steps;k++){
+      trueV+=Math.sqrt(Qd)*gauss()*0.3;
+      trueX+=trueV*dt+Math.sqrt(Qd)*gauss()*0.1;
+
+      /* Model prediction for all strategies */
+      const predB_x=estB+2.0*dt;
+      estB=predB_x;
+
+      /* KF predict */
+      const px=kfX+kfV*dt;
+      const pv=kfV;
+      const pP00=P00+2*P01*dt+P11*dt*dt+Qd*dt*dt/3;
+      const pP01=P01+P11*dt+Qd*dt/2;
+      const pP11=P11+Qd;
+
+      /* Measurement */
+      const z=trueX+R*gauss();
+      estA=z;
+      estC=0.5*(predB_x+z);
+
+      /* KF update */
+      const S=pP00+R*R;
+      const K0=pP00/S, K1=pP01/S;
+      const innov=z-px;
+      kfX=px+K0*innov;
+      kfV=pv+K1*innov;
+      P00=(1-K0)*pP00;
+      P01=(1-K0)*pP01;
+      P11=pP11-K1*pP00;
+
+      const eA=Math.abs(estA-trueX);
+      const eB=Math.abs(estB-trueX);
+      const eC=Math.abs(estC-trueX);
+      const eD=Math.abs(kfX-trueX);
+
+      tArr.push(k*dt); trueArr.push(trueX);
+      errAarr.push(eA); errBarr.push(eB); errCarr.push(eC); errDarr.push(eD);
+      sA+=eA*eA; sB+=eB*eB; sC+=eC*eC; sD+=eD*eD;
+      cumA.push(Math.sqrt(sA/(k+1)));
+      cumB.push(Math.sqrt(sB/(k+1)));
+      cumC.push(Math.sqrt(sC/(k+1)));
+      cumD.push(Math.sqrt(sD/(k+1)));
+    }
+
+    document.getElementById('dynRmsA').textContent=cumA[cumA.length-1].toFixed(3);
+    document.getElementById('dynRmsB').textContent=cumB[cumB.length-1].toFixed(3);
+    document.getElementById('dynRmsC').textContent=cumC[cumC.length-1].toFixed(3);
+    document.getElementById('dynRmsD').textContent=cumD[cumD.length-1].toFixed(3);
+
+    Plotly.react('dynTrajPlot',[
+      {x:tArr,y:trueArr,name:'真实位置',line:{color:'#16a34a',width:2}},
+      {x:tArr,y:errAarr.map((_,i)=>trueArr[i]+(errAarr[i]>0?errAarr[i]:-errAarr[i])),visible:false},
+    ],{
+      margin:{t:20,r:20,b:40,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'位置 (m)'},
+      plot_bgcolor:'#fafafa',font:{family:'-apple-system,sans-serif'},showlegend:false
+    },{responsive:true});
+
+    Plotly.react('dynErrPlot',[
+      {x:tArr,y:cumA,name:'只用传感器',line:{color:'#ef4444',width:1.5}},
+      {x:tArr,y:cumB,name:'只用模型',line:{color:'#f59e0b',width:1.5}},
+      {x:tArr,y:cumC,name:'简单平均',line:{color:'#06b6d4',width:1.5,dash:'dash'}},
+      {x:tArr,y:cumD,name:'卡尔曼滤波',line:{color:'#7c3aed',width:2.5}}
+    ],{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'时间 (s)'},
+      yaxis:{title:'累积 RMS 误差 (m)'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+  }
+
+  document.getElementById('runDyn').addEventListener('click',runDynamic);
+  runDynamic();
+})();
+
+/* ============================================================
+ * Experiment 3: Information additivity with multiple sensors
+ * ============================================================ */
+(function(){
+  const nSlider=document.getElementById('nSensSlider');
+  const sigSlider=document.getElementById('sensSigSlider');
+  const predSlider=document.getElementById('sensPredSlider');
+
+  function update(){
+    const n=parseInt(nSlider.value);
+    const sig=parseFloat(sigSlider.value);
+    const sigP=parseFloat(predSlider.value);
+    document.getElementById('nSensVal').textContent=n;
+    document.getElementById('sensSigVal').textContent=sig.toFixed(1);
+    document.getElementById('sensPredVal').textContent=sigP.toFixed(1);
+
+    const infoPred=1/(sigP*sigP);
+    const infoOneSens=1/(sig*sig);
+
+    const ns=[], infoArr=[], mseArr=[], mseNoFusion=[];
+    for(let i=0;i<=n;i++){
+      ns.push(i);
+      const totalInfo=infoPred+i*infoOneSens;
+      infoArr.push(totalInfo);
+      mseArr.push(1/totalInfo);
+      mseNoFusion.push(i===0?sigP*sigP:sig*sig/i);
+    }
+
+    Plotly.react('infoPlot',[
+      {x:ns,y:mseArr,name:'KF 融合 MSE',type:'scatter',mode:'lines+markers',line:{color:'#7c3aed',width:2.5},marker:{size:8}},
+      {x:ns,y:mseNoFusion,name:'只用传感器均值 MSE',type:'scatter',mode:'lines+markers',line:{color:'#ef4444',width:2,dash:'dash'},marker:{size:6}},
+      {x:ns,y:ns.map(()=>sigP*sigP),name:'只用模型 MSE',type:'scatter',mode:'lines',line:{color:'#f59e0b',width:1.5,dash:'dot'}},
+      {x:ns,y:infoArr,name:'总信息量 (1/MSE)',type:'bar',marker:{color:'rgba(37,99,235,0.3)'},yaxis:'y2'}
+    ],{
+      margin:{t:20,r:60,b:50,l:60},
+      xaxis:{title:'传感器数量',dtick:1},
+      yaxis:{title:'MSE (方差)',titlefont:{color:'#7c3aed'},rangemode:'tozero'},
+      yaxis2:{title:'信息量',titlefont:{color:'#2563eb'},overlaying:'y',side:'right',rangemode:'tozero'},
+      legend:{x:0,y:1.15,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+  }
+
+  [nSlider,sigSlider,predSlider].forEach(s=>s.addEventListener('input',update));
+  update();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第一章：从振动噪声说起 | 卡尔曼滤波交互式教材</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #dbeafe;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --border: #e2e8f0;
+  --note-bg: #fffbeb;
+  --note-border: #f59e0b;
+  --code-bg: #f1f5f9;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.8;
+}
+nav {
+  background: var(--card); border-bottom: 1px solid var(--border);
+  padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+nav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.95em; }
+nav a:hover { text-decoration: underline; }
+.container { max-width: 880px; margin: 0 auto; padding: 32px 20px 60px; }
+h1 { font-size: 2em; margin-bottom: 8px; color: var(--primary); }
+.chapter-meta { color: var(--text-light); margin-bottom: 28px; font-size: 0.95em; }
+h2 { font-size: 1.4em; margin: 36px 0 14px; color: #0f172a; border-left: 4px solid var(--primary); padding-left: 12px; }
+h3 { font-size: 1.15em; margin: 24px 0 10px; }
+p { margin-bottom: 14px; }
+.objective {
+  background: var(--primary-light); border-radius: 10px;
+  padding: 20px 24px; margin-bottom: 28px;
+}
+.objective h3 { margin-top: 0; color: var(--primary); }
+.interactive-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px; margin: 24px 0;
+}
+.controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 16px; }
+.control-group { display: flex; flex-direction: column; gap: 4px; }
+.control-group label { font-size: 0.88em; color: var(--text-light); font-weight: 600; }
+.control-group input[type="range"] { width: 200px; }
+.val-display {
+  display: inline-block; min-width: 42px; text-align: center;
+  background: var(--code-bg); border-radius: 4px; padding: 1px 6px;
+  font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.88em;
+}
+pre {
+  background: #1e293b; color: #e2e8f0; border-radius: 8px;
+  padding: 18px 20px; overflow-x: auto; font-size: 0.9em;
+  line-height: 1.6; margin: 14px 0;
+}
+pre code { font-family: 'SF Mono', 'Consolas', 'Menlo', monospace; }
+.c-label { color: #94a3b8; font-size: 0.8em; display: block; margin-bottom: 4px; }
+.note {
+  background: var(--note-bg); border-left: 4px solid var(--note-border);
+  border-radius: 0 8px 8px 0; padding: 20px 24px; margin: 32px 0;
+}
+.note h3 { color: #92400e; margin-top: 0; }
+.note h3::before { content: "🔧 "; }
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+@media(max-width:600px) {
+  .controls { flex-direction: column; }
+  .control-group input[type="range"] { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html">← 目录</a>
+  <span style="font-weight:700;font-size:0.95em;">第一章</span>
+  <a href="ch02.html">下一章 →</a>
+</nav>
+
+<div class="container">
+
+<h1>第一章：从振动噪声说起</h1>
+<p class="chapter-meta">为什么需要卡尔曼滤波？——从传感器噪声到智能融合的必经之路</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>理解传感器噪声的来源和危害（加速度计漂移、GPS 随机误差）</li>
+    <li>体验简单滤波方法（均值滤波、指数滑动平均）的局限性</li>
+    <li>建立"模型预测 vs 测量值"的核心矛盾意识</li>
+  </ul>
+</div>
+
+<h2>一、无人机上的传感器困境</h2>
+
+<p>假设你正在开发一架小型四旋翼无人机的飞控系统。你需要知道无人机在水平面内的位置，但你手上的传感器各有各的毛病：</p>
+
+<p><strong>加速度计（IMU）</strong>：采样率很高（100~1000Hz），但数据里掺杂着电机振动、温漂和零偏。如果你对加速度做二次积分来求位置，误差会随时间的平方增长——几秒钟就飞到天上去了（字面意思）。</p>
+
+<p><strong>GPS</strong>：直接给出位置，不会漂移，但更新慢（1~10Hz），而且有几米的随机噪声。你的无人机可能已经飞出去两米了，GPS 还在报上一个位置。</p>
+
+<p>这就是我们面对的核心问题：<strong>没有一个传感器是完美的</strong>，但我们能不能把它们的优势结合起来？</p>
+
+<h2>一个直觉类比：两台秤称体重</h2>
+
+<p>在正式讨论滤波器之前，先来看一个 MIT 课程（16.322 Stochastic Estimation and Control）中经典的直觉类比，它能帮你秒懂卡尔曼滤波的核心思想。</p>
+
+<p>假设你要称体重，手头有两台秤：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>浴室电子秤</strong>（便宜，噪声大）：显示 70.5 kg，标准差 \(\sigma_1 = 2\) kg</li>
+  <li><strong>医院体检秤</strong>（精确，但读数慢）：显示 68.2 kg，标准差 \(\sigma_2 = 0.5\) kg</li>
+</ul>
+
+<p>你该相信哪台？答案是：<strong>都不要 100% 相信，而是做加权平均</strong>。直觉告诉我们应该更相信精度高的那台。但"更相信多少"有一个数学上的最优解。</p>
+
+<p>最优的加权系数为：</p>
+
+$$w = \frac{\sigma_2^2}{\sigma_1^2 + \sigma_2^2} = \frac{0.25}{4 + 0.25} = 0.0588$$
+
+<p>最优融合结果：</p>
+
+$$\hat{x} = w \cdot x_1 + (1-w) \cdot x_2 = 0.059 \times 70.5 + 0.941 \times 68.2 \approx 68.34 \text{ kg}$$
+
+<p>注意，结果非常接近精确的那台秤——这完全符合直觉。而这个 \(w\)，<strong>就是一维卡尔曼增益</strong>。</p>
+
+<p>MIT 16.322 把这叫做<strong>最小方差无偏估计</strong>（Minimum Variance Unbiased Estimation, MVUE）。融合后的方差为：</p>
+
+$$\sigma_{融合}^2 = \frac{\sigma_1^2 \cdot \sigma_2^2}{\sigma_1^2 + \sigma_2^2} = \frac{4 \times 0.25}{4.25} \approx 0.235 \text{ kg}^2$$
+
+<p>融合后的标准差约 0.49 kg——比两台秤中最好的那台（0.5 kg）还要好！这不是魔法，这是<strong>信息叠加</strong>的必然结果。卡尔曼滤波只不过是把这个简单的道理推广到了多维、动态、递归的场景。</p>
+
+<h2>二、先试试最直觉的办法</h2>
+
+<p>学过信号处理的同学可能会说："加个滤波器不就行了？"好，我们来试试。</p>
+
+<h3>均值滤波（Moving Average）</h3>
+<p>取最近 \(N\) 个采样的算术平均。公式很简单：</p>
+$$\hat{x}_k = \frac{1}{N}\sum_{i=0}^{N-1} x_{k-i}$$
+<p>问题是：窗口太小，噪声压不下去；窗口太大，信号被拖得面目全非，而且需要存 \(N\) 个历史值——在只有几 KB RAM 的 MCU 上，这很奢侈。</p>
+
+<h3>指数滑动平均（EMA / 低通滤波）</h3>
+<p>只存一个上一次的滤波值，每次做加权平均：</p>
+$$\hat{x}_k = \alpha \cdot z_k + (1-\alpha) \cdot \hat{x}_{k-1}$$
+<p>其中 \(\alpha \in (0,1)\) 是平滑系数。\(\alpha\) 越小越平滑，但相位滞后越严重。在飞控里，200ms 的滞后足以让无人机撞墙。</p>
+
+<p><strong>试一试：</strong>下面的交互图让你亲手感受这些滤波器的表现。</p>
+
+<div class="interactive-box">
+  <h3>🎛️ 交互实验：噪声与滤波效果对比</h3>
+  <p style="font-size:0.92em;color:var(--text-light);">调节下方滑块，观察不同滤波方法对含噪正弦信号的处理效果。注意均值滤波的延迟和 EMA 的相位滞后。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>噪声强度 σ: <span class="val-display" id="noiseVal">0.5</span></label>
+      <input type="range" id="noiseSlider" min="0" max="2" step="0.05" value="0.5">
+    </div>
+    <div class="control-group">
+      <label>信号频率 (Hz): <span class="val-display" id="freqVal">1.0</span></label>
+      <input type="range" id="freqSlider" min="0.2" max="3" step="0.1" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>均值窗口 N: <span class="val-display" id="windowVal">10</span></label>
+      <input type="range" id="windowSlider" min="2" max="50" step="1" value="10">
+    </div>
+    <div class="control-group">
+      <label>EMA α: <span class="val-display" id="alphaVal">0.1</span></label>
+      <input type="range" id="alphaSlider" min="0.01" max="0.5" step="0.01" value="0.1">
+    </div>
+  </div>
+  <div id="filterPlot" style="width:100%;height:420px;"></div>
+</div>
+
+<h2>三、为什么简单滤波不够？</h2>
+
+<p>通过上面的实验，你应该注意到几个关键问题：</p>
+
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>延迟</strong>：无论均值还是 EMA，滤波越激进，信号延迟越大。在实时控制中，这意味着你看到的是"过去的世界"。</li>
+  <li><strong>没有"预测"能力</strong>：这些滤波器只是被动地处理观测数据，完全不知道系统的物理规律（比如"位置 = 上一次位置 + 速度 × 时间"）。</li>
+  <li><strong>不区分信源</strong>：所有数据被一视同仁，但实际上 GPS 和 IMU 的可靠程度不同，在不同场景下应该"更相信"不同的传感器。</li>
+</ol>
+
+<p>这就引出了一个核心问题：</p>
+
+<div style="background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0;text-align:center;">
+  <p style="font-size:1.15em;font-weight:700;margin:0;">我有一个物理模型的预测值，也有一个传感器的测量值，<br>它们都不完美——我该<span style="color:var(--primary);">相信谁、相信多少</span>？</p>
+</div>
+
+<p>卡尔曼滤波的回答是：<strong>谁更靠谱就更相信谁，而且靠谱程度可以用方差来量化</strong>。下一章我们会看到，它如何用一个优雅的数学框架回答这个问题。</p>
+
+<h2>为什么是递归的？——从最小二乘到卡尔曼</h2>
+
+<p>假设你有 1000 个 GPS 测量点，想估计无人机的轨迹。最直接的方法是<strong>批处理最小二乘</strong>：把 1000 个方程列出来，一次性解一个超大的矩阵方程。在 MATLAB 里这很自然，但在嵌入式系统里——你的 MCU 可能只有 64KB RAM，根本存不下所有历史数据。</p>
+
+<p>更聪明的做法是<strong>递归最小二乘</strong>（Recursive Least Squares, RLS）：每来一个新测量，就更新一次估计，然后<strong>丢掉原始数据</strong>。只需要存当前的估计值和一个协方差矩阵——内存消耗是常数。</p>
+
+<p>卡尔曼滤波 = 递归最小二乘 + <strong>动态模型</strong>（状态转移方程）。这是 MIT 课程反复强调的关键洞察：</p>
+
+<div style="background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;text-align:center;font-size:1.05em;"><strong>卡尔曼滤波不是"又一个滤波器"——它是一个最优递归状态估计器。</strong></p>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:14px 0;">
+  <tr style="background:var(--primary-light);">
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">方法</th>
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">数据需求</th>
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">内存</th>
+    <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">有动态模型？</th>
+  </tr>
+  <tr>
+    <td style="padding:8px 14px;border:1px solid var(--border);">批处理最小二乘</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">所有历史数据</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">O(N)</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">否</td>
+  </tr>
+  <tr>
+    <td style="padding:8px 14px;border:1px solid var(--border);">递归最小二乘</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">只需当前测量</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">O(n²)</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">否</td>
+  </tr>
+  <tr>
+    <td style="padding:8px 14px;border:1px solid var(--border);font-weight:700;color:var(--primary);">卡尔曼滤波</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">只需当前测量</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);">O(n²)</td>
+    <td style="padding:8px 14px;border:1px solid var(--border);font-weight:700;color:#16a34a;">是！</td>
+  </tr>
+</table>
+
+<p>在嵌入式系统中，递归不是一种"可选的优化"——它是<strong>唯一可行的方案</strong>。你的 STM32 没有能力存储和回溯所有历史测量值。卡尔曼滤波的递归结构天然契合嵌入式系统的约束：固定内存、逐个处理、实时输出。</p>
+
+<h2>四、加速度二次积分的灾难</h2>
+
+<p>为了更直观地理解"为什么不能只用 IMU"，来看加速度二次积分求位置的误差增长。假设加速度计有一个恒定偏差 \(b\)（零偏）：</p>
+
+$$x_{err}(t) = \frac{1}{2} b \cdot t^2$$
+
+<p>即使 \(b\) 只有 0.01 m/s²（这在 MEMS 传感器中很常见），10 秒后位置误差就达到 0.5 米，100 秒后达到 50 米。这就是所谓的<strong>积分漂移</strong>。</p>
+
+<div class="interactive-box">
+  <h3>📈 交互实验：积分漂移的灾难</h3>
+  <p style="font-size:0.92em;color:var(--text-light);">调节加速度计偏差，观察积分位置误差随时间的增长。</p>
+  <div class="controls">
+    <div class="control-group">
+      <label>加速度计偏差 b (m/s²): <span class="val-display" id="biasVal">0.01</span></label>
+      <input type="range" id="biasSlider" min="0.001" max="0.1" step="0.001" value="0.01">
+    </div>
+    <div class="control-group">
+      <label>时间范围 (s): <span class="val-display" id="timeVal">60</span></label>
+      <input type="range" id="timeSlider" min="10" max="300" step="10" value="60">
+    </div>
+  </div>
+  <div id="driftPlot" style="width:100%;height:340px;"></div>
+</div>
+
+<h2>五、GPS 噪声长什么样？</h2>
+
+<p>而 GPS 的问题恰好相反：它不会漂移（长期均值是对的），但每个测量点都有几米的随机误差。这个噪声大致符合高斯分布，标准差通常在 1~5 米（民用单频 GPS）。</p>
+
+<p>有意思的是，IMU 和 GPS 的误差特性恰好互补：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li>IMU：短期准、长期飘 → 高频信息可靠</li>
+  <li>GPS：短期吵、长期准 → 低频信息可靠</li>
+</ul>
+<p>卡尔曼滤波器本质上就是一个<strong>最优的融合器</strong>，把两个传感器的优势结合起来。我们在第五章会完整实现它。</p>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+  <p><strong>均值滤波的内存代价</strong>：一个 N=64 窗口的 float32 均值滤波器需要 256 字节的环形缓冲区。在 STM32F103（只有 20KB SRAM）上，如果你对 6 轴 IMU 都做滤波，就要消耗近 1.5KB——这在小型 MCU 上是不可接受的。</p>
+  <p style="margin-top:10px;"><strong>低通滤波的相位滞后</strong>：一阶 IIR 低通滤波器（即 EMA）在截止频率处有 45° 的相位滞后。对于 100Hz 采样、10Hz 截止的典型飞控配置，这意味着大约 25ms 的延迟。如果控制回路带宽接近 10Hz，这个滞后可能导致振荡。</p>
+  <p style="margin-top:10px;"><strong>工程中的常见做法</strong>：IMU 数据先过一个简单的低通滤波去掉电机振动（通常切在 30~80Hz），然后送进卡尔曼滤波器。卡尔曼滤波不是要取代简单滤波，而是在简单滤波的基础上做<strong>多传感器融合</strong>。</p>
+
+  <p style="margin-top:10px;"><strong>真实飞控中的 EKF</strong>：PX4 和 ArduPilot 这两大开源飞控都使用扩展卡尔曼滤波（EKF）作为核心导航方案，而不是简单的互补滤波。ArduPilot 的 EKF3 在 STM32H7（Cortex-M7, 480MHz）上以 <strong>400Hz</strong> 运行，同时融合 3 个 IMU + 2 个 GPS + 磁力计 + 气压计的数据。为什么需要这么复杂？因为简单的滤波器无法处理<strong>异构传感器融合</strong>——不同传感器有不同的采样率（IMU 1kHz vs GPS 10Hz）、不同的噪声特性、不同的延迟，只有卡尔曼滤波框架能优雅地统一处理这些差异。</p>
+
+  <pre><code>/* 嵌入式 C：一阶 IIR 低通滤波 —— 最省资源的预滤波 */
+typedef struct {
+    float out;    /* 上一次输出 */
+    float alpha;  /* 平滑系数, 0 < alpha < 1 */
+} LPF_t;
+
+static inline float lpf_update(LPF_t *f, float in) {
+    f->out += f->alpha * (in - f->out);
+    return f->out;
+}</code></pre>
+</div>
+
+</div><!-- container -->
+
+<nav style="background:var(--card);border-top:1px solid var(--border);padding:16px 20px;display:flex;justify-content:space-between;">
+  <a href="index.html" style="color:var(--primary);text-decoration:none;font-weight:600;">← 返回目录</a>
+  <a href="ch02.html" style="color:var(--primary);text-decoration:none;font-weight:600;">第二章：状态空间建模 →</a>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: "$$", right: "$$", display: true},
+      {left: "\\(", right: "\\)", display: false}
+    ]
+  });
+});
+
+/* ============================================================
+ * Interactive Plot 1: Noise & Filter Comparison
+ * ============================================================ */
+(function() {
+  const noiseSlider = document.getElementById('noiseSlider');
+  const freqSlider  = document.getElementById('freqSlider');
+  const windowSlider= document.getElementById('windowSlider');
+  const alphaSlider = document.getElementById('alphaSlider');
+
+  function gauss() {
+    let u = 0, v = 0;
+    while(u === 0) u = Math.random();
+    while(v === 0) v = Math.random();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  }
+
+  /* Pre-generate random seed for consistent noise across updates */
+  const N = 500;
+  const randSeed = Array.from({length: N}, () => gauss());
+
+  function updateFilterPlot() {
+    const sigma  = parseFloat(noiseSlider.value);
+    const freq   = parseFloat(freqSlider.value);
+    const winN   = parseInt(windowSlider.value);
+    const alpha  = parseFloat(alphaSlider.value);
+
+    document.getElementById('noiseVal').textContent  = sigma.toFixed(2);
+    document.getElementById('freqVal').textContent   = freq.toFixed(1);
+    document.getElementById('windowVal').textContent  = winN;
+    document.getElementById('alphaVal').textContent   = alpha.toFixed(2);
+
+    const dt = 0.005;
+    const t = [], clean = [], noisy = [], ma = [], ema = [];
+
+    for(let i = 0; i < N; i++) {
+      const ti = i * dt;
+      t.push(ti);
+      const s = Math.sin(2 * Math.PI * freq * ti);
+      clean.push(s);
+      noisy.push(s + sigma * randSeed[i]);
+    }
+
+    /* Moving Average */
+    for(let i = 0; i < N; i++) {
+      let sum = 0, count = 0;
+      for(let j = Math.max(0, i - winN + 1); j <= i; j++) {
+        sum += noisy[j];
+        count++;
+      }
+      ma.push(sum / count);
+    }
+
+    /* Exponential Moving Average */
+    ema.push(noisy[0]);
+    for(let i = 1; i < N; i++) {
+      ema.push(alpha * noisy[i] + (1 - alpha) * ema[i-1]);
+    }
+
+    const traces = [
+      { x: t, y: clean, name: '原始信号', line: { color: '#16a34a', width: 2.5 } },
+      { x: t, y: noisy, name: '含噪信号', line: { color: '#cbd5e1', width: 1 }, opacity: 0.7 },
+      { x: t, y: ma,    name: `均值滤波 (N=${winN})`, line: { color: '#dc2626', width: 2, dash: 'dash' } },
+      { x: t, y: ema,   name: `EMA (α=${alpha.toFixed(2)})`, line: { color: '#2563eb', width: 2, dash: 'dot' } }
+    ];
+
+    const layout = {
+      margin: { t: 30, r: 20, b: 50, l: 55 },
+      xaxis: { title: '时间 (s)' },
+      yaxis: { title: '幅值' },
+      legend: { x: 0, y: 1.15, orientation: 'h' },
+      plot_bgcolor: '#fafafa',
+      font: { family: '-apple-system, sans-serif' }
+    };
+
+    Plotly.react('filterPlot', traces, layout, { responsive: true });
+  }
+
+  [noiseSlider, freqSlider, windowSlider, alphaSlider].forEach(
+    s => s.addEventListener('input', updateFilterPlot)
+  );
+  updateFilterPlot();
+})();
+
+/* ============================================================
+ * Interactive Plot 2: Integration Drift
+ * ============================================================ */
+(function() {
+  const biasSlider = document.getElementById('biasSlider');
+  const timeSlider = document.getElementById('timeSlider');
+
+  function updateDriftPlot() {
+    const b    = parseFloat(biasSlider.value);
+    const tMax = parseInt(timeSlider.value);
+
+    document.getElementById('biasVal').textContent = b.toFixed(3);
+    document.getElementById('timeVal').textContent = tMax;
+
+    const steps = 300;
+    const t = [], velErr = [], posErr = [];
+    for(let i = 0; i <= steps; i++) {
+      const ti = tMax * i / steps;
+      t.push(ti);
+      velErr.push(b * ti);
+      posErr.push(0.5 * b * ti * ti);
+    }
+
+    const traces = [
+      { x: t, y: posErr, name: '位置误差 (m)', line: { color: '#dc2626', width: 2.5 }, yaxis: 'y' },
+      { x: t, y: velErr, name: '速度误差 (m/s)', line: { color: '#2563eb', width: 2, dash: 'dash' }, yaxis: 'y2' }
+    ];
+
+    const layout = {
+      margin: { t: 30, r: 60, b: 50, l: 60 },
+      xaxis: { title: '时间 (s)' },
+      yaxis: { title: '位置误差 (m)', titlefont: { color: '#dc2626' }, tickfont: { color: '#dc2626' } },
+      yaxis2: {
+        title: '速度误差 (m/s)', titlefont: { color: '#2563eb' }, tickfont: { color: '#2563eb' },
+        overlaying: 'y', side: 'right'
+      },
+      legend: { x: 0, y: 1.12, orientation: 'h' },
+      plot_bgcolor: '#fafafa',
+      font: { family: '-apple-system, sans-serif' },
+      annotations: [{
+        x: t[steps], y: posErr[steps],
+        text: posErr[steps].toFixed(1) + ' m',
+        showarrow: true, arrowhead: 2, ax: -40, ay: -30,
+        font: { color: '#dc2626', size: 13, weight: 'bold' }
+      }]
+    };
+
+    Plotly.react('driftPlot', traces, layout, { responsive: true });
+  }
+
+  biasSlider.addEventListener('input', updateDriftPlot);
+  timeSlider.addEventListener('input', updateDriftPlot);
+  updateDriftPlot();
+})();
+</script>
+</body>
+</html>

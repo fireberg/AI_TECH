@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第五章：实战——无人机水平位置估计 | 卡尔曼滤波交互式教材</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root{--primary:#2563eb;--primary-light:#dbeafe;--bg:#f8fafc;--card:#fff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--note-bg:#fffbeb;--note-border:#f59e0b;--code-bg:#f1f5f9}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+nav a{color:var(--primary);text-decoration:none;font-weight:600;font-size:.95em}
+.container{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:2em;margin-bottom:8px;color:var(--primary)}
+.chapter-meta{color:var(--text-light);margin-bottom:28px;font-size:.95em}
+h2{font-size:1.4em;margin:36px 0 14px;color:#0f172a;border-left:4px solid var(--primary);padding-left:12px}
+h3{font-size:1.15em;margin:24px 0 10px}
+p{margin-bottom:14px}
+.objective{background:var(--primary-light);border-radius:10px;padding:20px 24px;margin-bottom:28px}
+.objective h3{margin-top:0;color:var(--primary)}
+.interactive-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px}
+.control-group{display:flex;flex-direction:column;gap:4px}
+.control-group label{font-size:.85em;color:var(--text-light);font-weight:600}
+.control-group input[type="range"]{width:160px}
+.val-display{display:inline-block;min-width:36px;text-align:center;background:var(--code-bg);border-radius:4px;padding:1px 6px;font-family:'SF Mono',monospace;font-size:.85em}
+pre{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:18px 20px;overflow-x:auto;font-size:.88em;line-height:1.6;margin:14px 0}
+pre code{font-family:'SF Mono','Consolas','Menlo',monospace}
+.note{background:var(--note-bg);border-left:4px solid var(--note-border);border-radius:0 8px 8px 0;padding:20px 24px;margin:32px 0}
+.note h3{color:#92400e;margin-top:0}
+.note h3::before{content:"🔧 "}
+.stats-row{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.stat-box{background:var(--code-bg);border-radius:8px;padding:8px 14px;flex:1;min-width:120px}
+.stat-box .label{font-size:.78em;color:var(--text-light)}
+.stat-box .value{font-family:'SF Mono',monospace;font-weight:700;font-size:.95em}
+button.action{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-weight:600;color:#fff;font-size:.92em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+@media(max-width:600px){.controls{flex-direction:column}.control-group input[type="range"]{width:100%}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="ch04.html">← 上一章</a>
+  <span style="font-weight:700;font-size:.95em;">第五章</span>
+  <a href="ch06.html">下一章 →</a>
+</nav>
+
+<div class="container">
+<h1>第五章：实战——无人机水平位置估计</h1>
+<p class="chapter-meta">完整 2D 卡尔曼滤波器：IMU + GPS 融合，从代码到可视化</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>构建一个完整的 4 维卡尔曼滤波器（[x, y, vx, vy]）</li>
+    <li>模拟真实的无人机圆形轨迹飞行，融合 IMU 加速度和 GPS 位置</li>
+    <li>实时调参并观察滤波效果，体验 Q/R 调参的手感</li>
+  </ul>
+</div>
+
+<h2>一、系统设定</h2>
+
+<p>我们模拟一架无人机沿椭圆/圆形轨迹飞行：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>状态</strong>：\(\mathbf{x} = [x, y, v_x, v_y]^T\)</li>
+  <li><strong>IMU 输入</strong>：加速度 \([a_x, a_y]\)，采样率 50Hz，含噪声和偏差</li>
+  <li><strong>GPS 测量</strong>：位置 \([x_{gps}, y_{gps}]\)，采样率 5Hz，标准差约 3m</li>
+  <li><strong>关键差异</strong>：IMU 每步都有，GPS 每 10 步才来一次</li>
+</ul>
+
+$$\mathbf{F} = \begin{bmatrix}1&0&\Delta t&0\\0&1&0&\Delta t\\0&0&1&0\\0&0&0&1\end{bmatrix}, \quad
+\mathbf{B} = \begin{bmatrix}\frac{\Delta t^2}{2}&0\\0&\frac{\Delta t^2}{2}\\\Delta t&0\\0&\Delta t\end{bmatrix}, \quad
+\mathbf{H} = \begin{bmatrix}1&0&0&0\\0&1&0&0\end{bmatrix}$$
+
+<h2>二、完整 JavaScript 实现</h2>
+
+<p>下面是核心滤波器的 JavaScript 代码，注释对照第四章的五个方程：</p>
+
+<pre><code>/* KF2D: 2D 位置-速度卡尔曼滤波器 (JS 版) */
+function createKF2D(dt, q, r, p0) {
+  const n = 4, m = 2;
+  return {
+    x: [0, 0, 0, 0],
+    P: diagMat(n, p0),
+    F: [[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]],
+    B: [[.5*dt*dt,0],[0,.5*dt*dt],[dt,0],[0,dt]],
+    H: [[1,0,0,0],[0,1,0,0]],
+    Q: buildQ(dt, q),
+    R: [[r, 0],[0, r]],
+
+    predict: function(ax, ay) {
+      /* ① x = F*x + B*u */
+      const x = this.x, F = this.F;
+      this.x = [
+        F[0][0]*x[0]+F[0][2]*x[2] + this.B[0][0]*ax,
+        F[1][1]*x[1]+F[1][3]*x[3] + this.B[1][1]*ay,
+        x[2] + this.B[2][0]*ax,
+        x[3] + this.B[3][1]*ay
+      ];
+      /* ② P = F*P*F' + Q */
+      this.P = matAdd(matMul(matMul(F,this.P),transpose(F)),this.Q);
+    },
+
+    update: function(zx, zy) {
+      /* ③ K = P*H'*(H*P*H'+R)^-1 */
+      const PHt = matMul(this.P, transpose(this.H));
+      const S = matAdd(matMul(this.H, PHt), this.R);
+      const Si = inv2x2(S);
+      const K = matMul(PHt, Si);
+      /* ④ x = x + K*(z - H*x) */
+      const innov = [zx-this.x[0], zy-this.x[1]];
+      for(let i=0;i<n;i++)
+        this.x[i] += K[i][0]*innov[0] + K[i][1]*innov[1];
+      /* ⑤ P = (I-K*H)*P */
+      const IKH = matSub(eye(n), matMul(K, this.H));
+      this.P = matMul(IKH, this.P);
+      return { K, innov };
+    }
+  };
+}</code></pre>
+
+<h2>二·五、互补滤波器——穷人版卡尔曼</h2>
+
+<p>在看完上面那一大段 KF 代码后，你可能会想：有没有更简单的方案？当然有——<strong>互补滤波器</strong>（Complementary Filter），它本质上就是第四章讲的稳态卡尔曼滤波器的特殊形式。</p>
+
+<p>对于位置估计，一个互补滤波器可以写成一行：</p>
+
+$$\hat{x}_k = \alpha \cdot x_{GPS} + (1-\alpha) \cdot (\hat{x}_{k-1} + v \cdot \Delta t)$$
+
+<p>这里的 \(\alpha\) 就对应于稳态卡尔曼增益 \(\mathbf{K}_\infty\)。当 GPS 噪声大（R 大）时，\(\alpha\) 小，更相信惯性推算；当 GPS 噪声小（R 小）时，\(\alpha\) 大，更相信 GPS。</p>
+
+<pre><code>/* 互补滤波器——3 行 C 代码，效果出奇地好 */
+float comp_filter(float gps_pos, float accel, float dt) {
+    static float pos = 0, vel = 0;
+    vel += accel * dt;
+    pos = 0.98f * (pos + vel * dt) + 0.02f * gps_pos;
+    return pos;
+}</code></pre>
+
+<p>对比卡尔曼滤波器：</p>
+
+<table style="border-collapse:collapse;margin:14px 0;width:100%;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;"></th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">互补滤波器</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">卡尔曼滤波器</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">代码量</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">3 行</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">~100 行</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">需要矩阵运算</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">否</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">是</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">自适应噪声</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">不能</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">自动适应</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">不确定度估计</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">没有</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">P 矩阵</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">多状态最优估计</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">不能（速度估计不最优）</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">所有状态都最优</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-weight:600;">适用场景</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">噪声恒定的简单系统</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">通用</td></tr>
+</tbody>
+</table>
+
+<p>在<strong>姿态估计</strong>领域，Madgwick 滤波器和 Mahony 滤波器都是互补滤波器的变体——它们在四元数空间上做类似的高通/低通融合。之所以效果好，是因为陀螺仪和加速度计的噪声特性相对稳定，不太需要自适应。</p>
+
+<p>但一旦你需要融合多个传感器（GPS + 气压计 + 光流 + ...）、需要知道估计的不确定度（用于决策）、或者噪声特性会变化——就该用完整的卡尔曼滤波器了。</p>
+
+<h2>三、实时仿真</h2>
+
+<div class="interactive-box">
+  <h3>🚁 交互实验：无人机 2D 位置估计</h3>
+  <p style="font-size:.92em;color:var(--text-light);">点击"开始"后无人机沿轨迹飞行。调节 Q/R 滑块观察滤波效果——Q 太小会跟不上机动，R 太小会被噪声带偏。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>过程噪声 q: <span class="val-display" id="qVal">0.5</span></label>
+      <input type="range" id="qSlider5" min="0.01" max="5" step="0.01" value="0.5">
+    </div>
+    <div class="control-group">
+      <label>GPS 噪声 σ (m): <span class="val-display" id="rVal">3.0</span></label>
+      <input type="range" id="rSlider5" min="0.5" max="15" step="0.5" value="3.0">
+    </div>
+    <div class="control-group">
+      <label>初始 P₀: <span class="val-display" id="p0Val">100</span></label>
+      <input type="range" id="p0Slider" min="1" max="500" step="1" value="100">
+    </div>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>
+        <input type="checkbox" id="useIMU" checked> 使用 IMU 加速度输入
+      </label>
+    </div>
+    <div class="control-group">
+      <label>速度倍率:</label>
+      <select id="speedSelect">
+        <option value="1">1×</option>
+        <option value="2" selected>2×</option>
+        <option value="5">5×</option>
+      </select>
+    </div>
+    <div class="control-group" style="flex-direction:row;gap:8px;align-items:flex-end;">
+      <button class="action" id="startBtn" style="background:#16a34a;">开始</button>
+      <button class="action" id="pauseBtn" style="background:#f59e0b;color:#000;">暂停</button>
+      <button class="action" id="resetBtn5" style="background:#64748b;">重置</button>
+    </div>
+  </div>
+
+  <div id="trajPlot5" style="width:100%;height:480px;"></div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="label">位置 RMS 误差 (m)</div><div class="value" id="rmsVal">-</div></div>
+    <div class="stat-box"><div class="label">当前步数</div><div class="value" id="stepVal">0</div></div>
+    <div class="stat-box"><div class="label">GPS 更新次数</div><div class="value" id="gpsCount">0</div></div>
+    <div class="stat-box"><div class="label">K 范数</div><div class="value" id="kNorm">-</div></div>
+  </div>
+
+  <div id="errorPlot5" style="width:100%;height:220px;margin-top:12px;"></div>
+</div>
+
+<h2>三·五、马氏距离门限——别让坏数据毁了你的滤波器</h2>
+
+<p>在真实飞行中，GPS 偶尔会给出<strong>严重错误的读数</strong>——比如在城市峡谷中信号反射（multipath），位置突然跳几十米。如果你把这种"毒数据"直接喂给卡尔曼滤波器，它会被猛烈拉偏，可能需要好几秒才能恢复。</p>
+
+<p>解决方法：在做 KF 更新之前，先检查新息是否"合理"。用<strong>马氏距离</strong>（Mahalanobis Distance）来判断：</p>
+
+$$d^2 = \boldsymbol{\nu}^T \mathbf{S}^{-1} \boldsymbol{\nu}$$
+
+<p>其中 \(\boldsymbol{\nu}\) 是新息，\(\mathbf{S} = \mathbf{H}\mathbf{P}\mathbf{H}^T + \mathbf{R}\) 是新息的期望协方差。如果滤波器正确调谐，\(d^2\) 服从 \(\chi^2(m)\) 分布。</p>
+
+<p>设定一个门限：如果 \(d^2\) 超过 \(\chi^2\) 分布的 99% 分位数，就<strong>拒绝这次测量</strong>——它几乎肯定是异常值。</p>
+
+<table style="border-collapse:collapse;margin:14px 0;width:100%;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 14px;border:1px solid var(--border);">观测维数 m</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">95% 门限</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">99% 门限</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">典型传感器</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">1</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">3.84</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">6.63</td><td style="padding:6px 14px;border:1px solid var(--border);">气压计高度</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">2</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">5.99</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">9.21</td><td style="padding:6px 14px;border:1px solid var(--border);">GPS 水平位置 (x, y)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">3</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">7.81</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">11.34</td><td style="padding:6px 14px;border:1px solid var(--border);">GPS 位置 (x, y, z)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">6</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">12.59</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">16.81</td><td style="padding:6px 14px;border:1px solid var(--border);">GPS 位置+速度</td></tr>
+</tbody>
+</table>
+
+<pre><code>/* 马氏距离门限检测——在 KF update 前调用 */
+/* 对于 m=2 的 GPS 测量 */
+float innov[2] = { gps_x - kf.x[0], gps_y - kf.x[1] };
+
+/* Si 是 S 的逆矩阵（在计算 K 时已经算过了，直接复用） */
+float d2 = innov[0]*Si[0][0]*innov[0] + innov[1]*Si[1][1]*innov[1]
+         + 2*innov[0]*Si[0][1]*innov[1];
+
+if (d2 > 9.21f) {
+    /* 拒绝这次 GPS 测量——可能是多径效应 */
+    log_warning("GPS innovation gate reject: d2=%.1f", d2);
+    return;  /* 跳过更新，继续预测 */
+}
+
+/* 通过门限检测，正常执行 KF update */
+kf2d_update(&kf, gps_x, gps_y);</code></pre>
+
+<p><strong>关键原则</strong>：拒绝异常值后，<strong>不要重置滤波器</strong>——直接跳过更新步，让预测继续运行。滤波器会用惯性推算撑过没有 GPS 的时段，等下一次正常的 GPS 数据到来再校正。PX4 和 ArduPilot 的 EKF 都实现了这种新息门限检测（innovation gate test），对每个传感器的每次更新都会做。</p>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+
+  <p><strong>异步更新——飞控中的关键设计</strong></p>
+  <p>在真实飞控中，IMU 跑 100~400Hz，GPS 只有 1~10Hz。代码结构应该是这样的：</p>
+
+  <pre><code>/* 主循环伪代码 (典型飞控架构) */
+void main_loop(void) {  /* 400Hz tick */
+    imu_read(&ax, &ay, &az);
+
+    /* 每次 tick 都做预测 */
+    kf2d_predict(&kf, ax, ay);
+
+    /* 只有 GPS 数据到来时才做更新 */
+    if (gps_data_ready()) {
+        gps_read(&gps_x, &gps_y);
+        kf2d_update(&kf, gps_x, gps_y);
+        gps_clear_flag();
+    }
+
+    /* 输出融合后的位置和速度 */
+    nav_output.x  = kf.x[0];
+    nav_output.y  = kf.x[1];
+    nav_output.vx = kf.x[2];
+    nav_output.vy = kf.x[3];
+}</code></pre>
+
+  <p style="margin-top:12px;"><strong>dt 的处理</strong>：如果 IMU 和主循环不完全同步，最好用实际时间差 dt 来构建 F 和 B 矩阵，而不是用固定的标称值。在 STM32 上可以用 DWT 周期计数器或 TIM 定时器来获取精确的 dt。</p>
+
+  <p style="margin-top:10px;"><strong>数值检查</strong>：每次更新后，检查 P 的对角元素是否全部为正。如果出现负值，说明滤波器已经发散了——这通常意味着 Q 设得太小或者观测模型有误。</p>
+
+  <p style="margin-top:14px;"><strong>真实飞控架构参考</strong>：PX4 的 ECL-EKF（Estimation and Control Library）使用 <strong>24 维状态向量</strong>：</p>
+  <ul style="margin-left:18px;margin-top:6px;">
+    <li>四元数 (4) + 速度 (3) + 位置 (3) + 陀螺偏差 (3) + 加速度偏差 (3) + 地磁场 (3) + 风速 (2) + 磁偏差 (3)</li>
+    <li>运行频率：IMU 预测 250Hz + 按需更新（GPS 10Hz，气压 50Hz，磁力 50Hz）</li>
+    <li>使用 Joseph 形式更新 P，Mahalanobis 门限剔除异常值</li>
+    <li>源码：<a href="https://github.com/PX4/PX4-ECL" style="color:var(--primary);">github.com/PX4/PX4-ECL</a></li>
+  </ul>
+  <p style="margin-top:8px;">ArduPilot 的 EKF3 架构类似，但有一个独特设计：它运行<strong>三个并行的 EKF 实例</strong>（每个 IMU 一个），通过比较各实例的归一化新息平方（NIS）来选择最佳的那个。如果某个 IMU 出了故障，对应的 EKF 实例的 NIS 会飙高，系统自动切换到健康的实例——这就是传感器冗余+滤波器冗余的双重保障。</p>
+</div>
+
+</div>
+
+<nav style="background:var(--card);border-top:1px solid var(--border);padding:16px 20px;display:flex;justify-content:space-between;">
+  <a href="ch04.html" style="color:var(--primary);text-decoration:none;font-weight:600;">← 第四章</a>
+  <a href="ch06.html" style="color:var(--primary);text-decoration:none;font-weight:600;">第六章：扩展卡尔曼 →</a>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
+(function(){
+  /* Matrix utilities */
+  function mat(r,c){return Array.from({length:r},()=>new Array(c).fill(0));}
+  function matMul(A,B){const m=A.length,n=B[0].length,p=B.length,C=mat(m,n);for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];return C;}
+  function matAdd(A,B){return A.map((r,i)=>r.map((v,j)=>v+B[i][j]));}
+  function matSub(A,B){return A.map((r,i)=>r.map((v,j)=>v-B[i][j]));}
+  function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+  function eye(n){const I=mat(n,n);for(let i=0;i<n;i++)I[i][i]=1;return I;}
+  function diagMat(n,v){const M=mat(n,n);for(let i=0;i<n;i++)M[i][i]=v;return M;}
+  function inv2x2(M){const d=M[0][0]*M[1][1]-M[0][1]*M[1][0],id=1/d;return[[M[1][1]*id,-M[0][1]*id],[-M[1][0]*id,M[0][0]*id]];}
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  function buildQ(dt,q){
+    const d3=dt*dt*dt/3,d2=dt*dt/2,d1=dt;
+    return[[q*d3,0,q*d2,0],[0,q*d3,0,q*d2],[q*d2,0,q*d1,0],[0,q*d2,0,q*d1]];
+  }
+
+  const dt=0.02; // 50Hz
+  const gpsInterval=10; // GPS every 10 steps -> 5Hz
+
+  let kf,simState,animId,step,gpsN,errors;
+
+  function createKF(q,r,p0){
+    return{
+      x:[0,0,0,0],P:diagMat(4,p0),
+      F:[[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]],
+      B:[[.5*dt*dt,0],[0,.5*dt*dt],[dt,0],[0,dt]],
+      H:[[1,0,0,0],[0,1,0,0]],
+      Q:buildQ(dt,q), R:[[r*r,0],[0,r*r]]
+    };
+  }
+
+  function initSim(){
+    if(animId){cancelAnimationFrame(animId);animId=null;}
+    const q=parseFloat(document.getElementById('qSlider5').value);
+    const r=parseFloat(document.getElementById('rSlider5').value);
+    const p0=parseFloat(document.getElementById('p0Slider').value);
+    kf=createKF(q,r,p0);
+    simState={t:0,radius:20,omega:0.3};
+    step=0; gpsN=0; errors=[];
+    plotData={trueX:[],trueY:[],estX:[],estY:[],gpsX:[],gpsY:[],errHist:[]};
+    updatePlots();
+  }
+
+  let plotData;
+
+  function simStep(){
+    const s=simState;
+    const useIMU=document.getElementById('useIMU').checked;
+
+    s.t+=dt;
+
+    /* True trajectory: elliptical path */
+    const trueX=s.radius*Math.cos(s.omega*s.t);
+    const trueY=s.radius*0.7*Math.sin(s.omega*s.t);
+    const trueAx=-s.radius*s.omega*s.omega*Math.cos(s.omega*s.t);
+    const trueAy=-s.radius*0.7*s.omega*s.omega*Math.sin(s.omega*s.t);
+
+    /* IMU reading (true + noise + small bias) */
+    const imuAx=trueAx+0.5*gauss()+0.02;
+    const imuAy=trueAy+0.5*gauss()-0.01;
+
+    /* Predict */
+    if(useIMU){
+      const x=kf.x,F=kf.F;
+      kf.x=[
+        x[0]+x[2]*dt+.5*imuAx*dt*dt,
+        x[1]+x[3]*dt+.5*imuAy*dt*dt,
+        x[2]+imuAx*dt,
+        x[3]+imuAy*dt
+      ];
+    }else{
+      const x=kf.x;
+      kf.x=[x[0]+x[2]*dt,x[1]+x[3]*dt,x[2],x[3]];
+    }
+    kf.P=matAdd(matMul(matMul(kf.F,kf.P),transpose(kf.F)),kf.Q);
+
+    /* GPS update */
+    let lastK=null;
+    if(step%gpsInterval===0){
+      const r=Math.sqrt(kf.R[0][0]);
+      const gx=trueX+r*gauss(), gy=trueY+r*gauss();
+      plotData.gpsX.push(gx); plotData.gpsY.push(gy);
+
+      const PHt=matMul(kf.P,transpose(kf.H));
+      const S=matAdd(matMul(kf.H,PHt),kf.R);
+      const Si=inv2x2(S);
+      const K=matMul(PHt,Si);
+      const innov=[gx-kf.x[0],gy-kf.x[1]];
+      for(let i=0;i<4;i++) kf.x[i]+=K[i][0]*innov[0]+K[i][1]*innov[1];
+      const IKH=matSub(eye(4),matMul(K,kf.H));
+      kf.P=matMul(IKH,kf.P);
+      gpsN++;
+      lastK=K;
+    }
+
+    plotData.trueX.push(trueX); plotData.trueY.push(trueY);
+    plotData.estX.push(kf.x[0]); plotData.estY.push(kf.x[1]);
+
+    const err=Math.sqrt((kf.x[0]-trueX)**2+(kf.x[1]-trueY)**2);
+    errors.push(err);
+    plotData.errHist.push(err);
+
+    step++;
+
+    if(lastK){
+      const kn=Math.sqrt(lastK.reduce((s,r)=>s+r.reduce((a,v)=>a+v*v,0),0));
+      document.getElementById('kNorm').textContent=kn.toFixed(4);
+    }
+    document.getElementById('stepVal').textContent=step;
+    document.getElementById('gpsCount').textContent=gpsN;
+    if(errors.length>0){
+      const rms=Math.sqrt(errors.reduce((s,e)=>s+e*e,0)/errors.length);
+      document.getElementById('rmsVal').textContent=rms.toFixed(3);
+    }
+  }
+
+  function updatePlots(){
+    const d=plotData||{trueX:[],trueY:[],estX:[],estY:[],gpsX:[],gpsY:[],errHist:[]};
+    const traces=[
+      {x:d.trueX,y:d.trueY,name:'真实轨迹',mode:'lines',line:{color:'#16a34a',width:2}},
+      {x:d.estX,y:d.estY,name:'KF 估计',mode:'lines',line:{color:'#2563eb',width:2.5}},
+      {x:d.gpsX,y:d.gpsY,name:'GPS 测量',mode:'markers',marker:{color:'#dc2626',size:5,opacity:0.6}}
+    ];
+    Plotly.react('trajPlot5',traces,{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'X (m)',range:[-35,35],scaleanchor:'y'},
+      yaxis:{title:'Y (m)',range:[-25,25]},
+      legend:{x:0,y:1.1,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    Plotly.react('errorPlot5',[{
+      y:d.errHist,name:'位置误差 (m)',
+      line:{color:'#dc2626',width:1.5},fill:'tozeroy',fillcolor:'rgba(220,38,38,0.1)'
+    }],{
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'步数'},
+      yaxis:{title:'误差 (m)'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      showlegend:false
+    },{responsive:true});
+  }
+
+  let running=false;
+  function animate(){
+    if(!running)return;
+    const speed=parseInt(document.getElementById('speedSelect').value);
+    for(let i=0;i<speed;i++) simStep();
+    if(step%5===0) updatePlots();
+    animId=requestAnimationFrame(animate);
+  }
+
+  document.getElementById('startBtn').addEventListener('click',()=>{
+    if(!plotData) initSim();
+    running=true; animate();
+  });
+  document.getElementById('pauseBtn').addEventListener('click',()=>{
+    running=false;
+  });
+  document.getElementById('resetBtn5').addEventListener('click',()=>{
+    running=false; initSim();
+  });
+
+  ['qSlider5','rSlider5','p0Slider'].forEach(id=>{
+    document.getElementById(id).addEventListener('input',function(){
+      const labels={qSlider5:'qVal',rSlider5:'rVal',p0Slider:'p0Val'};
+      document.getElementById(labels[id]).textContent=parseFloat(this.value).toFixed(id==='p0Slider'?0:2);
+    });
+  });
+
+  initSim();
+})();
+</script>
+</body>
+</html>

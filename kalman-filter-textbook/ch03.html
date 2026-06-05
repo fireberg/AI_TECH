@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第三章：一场数据的融合 | 卡尔曼滤波交互式教材</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root{--primary:#2563eb;--primary-light:#dbeafe;--bg:#f8fafc;--card:#fff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--note-bg:#fffbeb;--note-border:#f59e0b;--code-bg:#f1f5f9}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+nav a{color:var(--primary);text-decoration:none;font-weight:600;font-size:.95em}
+.container{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:2em;margin-bottom:8px;color:var(--primary)}
+.chapter-meta{color:var(--text-light);margin-bottom:28px;font-size:.95em}
+h2{font-size:1.4em;margin:36px 0 14px;color:#0f172a;border-left:4px solid var(--primary);padding-left:12px}
+h3{font-size:1.15em;margin:24px 0 10px}
+p{margin-bottom:14px}
+.objective{background:var(--primary-light);border-radius:10px;padding:20px 24px;margin-bottom:28px}
+.objective h3{margin-top:0;color:var(--primary)}
+.interactive-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0}
+.controls{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:16px}
+.control-group{display:flex;flex-direction:column;gap:4px}
+.control-group label{font-size:.88em;color:var(--text-light);font-weight:600}
+.control-group input[type="range"]{width:180px}
+.val-display{display:inline-block;min-width:42px;text-align:center;background:var(--code-bg);border-radius:4px;padding:1px 6px;font-family:'SF Mono','Consolas',monospace;font-size:.88em}
+.stats-panel{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+.stat-box{background:var(--code-bg);border-radius:8px;padding:10px 16px;flex:1;min-width:160px}
+.stat-box .label{font-size:.82em;color:var(--text-light);margin-bottom:2px}
+.stat-box .value{font-size:1.15em;font-weight:700;font-family:'SF Mono',monospace}
+pre{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:18px 20px;overflow-x:auto;font-size:.9em;line-height:1.6;margin:14px 0}
+pre code{font-family:'SF Mono','Consolas','Menlo',monospace}
+.note{background:var(--note-bg);border-left:4px solid var(--note-border);border-radius:0 8px 8px 0;padding:20px 24px;margin:32px 0}
+.note h3{color:#92400e;margin-top:0}
+.note h3::before{content:"🔧 "}
+.highlight-box{background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+@media(max-width:600px){.controls{flex-direction:column}.control-group input[type="range"]{width:100%}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="ch02.html">← 上一章</a>
+  <span style="font-weight:700;font-size:.95em;">第三章</span>
+  <a href="ch04.html">下一章 →</a>
+</nav>
+
+<div class="container">
+<h1>第三章：一场数据的融合</h1>
+<p class="chapter-meta">预测与更新的直觉——两个高斯分布如何"合体"</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>直观理解"预测分布"和"测量分布"的融合过程</li>
+    <li>掌握卡尔曼增益 K 的物理含义</li>
+    <li>为下一章的五个公式做好直觉铺垫</li>
+  </ul>
+</div>
+
+<h2>一、一个最简单的融合问题</h2>
+
+<p>先忘掉矩阵，回到最简单的情况：你有两个关于同一个量（比如温度、位置）的估计：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>预测</strong>：基于你的物理模型，你认为温度是 22°C，但你对这个估计不太确定（标准差 3°C）</li>
+  <li><strong>测量</strong>：温度计读数是 25°C，精度还不错（标准差 1°C）</li>
+</ul>
+
+<p>最终你应该更相信温度计（因为它更准），结果应该接近 25°C。但具体是多少？卡尔曼滤波给出了<strong>数学上最优的答案</strong>。</p>
+
+<h2>贝叶斯视角——卡尔曼滤波的"真正身份"</h2>
+
+<p>MIT 的课程（6.011, 16.322）在推导卡尔曼滤波时，不是从工程直觉出发，而是从<strong>贝叶斯定理</strong>开始：</p>
+
+$$p(x|z) \propto p(z|x) \cdot p(x)$$
+
+<p>翻译成人话：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>先验 \(p(x)\)</strong>：在看到测量之前，你对状态的信念（= 预测分布）</li>
+  <li><strong>似然 \(p(z|x)\)</strong>：如果状态是 \(x\)，观测到 \(z\) 的概率（= 测量模型）</li>
+  <li><strong>后验 \(p(x|z)\)</strong>：看到测量之后，你对状态的更新信念（= 融合结果）</li>
+</ul>
+
+<p>当先验和似然都是高斯分布时：</p>
+
+$$p(x) = \mathcal{N}(x;\, \hat{x}_{k|k-1},\, P_{k|k-1}), \quad p(z|x) = \mathcal{N}(z;\, Hx,\, R)$$
+
+<p>后验也是高斯分布（高斯的共轭性），而且后验的均值和方差<strong>恰好就是卡尔曼滤波更新公式</strong>！完整的贝叶斯后验写出来是：</p>
+
+$$p(x|z) \propto \mathcal{N}(z;\, Hx,\, R) \cdot \mathcal{N}(x;\, \hat{x}_{k|k-1},\, P_{k|k-1})$$
+
+<p>这揭示了卡尔曼滤波的真正身份：<strong>它不是一个工程经验公式，而是线性高斯系统下贝叶斯推断的精确解</strong>。</p>
+
+<div style="background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;font-size:1.05em;"><strong>关键推论</strong>：当系统是非线性的（如飞行器姿态动力学），或者噪声不是高斯的（如重尾噪声、多模态分布），卡尔曼滤波<strong>不再是最优的</strong>。这就是为什么存在 EKF（对非线性的妥协）、UKF（更好的非线性近似）和粒子滤波（完全抛弃高斯假设）。</p>
+</div>
+
+<h2>二、高斯分布的乘积——融合的数学</h2>
+
+<p>如果预测和测量都服从高斯分布：</p>
+
+$$\text{预测: } \mathcal{N}(\mu_p, \sigma_p^2), \quad \text{测量: } \mathcal{N}(\mu_z, \sigma_z^2)$$
+
+<p>那么融合后的后验分布也是高斯的（这是卡尔曼滤波只适用于线性高斯系统的根本原因），其参数为：</p>
+
+$$\mu_{后验} = \mu_p + K \cdot (\mu_z - \mu_p)$$
+$$\sigma_{后验}^2 = (1 - K) \cdot \sigma_p^2$$
+
+<p>其中<strong>卡尔曼增益</strong>：</p>
+
+$$K = \frac{\sigma_p^2}{\sigma_p^2 + \sigma_z^2}$$
+
+<div class="highlight-box">
+  <p style="margin:0;"><strong>直觉解读：</strong></p>
+  <ul style="margin:8px 0 0 18px;">
+    <li>当测量很准（\(\sigma_z \to 0\)）→ \(K \to 1\) → 完全相信测量</li>
+    <li>当测量很差（\(\sigma_z \to \infty\)）→ \(K \to 0\) → 完全相信预测</li>
+    <li>融合后的不确定度 \(\sigma_{后验}\) <strong>永远比两个输入都小</strong>——信息只会增加！</li>
+  </ul>
+</div>
+
+<div class="highlight-box">
+  <p style="margin:0;"><strong>信息永远增加——传感器融合的基本定理</strong></p>
+  <p style="margin:8px 0 0;">"融合后的不确定度永远不会大于任何一个输入的不确定度"——这不是巧合，而是数学定理。</p>
+  <p style="margin:8px 0 0;">用<strong>信息量</strong>（精度，\(1/\sigma^2\)）来理解更自然：</p>
+  $$\frac{1}{\sigma_{后验}^2} = \frac{1}{\sigma_p^2} + \frac{1}{\sigma_z^2}$$
+  <p style="margin:8px 0 0;">信息是<strong>相加</strong>的！即使一个传感器很差（信息量很小），它也在贡献正信息，融合后的总信息量一定更大。这就是 MIT 所说的<strong>"信息永不减少"原则</strong>（Information Never Decreases）。</p>
+  <p style="margin:8px 0 0;">这个视角也解释了为什么多传感器融合永远值得——哪怕加一个很差的传感器，它也只会让估计更好（最坏情况是几乎没帮助），绝不会让估计变差。</p>
+</div>
+
+<div class="interactive-box">
+  <h3>📊 交互实验：信息量可视化</h3>
+  <p style="font-size:.92em;color:var(--text-light);">观察预测、测量和融合后的信息量（\(1/\sigma^2\)）。注意后验信息量 = 预测信息量 + 测量信息量。</p>
+  <div class="controls">
+    <div class="control-group">
+      <label>预测 σ_p: <span class="val-display" id="infSigPVal">3.0</span></label>
+      <input type="range" id="infSigPSlider" min="0.5" max="8" step="0.1" value="3.0">
+    </div>
+    <div class="control-group">
+      <label>测量 σ_z: <span class="val-display" id="infSigZVal">1.5</span></label>
+      <input type="range" id="infSigZSlider" min="0.5" max="8" step="0.1" value="1.5">
+    </div>
+  </div>
+  <div id="infoPlot" style="width:100%;height:280px;"></div>
+</div>
+
+<h2>三、动手试一试</h2>
+
+<p>下面的交互实验让你拖动滑块来调整预测和测量的参数，实时观察融合结果。注意紫色曲线（融合后）总是比蓝色（预测）和红色（测量）都"瘦"——这就是信息融合的力量。</p>
+
+<div class="interactive-box">
+  <h3>🎛️ 交互实验：高斯分布融合</h3>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>预测均值 μ_p: <span class="val-display" id="muPVal">5.0</span></label>
+      <input type="range" id="muPSlider" min="-5" max="15" step="0.1" value="5.0">
+    </div>
+    <div class="control-group">
+      <label>预测标准差 σ_p: <span class="val-display" id="sigPVal">3.0</span></label>
+      <input type="range" id="sigPSlider" min="0.3" max="8" step="0.1" value="3.0">
+    </div>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>测量均值 μ_z: <span class="val-display" id="muZVal">8.0</span></label>
+      <input type="range" id="muZSlider" min="-5" max="15" step="0.1" value="8.0">
+    </div>
+    <div class="control-group">
+      <label>测量标准差 σ_z: <span class="val-display" id="sigZVal">1.5</span></label>
+      <input type="range" id="sigZSlider" min="0.3" max="8" step="0.1" value="1.5">
+    </div>
+  </div>
+
+  <div id="fusionPlot" style="width:100%;height:400px;"></div>
+
+  <div class="stats-panel">
+    <div class="stat-box">
+      <div class="label">卡尔曼增益 K</div>
+      <div class="value" id="kValue">-</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">融合均值 μ_post</div>
+      <div class="value" id="muPostValue">-</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">融合标准差 σ_post</div>
+      <div class="value" id="sigPostValue">-</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">信任偏向</div>
+      <div class="value" id="trustLabel" style="font-size:.95em;">-</div>
+    </div>
+  </div>
+</div>
+
+<h2>"呼吸的节奏"——预测-更新的宏观行为</h2>
+
+<p>如果你运行上面的交互实验足够多步，会发现一个有趣的现象：协方差 P 的"一胀一缩"逐渐趋于一个<strong>稳定的振幅</strong>。预测后 P 增大一点，更新后 P 缩回来一点，但两者之间的跳动幅度越来越小，最终几乎不变。</p>
+
+<p>这不是巧合。对于线性时不变系统（F, H, Q, R 都是常数），协方差 P 最终会收敛到<strong>代数 Riccati 方程</strong>（Algebraic Riccati Equation, ARE）的解：</p>
+
+$$\mathbf{P}_\infty = \mathbf{F}\mathbf{P}_\infty\mathbf{F}^T + \mathbf{Q} - \mathbf{F}\mathbf{P}_\infty\mathbf{H}^T(\mathbf{H}\mathbf{P}_\infty\mathbf{H}^T + \mathbf{R})^{-1}\mathbf{H}\mathbf{P}_\infty\mathbf{F}^T$$
+
+<p>对应的卡尔曼增益也收敛到一个常数 \(\mathbf{K}_\infty\)。这意味着：</p>
+
+<div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;font-size:1.05em;"><strong>工程捷径</strong>：在很多嵌入式系统中，可以离线预计算稳态增益 \(\mathbf{K}_\infty\)，然后在运行时直接用这个常数——<strong>省掉所有的协方差传播和矩阵求逆！</strong></p>
+  <p style="margin:8px 0 0;">更新公式退化为：\(\hat{x}_{k} = \mathbf{F}\hat{x}_{k-1} + \mathbf{K}_\infty(z_k - \mathbf{H}\mathbf{F}\hat{x}_{k-1})\)</p>
+  <p style="margin:8px 0 0;">计算量从矩阵运算降到简单的乘加——在 Cortex-M0 上也能轻松跑。</p>
+</div>
+
+<p>事实上，经典的<strong>互补滤波器</strong>（Complementary Filter）本质上就是一个特定 Q/R 比值下的稳态卡尔曼滤波器。所以如果有人告诉你"互补滤波 vs 卡尔曼滤波"是两种不同的方法——其实互补滤波是卡尔曼滤波的一个特例。</p>
+
+<h2>四、预测-更新循环的可视化</h2>
+
+<p>在真正的卡尔曼滤波中，这个融合过程反复进行：</p>
+
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>预测步</strong>：用物理模型推算下一时刻的状态 → 不确定度增大（协方差变大）</li>
+  <li><strong>更新步</strong>：拿到新的测量值 → 融合 → 不确定度减小（协方差变小）</li>
+</ol>
+
+<p>就像呼吸一样，一胀一缩，不确定度在每一步收敛到一个稳定范围。</p>
+
+<div class="interactive-box">
+  <h3>📈 交互实验：预测-更新循环演示</h3>
+  <p style="font-size:.92em;color:var(--text-light);">点击按钮观察协方差在预测和更新之间的变化。真实值是一个缓慢移动的目标。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>过程噪声 q: <span class="val-display" id="qCycVal">1.0</span></label>
+      <input type="range" id="qCycSlider" min="0.1" max="5" step="0.1" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>测量噪声 r: <span class="val-display" id="rCycVal">2.0</span></label>
+      <input type="range" id="rCycSlider" min="0.5" max="10" step="0.5" value="2.0">
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <div style="display:flex;gap:8px;">
+        <button id="stepBtn" style="padding:6px 16px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">下一步</button>
+        <button id="autoBtn" style="padding:6px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">自动运行</button>
+        <button id="resetCycBtn" style="padding:6px 16px;background:#64748b;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">重置</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cyclePlot" style="width:100%;height:360px;"></div>
+  <div id="covPlot" style="width:100%;height:200px;margin-top:8px;"></div>
+</div>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+  <p><strong>K 的计算是瓶颈</strong>：在一维情况下 K 只是一个除法。但在多维系统中，卡尔曼增益的计算涉及矩阵求逆：</p>
+
+  $$\mathbf{K} = \mathbf{P}\mathbf{H}^T(\mathbf{H}\mathbf{P}\mathbf{H}^T + \mathbf{R})^{-1}$$
+
+  <p>对于 n 维状态、m 维观测，需要对 m×m 矩阵求逆。当 m=2（GPS 输出 x,y）时只需求 2×2 逆矩阵（用公式法就行）；但如果你融合了多个传感器（比如 GPS + 气压计 + 磁力计），m 可能达到 6 或更多，这时候可能需要 Cholesky 分解。</p>
+
+  <pre><code>/* 2x2 矩阵求逆 —— 大部分飞控的 GPS 融合够用了 */
+static void mat2_inv(const float A[2][2], float Ainv[2][2]) {
+    float det = A[0][0]*A[1][1] - A[0][1]*A[1][0];
+    float inv_det = 1.0f / det;  /* 实际使用前检查 det != 0 */
+    Ainv[0][0] =  A[1][1] * inv_det;
+    Ainv[0][1] = -A[0][1] * inv_det;
+    Ainv[1][0] = -A[1][0] * inv_det;
+    Ainv[1][1] =  A[0][0] * inv_det;
+}</code></pre>
+
+  <p style="margin-top:10px;"><strong>定点数实现</strong>：如果你的 MCU 没有 FPU（比如 Cortex-M0），可以用 Q16.16 定点数表示 K。K 的范围总是 [0, 1]，非常适合定点表示。但要注意协方差矩阵的数值范围可能很大（位置单位是米的平方），需要仔细选择定点格式。</p>
+
+  <p style="margin-top:10px;"><strong>信息滤波器（Information Filter）</strong>：卡尔曼滤波有一个等价形式——用信息矩阵 \(\mathbf{P}^{-1}\) 代替协方差矩阵 \(\mathbf{P}\)。在这种形式下，多传感器融合变得极其简单：只需把各传感器的信息矩阵和信息向量<strong>相加</strong>即可。不需要复杂的串行融合顺序，也不需要处理跨传感器的相关性。</p>
+
+  <p style="margin-top:10px;"><strong>分布式传感器网络</strong>：在配备多个 GPS 接收机或多个 IMU 的系统中（如 PX4 支持 3 IMU 冗余），信息滤波器是首选，因为融合 = 简单的矩阵加法。PX4 的多 IMU 处理就使用了一种信息融合的变体——每个 IMU 独立产生信息贡献，最终汇总。这种架构天然支持传感器的热插拔和故障隔离。</p>
+</div>
+
+</div>
+
+<nav style="background:var(--card);border-top:1px solid var(--border);padding:16px 20px;display:flex;justify-content:space-between;">
+  <a href="ch02.html" style="color:var(--primary);text-decoration:none;font-weight:600;">← 第二章</a>
+  <a href="ch04.html" style="color:var(--primary);text-decoration:none;font-weight:600;">第四章：五个公式 →</a>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
+/* ============================================================
+ * Gaussian Fusion Interactive
+ * ============================================================ */
+(function() {
+  const muPSlider  = document.getElementById('muPSlider');
+  const sigPSlider = document.getElementById('sigPSlider');
+  const muZSlider  = document.getElementById('muZSlider');
+  const sigZSlider = document.getElementById('sigZSlider');
+
+  function gaussian(x, mu, sig) {
+    return Math.exp(-0.5 * ((x - mu) / sig) ** 2) / (sig * Math.sqrt(2 * Math.PI));
+  }
+
+  function updateFusion() {
+    const muP  = parseFloat(muPSlider.value);
+    const sigP = parseFloat(sigPSlider.value);
+    const muZ  = parseFloat(muZSlider.value);
+    const sigZ = parseFloat(sigZSlider.value);
+
+    document.getElementById('muPVal').textContent  = muP.toFixed(1);
+    document.getElementById('sigPVal').textContent  = sigP.toFixed(1);
+    document.getElementById('muZVal').textContent   = muZ.toFixed(1);
+    document.getElementById('sigZVal').textContent   = sigZ.toFixed(1);
+
+    const K = (sigP * sigP) / (sigP * sigP + sigZ * sigZ);
+    const muPost  = muP + K * (muZ - muP);
+    const sigPost = Math.sqrt((1 - K) * sigP * sigP);
+
+    document.getElementById('kValue').textContent      = K.toFixed(4);
+    document.getElementById('muPostValue').textContent  = muPost.toFixed(3);
+    document.getElementById('sigPostValue').textContent = sigPost.toFixed(3);
+
+    let trust = '';
+    if(K > 0.7) trust = '📡 偏信测量';
+    else if(K < 0.3) trust = '🧠 偏信模型';
+    else trust = '⚖️ 均衡';
+    document.getElementById('trustLabel').textContent = trust;
+
+    const lo = Math.min(muP - 4*sigP, muZ - 4*sigZ, muPost - 4*sigPost);
+    const hi = Math.max(muP + 4*sigP, muZ + 4*sigZ, muPost + 4*sigPost);
+    const N = 400;
+    const x = [], yP = [], yZ = [], yF = [];
+    for(let i = 0; i <= N; i++) {
+      const xi = lo + (hi - lo) * i / N;
+      x.push(xi);
+      yP.push(gaussian(xi, muP, sigP));
+      yZ.push(gaussian(xi, muZ, sigZ));
+      yF.push(gaussian(xi, muPost, sigPost));
+    }
+
+    const traces = [
+      {x, y: yP, name: '预测分布', line: {color:'#2563eb', width: 2.5}, fill:'tozeroy', fillcolor:'rgba(37,99,235,0.08)'},
+      {x, y: yZ, name: '测量分布', line: {color:'#dc2626', width: 2.5}, fill:'tozeroy', fillcolor:'rgba(220,38,38,0.08)'},
+      {x, y: yF, name: '融合后验', line: {color:'#7c3aed', width: 3}, fill:'tozeroy', fillcolor:'rgba(124,58,237,0.12)'}
+    ];
+
+    Plotly.react('fusionPlot', traces, {
+      margin:{t:30,r:20,b:50,l:55},
+      xaxis:{title:'状态值'},
+      yaxis:{title:'概率密度'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      shapes:[
+        {type:'line',x0:muPost,x1:muPost,y0:0,y1:gaussian(muPost,muPost,sigPost),line:{color:'#7c3aed',width:2,dash:'dot'}}
+      ]
+    }, {responsive:true});
+  }
+
+  [muPSlider, sigPSlider, muZSlider, sigZSlider].forEach(
+    s => s.addEventListener('input', updateFusion)
+  );
+  updateFusion();
+})();
+
+/* ============================================================
+ * Information Bar Chart
+ * ============================================================ */
+(function() {
+  const sigPSlider = document.getElementById('infSigPSlider');
+  const sigZSlider = document.getElementById('infSigZSlider');
+
+  function updateInfoPlot() {
+    const sigP = parseFloat(sigPSlider.value);
+    const sigZ = parseFloat(sigZSlider.value);
+    document.getElementById('infSigPVal').textContent = sigP.toFixed(1);
+    document.getElementById('infSigZVal').textContent = sigZ.toFixed(1);
+
+    const infP = 1 / (sigP * sigP);
+    const infZ = 1 / (sigZ * sigZ);
+    const infPost = infP + infZ;
+    const sigPost = Math.sqrt(1 / infPost);
+
+    Plotly.react('infoPlot', [{
+      x: ['预测 (1/σ²_p)', '测量 (1/σ²_z)', '后验 (1/σ²_post)'],
+      y: [infP, infZ, infPost],
+      type: 'bar',
+      marker: {
+        color: ['rgba(37,99,235,0.7)', 'rgba(220,38,38,0.7)', 'rgba(124,58,237,0.85)']
+      },
+      text: [
+        'σ_p=' + sigP.toFixed(1),
+        'σ_z=' + sigZ.toFixed(1),
+        'σ_post=' + sigPost.toFixed(2)
+      ],
+      textposition: 'outside'
+    }], {
+      margin: {t: 30, r: 20, b: 50, l: 55},
+      yaxis: {title: '信息量 (1/σ²)'},
+      plot_bgcolor: '#fafafa',
+      font: {family: '-apple-system,sans-serif'},
+      showlegend: false,
+      annotations: [{
+        x: '后验 (1/σ²_post)', y: infPost,
+        text: (infP.toFixed(2) + ' + ' + infZ.toFixed(2) + ' = ' + infPost.toFixed(2)),
+        showarrow: true, arrowhead: 2, ax: 0, ay: -35,
+        font: {size: 12, color: '#7c3aed'}
+      }]
+    }, {responsive: true});
+  }
+
+  sigPSlider.addEventListener('input', updateInfoPlot);
+  sigZSlider.addEventListener('input', updateInfoPlot);
+  updateInfoPlot();
+})();
+
+/* ============================================================
+ * Predict-Update Cycle
+ * ============================================================ */
+(function() {
+  const qSlider = document.getElementById('qCycSlider');
+  const rSlider = document.getElementById('rCycSlider');
+  const stepBtn = document.getElementById('stepBtn');
+  const autoBtn = document.getElementById('autoBtn');
+  const resetBtn= document.getElementById('resetCycBtn');
+
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  let state, autoId;
+
+  function initState() {
+    if(autoId) { clearInterval(autoId); autoId = null; }
+    state = {
+      xTrue: 0, xEst: 0, P: 10,
+      step: 0, phase: 'predict',
+      histTrue: [0], histEst: [0], histP: [10], histSteps: [0],
+      histMeas: [], histMeasSteps: []
+    };
+    updateCyclePlots();
+  }
+
+  function doStep() {
+    const q = parseFloat(qSlider.value);
+    const r = parseFloat(rSlider.value);
+
+    if(state.phase === 'predict') {
+      state.xTrue += 0.3 + 0.5 * Math.sin(state.step * 0.2) + Math.sqrt(q) * gauss() * 0.3;
+      state.xEst = state.xEst;
+      state.P = state.P + q;
+      state.phase = 'update';
+    } else {
+      const z = state.xTrue + r * gauss();
+      state.histMeas.push(z);
+      state.histMeasSteps.push(state.step + 0.5);
+      const K = state.P / (state.P + r * r);
+      state.xEst = state.xEst + K * (z - state.xEst);
+      state.P = (1 - K) * state.P;
+      state.phase = 'predict';
+      state.step++;
+    }
+
+    state.histTrue.push(state.xTrue);
+    state.histEst.push(state.xEst);
+    state.histP.push(state.P);
+    state.histSteps.push(state.step + (state.phase === 'update' ? 0.5 : 0));
+
+    updateCyclePlots();
+  }
+
+  function updateCyclePlots() {
+    document.getElementById('qCycVal').textContent = parseFloat(qSlider.value).toFixed(1);
+    document.getElementById('rCycVal').textContent = parseFloat(rSlider.value).toFixed(1);
+
+    const s = state;
+    const upper = s.histEst.map((e,i) => e + 2*Math.sqrt(s.histP[i]));
+    const lower = s.histEst.map((e,i) => e - 2*Math.sqrt(s.histP[i]));
+
+    const traces = [
+      {x:s.histSteps,y:upper,mode:'lines',line:{width:0},showlegend:false,hoverinfo:'skip'},
+      {x:s.histSteps,y:lower,mode:'lines',line:{width:0},fill:'tonexty',fillcolor:'rgba(37,99,235,0.12)',name:'2σ 置信区间',showlegend:true},
+      {x:s.histSteps,y:s.histTrue,name:'真实值',line:{color:'#16a34a',width:2}},
+      {x:s.histSteps,y:s.histEst,name:'估计值',line:{color:'#2563eb',width:2.5}},
+      {x:s.histMeasSteps,y:s.histMeas,name:'测量值',mode:'markers',marker:{color:'#dc2626',size:7,symbol:'x'}}
+    ];
+
+    Plotly.react('cyclePlot', traces, {
+      margin:{t:20,r:20,b:40,l:55},
+      xaxis:{title:'步数'},
+      yaxis:{title:'状态值'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    /* Covariance plot */
+    const covColors = s.histP.map((_,i) => {
+      const ph = i < s.histSteps.length ? (s.histSteps[i] % 1 > 0.1 ? '#dc2626' : '#2563eb') : '#64748b';
+      return ph;
+    });
+    Plotly.react('covPlot', [{
+      x: s.histSteps, y: s.histP,
+      type: 'bar', marker: { color: s.histSteps.map(st => st % 1 > 0.1 ? 'rgba(220,38,38,0.6)' : 'rgba(37,99,235,0.6)') },
+      name: '协方差 P'
+    }], {
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'步数'},
+      yaxis:{title:'P (方差)'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      showlegend:false
+    },{responsive:true});
+  }
+
+  stepBtn.addEventListener('click', doStep);
+  resetBtn.addEventListener('click', initState);
+  autoBtn.addEventListener('click', function() {
+    if(autoId) { clearInterval(autoId); autoId=null; autoBtn.textContent='自动运行'; return; }
+    autoBtn.textContent = '停止';
+    autoId = setInterval(doStep, 400);
+  });
+  qSlider.addEventListener('input', () => { document.getElementById('qCycVal').textContent = parseFloat(qSlider.value).toFixed(1); });
+  rSlider.addEventListener('input', () => { document.getElementById('rCycVal').textContent = parseFloat(rSlider.value).toFixed(1); });
+
+  initState();
+})();
+</script>
+</body>
+</html>

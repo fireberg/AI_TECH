@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第七章：嵌入式系统上的卡尔曼滤波 | 卡尔曼滤波交互式教材</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root{--primary:#2563eb;--primary-light:#dbeafe;--bg:#f8fafc;--card:#fff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--note-bg:#fffbeb;--note-border:#f59e0b;--code-bg:#f1f5f9;--danger:#dc2626;--danger-light:#fef2f2}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+nav a{color:var(--primary);text-decoration:none;font-weight:600;font-size:.95em}
+.container{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:2em;margin-bottom:8px;color:var(--primary)}
+.chapter-meta{color:var(--text-light);margin-bottom:28px;font-size:.95em}
+h2{font-size:1.4em;margin:36px 0 14px;color:#0f172a;border-left:4px solid var(--primary);padding-left:12px}
+h3{font-size:1.15em;margin:24px 0 10px}
+p{margin-bottom:14px}
+.objective{background:var(--primary-light);border-radius:10px;padding:20px 24px;margin-bottom:28px}
+.objective h3{margin-top:0;color:var(--primary)}
+.interactive-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px}
+.control-group{display:flex;flex-direction:column;gap:4px}
+.control-group label{font-size:.85em;color:var(--text-light);font-weight:600}
+.control-group input[type="range"]{width:160px}
+.control-group select{padding:4px 8px;border-radius:6px;border:1px solid var(--border)}
+.val-display{display:inline-block;min-width:36px;text-align:center;background:var(--code-bg);border-radius:4px;padding:1px 6px;font-family:'SF Mono',monospace;font-size:.85em}
+pre{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:18px 20px;overflow-x:auto;font-size:.88em;line-height:1.6;margin:14px 0}
+pre code{font-family:'SF Mono','Consolas','Menlo',monospace}
+.note{background:var(--note-bg);border-left:4px solid var(--note-border);border-radius:0 8px 8px 0;padding:20px 24px;margin:32px 0}
+.note h3{color:#92400e;margin-top:0}
+.note h3::before{content:"🔧 "}
+.warn-box{background:var(--danger-light);border:2px solid var(--danger);border-radius:10px;padding:16px 20px;margin:16px 0}
+.warn-box strong{color:var(--danger)}
+.checklist{list-style:none;padding:0}
+.checklist li{padding:8px 0 8px 32px;position:relative;border-bottom:1px solid var(--border)}
+.checklist li::before{content:"✓";position:absolute;left:4px;color:#16a34a;font-weight:700;font-size:1.1em}
+.stats-row{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.stat-box{background:var(--code-bg);border-radius:8px;padding:8px 14px;flex:1;min-width:120px}
+.stat-box .label{font-size:.78em;color:var(--text-light)}
+.stat-box .value{font-family:'SF Mono',monospace;font-weight:700;font-size:.95em}
+button.action{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-weight:600;color:#fff;font-size:.92em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+@media(max-width:600px){.controls{flex-direction:column}.control-group input[type="range"]{width:100%}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="ch06.html">← 上一章</a>
+  <span style="font-weight:700;font-size:.95em;">第七章</span>
+  <a href="ch08.html">下一章 →</a>
+</nav>
+
+<div class="container">
+<h1>第七章：嵌入式系统上的卡尔曼滤波</h1>
+<p class="chapter-meta">工程实战清单——从"能跑"到"跑得好"的最后一公里</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>掌握卡尔曼滤波在嵌入式系统中的常见问题和解决方案</li>
+    <li>学会用新息序列诊断滤波器健康状态</li>
+    <li>通过"故障诊断实验室"体验错误调参的后果和修复方法</li>
+  </ul>
+</div>
+
+<h2>一、数值稳定性——协方差矩阵的保卫战</h2>
+
+<p>在教科书上，卡尔曼滤波完美无缺。但在 32 位浮点数的世界里，魔鬼藏在细节中。</p>
+
+<h3>问题 1：P 矩阵失去对称性</h3>
+<p>反复执行 \(P = (I-KH)P\) 后，浮点舍入会让 P 不再精确对称。解法很简单：</p>
+<pre><code>/* 每次更新后强制对称化 */
+for (int i = 0; i < n; i++)
+    for (int j = i+1; j < n; j++)
+        kf.P[i][j] = kf.P[j][i] = 0.5f * (kf.P[i][j] + kf.P[j][i]);</code></pre>
+
+<h3>问题 2：P 矩阵变为负定</h3>
+<p>更严重的问题是 P 的对角元素可能变负——这意味着"方差为负"，物理上毫无意义。原因通常是 \((I-KH)P\) 这个简化形式的数值误差累积。</p>
+
+<p><strong>Joseph 形式</strong>——推荐的更新方程：</p>
+$$\mathbf{P} = (\mathbf{I}-\mathbf{K}\mathbf{H})\mathbf{P}(\mathbf{I}-\mathbf{K}\mathbf{H})^T + \mathbf{K}\mathbf{R}\mathbf{K}^T$$
+<p>数学上等价，但数值上保证了 P 的正半定性。代价是额外一次矩阵乘法。</p>
+
+<h3>问题 3：P 矩阵爆炸（发散）</h3>
+<div class="warn-box">
+  <strong>如果 Q 设得太小</strong>，滤波器过于相信模型，拒绝接受新的测量信息，P 越来越小，K 接近零，然后如果真实系统突然发生变化（比如一阵风），滤波器完全跟不上——<strong>这叫"滤波器锁死"</strong>。
+</div>
+
+<h2>二、诊断方法——新息序列分析</h2>
+
+<p><strong>新息</strong>（Innovation）\(\nu_k = z_k - H\hat{x}_{k|k-1}\) 是判断滤波器是否健康的最佳指标。对于调参正确的滤波器：</p>
+
+<ul class="checklist">
+  <li>新息序列均值应该接近零（无偏）</li>
+  <li>新息方差应该和 \(S = HPH^T + R\) 一致</li>
+  <li>归一化新息平方（NIS）：\(\nu^T S^{-1} \nu\) 应该服从 \(\chi^2(m)\) 分布，均值等于观测维数 m</li>
+  <li>新息不应该有明显的自相关——如果有，说明 Q 或模型不对</li>
+</ul>
+
+<h2>三、系统化调参——飞控工程师的实战流程</h2>
+
+<p>在实际飞控开发中（PX4、ArduPilot），调参不是"拍脑袋猜"——而是一套可重复的工程流程。MIT 16.322 课程和工业界的经验总结为以下四步：</p>
+
+<h3>Step 1：确定 R（测量噪声）——让传感器告诉你</h3>
+
+<p>R 是最容易确定的参数，因为你可以直接测。让传感器<strong>静止</strong>，采集一段数据，计算方差，就是 R。</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li><strong>GPS</strong>：静置 10 分钟，记录位置，计算方差 → 通常 \(R \approx 2 \sim 5 \, \text{m}^2\)</li>
+  <li><strong>气压计</strong>：静置 5 分钟，计算高度方差 → 通常 \(R \approx 0.1 \sim 0.5 \, \text{m}^2\)</li>
+  <li><strong>IMU</strong>：使用 Allan 方差分析（见下节），提取噪声密度和偏差不稳定性</li>
+</ul>
+
+<pre><code>/* 在 MCU 上用 Welford 算法在线计算传感器方差 */
+typedef struct {
+    int    n;
+    float  mean;
+    float  M2;    /* 累积方差 */
+} Welford_t;
+
+void welford_update(Welford_t *w, float x) {
+    w->n++;
+    float delta = x - w->mean;
+    w->mean += delta / w->n;
+    float delta2 = x - w->mean;
+    w->M2 += delta * delta2;
+}
+
+float welford_variance(const Welford_t *w) {
+    return w->n > 1 ? w->M2 / (w->n - 1) : 0.0f;
+}</code></pre>
+
+<h3>Step 2：初始化 Q（过程噪声）——从传感器噪声推导</h3>
+
+<p>Q 没有 R 那么直观，但也不是完全靠猜。对于位置-速度模型，Q 来自加速度计噪声的积分。连续白噪声离散化公式：</p>
+
+$$Q_d = \int_0^{\Delta t} F(\tau) \cdot G \cdot q_c \cdot G^T \cdot F(\tau)^T \, d\tau$$
+
+<p>其中 \(q_c\) 是连续时间的功率谱密度。实用近似：</p>
+
+$$q_c \approx (\text{加速度计噪声密度})^2$$
+
+<p>对于 MEMS IMU（如 MPU6050）：噪声密度 ≈ 400μg/√Hz → \(q_c \approx (0.004)^2 = 1.6 \times 10^{-5} \, \text{m}^2/\text{s}^4\)</p>
+
+<p>对于匀速模型（位置+速度），离散化后：</p>
+
+$$Q_d = q_c \begin{bmatrix} \Delta t^3/3 & \Delta t^2/2 \\ \Delta t^2/2 & \Delta t \end{bmatrix}$$
+
+<h3>Step 3：用 NIS 在线验证——滤波器的"体温计"</h3>
+
+<p><strong>归一化新息平方</strong>（Normalized Innovation Squared, NIS）是判断调参是否正确的定量工具：</p>
+
+$$\text{NIS}_k = \nu_k^T S_k^{-1} \nu_k \sim \chi^2(m)$$
+
+<p>其中 \(m\) 是观测维数。正确调参时：</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li>\(\mathbb{E}[\text{NIS}] = m\)（观测维数）</li>
+  <li>NIS 持续 \(> m\) → R 太小或 Q 太小（滤波器过于自信）</li>
+  <li>NIS 持续 \(< m\) → R 太大或 Q 太大（滤波器过于保守）</li>
+  <li>用滑动窗口平均 NIS，和 \(m\) 比较，调整 Q 和 R 直到匹配</li>
+</ul>
+
+<h3>Step 4：动态验证——实际机动测试</h3>
+
+<p>静态验证通过后，还要做动态测试。做实际机动（转弯、加减速），观察跟踪误差：</p>
+
+<ul style="margin-left:18px;margin-bottom:14px;">
+  <li>如果转弯时估计<strong>滞后</strong> → Q 太小，滤波器太相信模型，不愿接受新信息</li>
+  <li>如果直线飞行时估计<strong>抖动</strong> → Q 太大，滤波器太不相信模型，被噪声带着走</li>
+  <li>如果突然机动后估计<strong>长时间不收敛</strong> → P₀ 太小，或 Q 太小导致"锁死"</li>
+</ul>
+
+<div class="warn-box">
+  <strong>关键经验</strong>：先把 Q 设大一点，让滤波器"活"过来（宁可抖动也不要锁死），然后逐步减小 Q 直到 NIS ≈ m。这就是飞控工程师口中的"从松到紧"调参法。
+</div>
+
+<h2>四、Allan 方差——读懂 IMU 噪声的密码</h2>
+
+<p><strong>Allan 方差</strong>是 IMU 噪声分析的工业标准方法（IEEE Std 952-1997），也是读懂 IMU 数据手册的钥匙。</p>
+
+<p>基本思想：把传感器数据按不同的<strong>平均时间 \(\tau\)</strong> 分组，计算各组均值之差的方差。在 log-log 图上：x 轴是平均时间 \(\tau\)，y 轴是 Allan 偏差 \(\sigma(\tau)\)。</p>
+
+<p>不同斜率代表不同的噪声类型：</p>
+
+<table style="border-collapse:collapse;width:100%;margin:14px 0;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">斜率</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">噪声类型</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">物理含义</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">对 KF 的意义</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">斜率 = -1/2</td><td style="padding:6px 12px;border:1px solid var(--border);">白噪声 (ARW/VRW)</td><td style="padding:6px 12px;border:1px solid var(--border);">角度/速度随机游走</td><td style="padding:6px 12px;border:1px solid var(--border);"><strong>决定 Q 矩阵</strong></td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">斜率 = 0（平坦）</td><td style="padding:6px 12px;border:1px solid var(--border);">偏差不稳定性</td><td style="padding:6px 12px;border:1px solid var(--border);">传感器精度的"地板"</td><td style="padding:6px 12px;border:1px solid var(--border);">IMU 精度的下限</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">斜率 = +1/2</td><td style="padding:6px 12px;border:1px solid var(--border);">随机游走（偏差漂移）</td><td style="padding:6px 12px;border:1px solid var(--border);">偏差缓慢漂移</td><td style="padding:6px 12px;border:1px solid var(--border);">需要增加偏差状态来估计</td></tr>
+</tbody>
+</table>
+
+<p><strong>常见 IMU 的典型参数</strong>（陀螺仪）：</p>
+
+<table style="border-collapse:collapse;width:100%;margin:14px 0;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">型号</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">ARW (°/√hr)</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">偏差不稳定性 (°/hr)</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">等级</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">应用</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">MPU6050</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.3</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 10</td><td style="padding:6px 12px;border:1px solid var(--border);">消费级</td><td style="padding:6px 12px;border:1px solid var(--border);">玩具、简单平衡车</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">BMI088</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.09</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 3</td><td style="padding:6px 12px;border:1px solid var(--border);">工业级</td><td style="padding:6px 12px;border:1px solid var(--border);">无人机、机器人</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">ADIS16488</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.006</td><td style="padding:6px 12px;border:1px solid var(--border);">≈ 0.3</td><td style="padding:6px 12px;border:1px solid var(--border);">战术级</td><td style="padding:6px 12px;border:1px solid var(--border);">导弹制导、测绘</td></tr>
+</tbody>
+</table>
+
+<p>如何计算 Allan 方差：可以用 Python 的 <code>allantools</code> 库，或者在嵌入式端用 C 实现 log-binning 算法。静置 IMU 采集 1~2 小时数据即可画出完整的 Allan 方差曲线。</p>
+
+<h2>五、协方差匹配法——自动化调参</h2>
+
+<p>手动调 Q 和 R 虽然有效，但有没有<strong>自动化</strong>的方法？有。<strong>协方差匹配法</strong>（Covariance Matching / Autocovariance Method）就是其中之一：</p>
+
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li>采集新息序列 \(\{\nu_k\}\)</li>
+  <li>计算样本自协方差：\(C_0 = \frac{1}{N}\sum_{k=1}^{N} \nu_k \nu_k^T\)</li>
+  <li>理论上，\(C_0\) 应该等于 \(S = HPH^T + R\)</li>
+  <li>如果 \(C_0 > S\) → 说明实际新息方差大于模型预测 → <strong>增大 Q</strong>（或减小 R）</li>
+  <li>如果 \(C_0 < S\) → 说明实际新息方差小于模型预测 → <strong>减小 Q</strong>（或增大 R）</li>
+  <li>可以用简单的自适应循环自动调整</li>
+</ol>
+
+<pre><code>/* 在线协方差匹配：滑动窗口自适应 Q 调整 */
+#define COV_WINDOW 50
+
+typedef struct {
+    float innov_buf[COV_WINDOW];
+    int   head;
+    int   count;
+    float sum_sq;
+} CovMatch_t;
+
+void covmatch_init(CovMatch_t *cm) {
+    memset(cm, 0, sizeof(*cm));
+}
+
+/* 每次卡尔曼更新后调用：
+ * innov  = 本次新息
+ * S      = 本次新息协方差 HPH'+R
+ * Q_diag = Q 对角线指针，由此函数自动调整 */
+void covmatch_update(CovMatch_t *cm, float innov, float S,
+                     float *Q_diag, int n) {
+    /* 滑动窗口更新 */
+    if (cm->count >= COV_WINDOW)
+        cm->sum_sq -= cm->innov_buf[cm->head] *
+                      cm->innov_buf[cm->head];
+    cm->innov_buf[cm->head] = innov;
+    cm->sum_sq += innov * innov;
+    cm->head = (cm->head + 1) % COV_WINDOW;
+    if (cm->count < COV_WINDOW) cm->count++;
+
+    if (cm->count < COV_WINDOW) return;
+
+    float empirical_S = cm->sum_sq / COV_WINDOW;
+    float ratio = empirical_S / S;
+
+    /* ratio > 1 → 实际方差大于理论 → 增大 Q
+     * ratio < 1 → 实际方差小于理论 → 减小 Q */
+    float alpha = 0.01f;  /* 调整步长，越小越稳 */
+    float scale = 1.0f + alpha * (ratio - 1.0f);
+    scale = fmaxf(0.5f, fminf(2.0f, scale)); /* 限幅 */
+
+    for (int i = 0; i < n; i++)
+        Q_diag[i] *= scale;
+}</code></pre>
+
+<h2>六、故障诊断实验室</h2>
+
+<div class="interactive-box">
+  <h3>🔬 故障诊断实验室</h3>
+  <p style="font-size:.92em;color:var(--text-light);">选择一个预设的"故障模式"，观察滤波器的异常行为。然后调节滑块"修复"它，让新息序列回到正常范围。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>故障预设:</label>
+      <select id="faultSelect">
+        <option value="normal">正常工作</option>
+        <option value="q_small">Q 太小（滤波器锁死）</option>
+        <option value="r_big">R 太大（过度平滑）</option>
+        <option value="p0_small">初始 P₀ 太小（收敛慢）</option>
+        <option value="model_wrong">模型错误（实际有加速度，模型是匀速）</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Q 调节 (×倍): <span class="val-display" id="qFixVal">1.0</span></label>
+      <input type="range" id="qFixSlider" min="0.01" max="10" step="0.01" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>R 调节 (×倍): <span class="val-display" id="rFixVal">1.0</span></label>
+      <input type="range" id="rFixSlider" min="0.1" max="10" step="0.1" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>P₀ 调节: <span class="val-display" id="p0FixVal">10</span></label>
+      <input type="range" id="p0FixSlider" min="0.1" max="200" step="0.1" value="10">
+    </div>
+    <div class="control-group" style="flex-direction:row;gap:8px;align-items:flex-end;">
+      <button class="action" id="runDiag" style="background:#16a34a;">运行诊断</button>
+    </div>
+  </div>
+
+  <div id="diagPlot" style="width:100%;height:320px;"></div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="label">新息均值</div><div class="value" id="innovMean">-</div></div>
+    <div class="stat-box"><div class="label">新息标准差</div><div class="value" id="innovStd">-</div></div>
+    <div class="stat-box"><div class="label">NIS 均值 (期望=1)</div><div class="value" id="nisVal">-</div></div>
+    <div class="stat-box"><div class="label">诊断</div><div class="value" id="diagResult" style="font-size:.85em">-</div></div>
+  </div>
+
+  <div id="innovPlot" style="width:100%;height:240px;margin-top:8px;"></div>
+  <div id="nisPlot" style="width:100%;height:200px;margin-top:8px;"></div>
+</div>
+
+<h2>七、计算优化清单</h2>
+
+<h3>浮点 vs 定点</h3>
+<p>在没有 FPU 的 MCU（如 Cortex-M0/M0+）上，一次 float 乘法需要 ~50 个时钟周期（软件浮点），而 32 位整数乘法只需 1 个周期。对于 4 维状态的 KF，P 的更新涉及约 200 次乘法——差距从 200 到 10000 周期。</p>
+
+<pre><code>/* Q16.16 定点数运算示例 */
+typedef int32_t q16_t;
+#define Q16_ONE  (1 << 16)   /* 1.0 的定点表示 */
+#define Q16_HALF (1 << 15)   /* 0.5 */
+
+static inline q16_t q16_mul(q16_t a, q16_t b) {
+    return (q16_t)(((int64_t)a * b) >> 16);
+}
+
+static inline q16_t q16_div(q16_t a, q16_t b) {
+    return (q16_t)(((int64_t)a << 16) / b);
+}
+
+/* 卡尔曼增益 K = P / (P + R)  (一维情况) */
+q16_t kf1d_gain(q16_t P, q16_t R) {
+    return q16_div(P, P + R);  /* 结果范围 [0, Q16_ONE] */
+}</code></pre>
+
+<h3>内存布局建议</h3>
+<pre><code>/* 对齐到 4 字节（ARM 要求），紧凑存储 */
+typedef struct __attribute__((aligned(4))) {
+    float x[4];          /* 16B: 状态 */
+    float P_upper[10];   /* 40B: 协方差上三角 */
+    float K[8];          /* 32B: 增益 (4x2) */
+    float innov[2];      /*  8B: 新息 */
+    /* 总计: 96 字节 — 一个 cache line 就够了 */
+} KF2D_Compact_t;</code></pre>
+
+<h2>八、调试方法总结</h2>
+
+<table style="border-collapse:collapse;width:100%;margin:14px 0;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">现象</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">可能原因</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">修复方法</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">估计值不跟踪真实值</td><td style="padding:6px 12px;border:1px solid var(--border);">Q 太小 / P₀ 太小</td><td style="padding:6px 12px;border:1px solid var(--border);">增大 Q，增大 P₀</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">估计值抖动太大</td><td style="padding:6px 12px;border:1px solid var(--border);">R 太小 / Q 太大</td><td style="padding:6px 12px;border:1px solid var(--border);">增大 R，减小 Q</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">P 对角元素变负</td><td style="padding:6px 12px;border:1px solid var(--border);">数值不稳定</td><td style="padding:6px 12px;border:1px solid var(--border);">用 Joseph 形式</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">新息有明显趋势</td><td style="padding:6px 12px;border:1px solid var(--border);">模型偏差</td><td style="padding:6px 12px;border:1px solid var(--border);">检查 F 矩阵或加入偏差状态</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">NIS 持续 >> m</td><td style="padding:6px 12px;border:1px solid var(--border);">R 设太小 / 未建模误差</td><td style="padding:6px 12px;border:1px solid var(--border);">增大 R 或改进模型</td></tr>
+</tbody>
+</table>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+
+  <p><strong>ARM Cortex-M 简化滤波器示例</strong>（1D 温度估计，适合理解核心结构）：</p>
+
+  <pre><code>/* kf1d.c — 最小化实现，适合 Cortex-M0+ */
+typedef struct {
+    float x;    /* 状态估计 */
+    float P;    /* 估计方差 */
+    float Q;    /* 过程噪声方差 */
+    float R;    /* 测量噪声方差 */
+} KF1D_t;
+
+void kf1d_predict(KF1D_t *kf) {
+    /* 状态不变（温度缓慢变化模型） */
+    kf->P += kf->Q;
+}
+
+void kf1d_update(KF1D_t *kf, float z) {
+    float K = kf->P / (kf->P + kf->R);
+    kf->x += K * (z - kf->x);
+    kf->P *= (1.0f - K);
+}
+
+/* 用法：
+ * KF1D_t kf = {.x=25.0, .P=10.0, .Q=0.01, .R=1.0};
+ * while(1) {
+ *     kf1d_predict(&kf);
+ *     float temp = read_adc_temperature();
+ *     kf1d_update(&kf, temp);
+ *     printf("估计温度: %.2f, 不确定度: %.4f\n", kf.x, kf.P);
+ * }
+ */</code></pre>
+
+  <p style="margin-top:12px;"><strong>实时性预算参考</strong>：</p>
+  <ul style="margin-left:18px;">
+    <li>4 维 KF，Cortex-M4F @168MHz：约 5~10μs（包括协方差更新）</li>
+    <li>9 维 KF，同平台：约 30~50μs</li>
+    <li>4 维 EKF（含雅可比+三角函数）：约 15~25μs</li>
+    <li>以上时间都远小于 1ms（1kHz 控制周期），所以卡尔曼滤波在飞控中完全可行</li>
+  </ul>
+
+  <p style="margin-top:16px;"><strong>平方根滤波（Square Root Filter）</strong></p>
+  <p>存储 \(S\) 使得 \(P = SS^T\)，用 Cholesky 更新代替标准 P 更新。</p>
+  <ul style="margin-left:18px;">
+    <li>数值稳定性极佳——P <strong>永远</strong>正定（因为 \(SS^T\) 天生正定）</li>
+    <li>代价：实现复杂度增加约 2×，需要 Cholesky 分解和 rank-1 更新</li>
+    <li>推荐用于：航天级应用、长时间运行（数天/数周）的系统</li>
+    <li>条件数提升：\(\kappa(S) = \sqrt{\kappa(P)}\)，相当于有效精度翻倍</li>
+  </ul>
+
+  <p style="margin-top:16px;"><strong>UD 分解滤波（Bierman Filter）</strong></p>
+  <p>存储 \(P = UDU^T\)（U 为单位上三角矩阵，D 为对角矩阵）。</p>
+  <ul style="margin-left:18px;">
+    <li>Bierman 的 UD filter + Thornton 的 MWGS（Modified Weighted Gram-Schmidt）算法</li>
+    <li>在存储量几乎不增加的情况下保证正定性（U 和 D 共用 \(n(n+1)/2\) 个元素，和上三角存储一样）</li>
+    <li>NASA JPL 在深空探测器导航（旅行者号、卡西尼号）中使用此方法——连续运行数年不发散</li>
+    <li>比平方根滤波更节省计算量，是嵌入式高可靠场景的首选</li>
+  </ul>
+</div>
+
+</div>
+
+<nav style="background:var(--card);border-top:1px solid var(--border);padding:16px 20px;display:flex;justify-content:space-between;">
+  <a href="ch06.html" style="color:var(--primary);text-decoration:none;font-weight:600;">← 第六章</a>
+  <a href="ch08.html" style="color:var(--primary);text-decoration:none;font-weight:600;">第八章：更远的道路 →</a>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  renderMathInElement(document.body,{
+    delimiters:[{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
+(function(){
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  const faultSelect=document.getElementById('faultSelect');
+  const qFixSlider=document.getElementById('qFixSlider');
+  const rFixSlider=document.getElementById('rFixSlider');
+  const p0FixSlider=document.getElementById('p0FixSlider');
+
+  const faultPresets={
+    normal:     {q:1,  r:1,  p0:10,  hasAccel:false},
+    q_small:    {q:0.01,r:1,  p0:10,  hasAccel:false},
+    r_big:      {q:1,  r:8,  p0:10,  hasAccel:false},
+    p0_small:   {q:1,  r:1,  p0:0.1, hasAccel:false},
+    model_wrong:{q:1,  r:1,  p0:10,  hasAccel:true}
+  };
+
+  faultSelect.addEventListener('change',function(){
+    const p=faultPresets[this.value];
+    qFixSlider.value=p.q; rFixSlider.value=p.r; p0FixSlider.value=p.p0;
+    document.getElementById('qFixVal').textContent=p.q.toFixed(2);
+    document.getElementById('rFixVal').textContent=p.r.toFixed(1);
+    document.getElementById('p0FixVal').textContent=p.p0.toFixed(1);
+    runDiagnostic();
+  });
+
+  [qFixSlider,rFixSlider,p0FixSlider].forEach(s=>{
+    s.addEventListener('input',function(){
+      const map={qFixSlider:'qFixVal',rFixSlider:'rFixVal',p0FixSlider:'p0FixVal'};
+      document.getElementById(map[s.id]).textContent=parseFloat(this.value).toFixed(s===p0FixSlider?1:2);
+    });
+  });
+
+  function runDiagnostic(){
+    const qMul=parseFloat(qFixSlider.value);
+    const rMul=parseFloat(rFixSlider.value);
+    const p0=parseFloat(p0FixSlider.value);
+    const hasAccel=faultPresets[faultSelect.value].hasAccel;
+
+    const baseQ=0.5, baseR=3.0, dt=0.1;
+    const q=baseQ*qMul, r=baseR*rMul;
+    const steps=200;
+
+    let x=0, v=1.5, kfX=0, kfV=0, P00=p0, P01=0, P10=0, P11=p0;
+    const trueXArr=[],estXArr=[],measArr=[],innovArr=[],nisArr=[],errArr=[];
+
+    for(let k=0;k<steps;k++){
+      const accel=hasAccel?2*Math.sin(k*0.05):0;
+      x+=v*dt+0.5*accel*dt*dt;
+      v+=accel*dt+Math.sqrt(baseQ)*gauss()*0.1;
+
+      /* KF predict (constant velocity model — no accel input) */
+      const px=kfX+kfV*dt;
+      const pv=kfV;
+      const pP00=P00+2*P01*dt+P11*dt*dt+q*dt*dt*dt/3;
+      const pP01=P01+P11*dt+q*dt*dt/2;
+      const pP10=pP01;
+      const pP11=P11+q*dt;
+
+      /* Measurement */
+      if(k%5===0){
+        const z=x+r*gauss();
+        measArr.push({k,z});
+
+        const S=pP00+r*r;
+        const K0=pP00/S, K1=pP01/S;
+        const innov=z-px;
+        kfX=px+K0*innov;
+        kfV=pv+K1*innov;
+        P00=(1-K0)*pP00;
+        P01=(1-K0)*pP01;
+        P10=pP10-K1*pP00;
+        P11=pP11-K1*pP01;
+
+        innovArr.push(innov);
+        nisArr.push(innov*innov/S);
+      }else{
+        kfX=px; kfV=pv;
+        P00=pP00; P01=pP01; P10=pP10; P11=pP11;
+      }
+
+      trueXArr.push(x); estXArr.push(kfX);
+      errArr.push(Math.abs(kfX-x));
+    }
+
+    /* Stats */
+    const iMean=innovArr.reduce((s,v)=>s+v,0)/innovArr.length;
+    const iStd=Math.sqrt(innovArr.reduce((s,v)=>s+(v-iMean)**2,0)/innovArr.length);
+    const nisMean=nisArr.reduce((s,v)=>s+v,0)/nisArr.length;
+
+    document.getElementById('innovMean').textContent=iMean.toFixed(3);
+    document.getElementById('innovStd').textContent=iStd.toFixed(3);
+    document.getElementById('nisVal').textContent=nisMean.toFixed(3);
+
+    let diag='';
+    if(Math.abs(iMean)>iStd*0.5) diag='⚠️ 新息有偏';
+    else if(nisMean>3) diag='⚠️ NIS过大，R太小';
+    else if(nisMean<0.3) diag='⚠️ NIS过小，过度保守';
+    else diag='✅ 健康';
+    document.getElementById('diagResult').textContent=diag;
+
+    /* Plot 1: state tracking */
+    const tArr=Array.from({length:steps},(_,i)=>i*dt);
+    Plotly.react('diagPlot',[
+      {x:tArr,y:trueXArr,name:'真实值',line:{color:'#16a34a',width:2}},
+      {x:tArr,y:estXArr,name:'KF 估计',line:{color:'#2563eb',width:2}},
+      {x:measArr.map(m=>m.k*dt),y:measArr.map(m=>m.z),name:'测量',mode:'markers',marker:{color:'#dc2626',size:4,opacity:.5}}
+    ],{
+      margin:{t:20,r:20,b:40,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'位置 (m)'},
+      legend:{x:0,y:1.1,orientation:'h'},
+      plot_bgcolor:'#fafafa',font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    /* Plot 2: innovation sequence */
+    const measT=measArr.map(m=>m.k*dt);
+    Plotly.react('innovPlot',[
+      {x:measT,y:innovArr,type:'bar',marker:{color:innovArr.map(v=>Math.abs(v)>2*iStd?'#dc2626':'rgba(37,99,235,0.6)')},name:'新息'},
+      {x:[measT[0],measT[measT.length-1]],y:[2*iStd,2*iStd],mode:'lines',line:{color:'#dc2626',dash:'dash',width:1},name:'2σ 上限'},
+      {x:[measT[0],measT[measT.length-1]],y:[-2*iStd,-2*iStd],mode:'lines',line:{color:'#dc2626',dash:'dash',width:1},showlegend:false}
+    ],{
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'新息'},
+      legend:{x:0,y:1.1,orientation:'h'},
+      plot_bgcolor:'#fafafa',font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    /* Plot 3: NIS */
+    Plotly.react('nisPlot',[
+      {x:measT,y:nisArr,name:'NIS',line:{color:'#7c3aed',width:1.5}},
+      {x:[measT[0],measT[measT.length-1]],y:[1,1],mode:'lines',line:{color:'#16a34a',dash:'dash',width:1.5},name:'期望值 (m=1)'},
+      {x:[measT[0],measT[measT.length-1]],y:[3.84,3.84],mode:'lines',line:{color:'#dc2626',dash:'dot',width:1},name:'95% 门限'}
+    ],{
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'NIS'},
+      legend:{x:0,y:1.1,orientation:'h'},
+      plot_bgcolor:'#fafafa',font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+  }
+
+  document.getElementById('runDiag').addEventListener('click',runDiagnostic);
+  runDiagnostic();
+})();
+</script>
+</body>
+</html>

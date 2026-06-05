@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第二章：系统是台机器——状态空间建模 | 卡尔曼滤波交互式教材</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root{--primary:#2563eb;--primary-light:#dbeafe;--bg:#f8fafc;--card:#fff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--note-bg:#fffbeb;--note-border:#f59e0b;--code-bg:#f1f5f9}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+nav a{color:var(--primary);text-decoration:none;font-weight:600;font-size:.95em}
+.container{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:2em;margin-bottom:8px;color:var(--primary)}
+.chapter-meta{color:var(--text-light);margin-bottom:28px;font-size:.95em}
+h2{font-size:1.4em;margin:36px 0 14px;color:#0f172a;border-left:4px solid var(--primary);padding-left:12px}
+h3{font-size:1.15em;margin:24px 0 10px}
+p{margin-bottom:14px}
+.objective{background:var(--primary-light);border-radius:10px;padding:20px 24px;margin-bottom:28px}
+.objective h3{margin-top:0;color:var(--primary)}
+.interactive-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0}
+.controls{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:16px}
+.control-group{display:flex;flex-direction:column;gap:4px}
+.control-group label{font-size:.88em;color:var(--text-light);font-weight:600}
+.control-group input[type="range"]{width:180px}
+.control-group select{padding:4px 8px;border-radius:6px;border:1px solid var(--border)}
+.val-display{display:inline-block;min-width:42px;text-align:center;background:var(--code-bg);border-radius:4px;padding:1px 6px;font-family:'SF Mono','Consolas',monospace;font-size:.88em}
+pre{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:18px 20px;overflow-x:auto;font-size:.9em;line-height:1.6;margin:14px 0}
+pre code{font-family:'SF Mono','Consolas','Menlo',monospace}
+.note{background:var(--note-bg);border-left:4px solid var(--note-border);border-radius:0 8px 8px 0;padding:20px 24px;margin:32px 0}
+.note h3{color:#92400e;margin-top:0}
+.note h3::before{content:"🔧 "}
+.matrix-display{background:var(--code-bg);border-radius:8px;padding:14px 18px;margin:10px 0;overflow-x:auto;font-family:'SF Mono',monospace;font-size:.92em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+table.matrix-table{border-collapse:collapse;margin:10px 0}
+table.matrix-table td{padding:6px 14px;text-align:center;border:1px solid var(--border);font-family:'SF Mono',monospace}
+table.matrix-table th{padding:6px 14px;background:var(--primary-light);border:1px solid var(--border);font-size:.88em}
+@media(max-width:600px){.controls{flex-direction:column}.control-group input[type="range"]{width:100%}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="ch01.html">← 上一章</a>
+  <span style="font-weight:700;font-size:.95em;">第二章</span>
+  <a href="ch03.html">下一章 →</a>
+</nav>
+
+<div class="container">
+<h1>第二章：系统是台机器——状态空间建模</h1>
+<p class="chapter-meta">用矩阵描述物理世界：状态转移、观测模型、噪声来源</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>理解状态向量、状态转移矩阵 F、输入矩阵 B、观测矩阵 H</li>
+    <li>知道过程噪声 Q 和测量噪声 R 的物理来源</li>
+    <li>能用状态空间方程描述"无人机在平面上运动"的场景</li>
+  </ul>
+</div>
+
+<h2>一、状态——系统的"内心独白"</h2>
+
+<p>在卡尔曼滤波的世界里，所有东西都被抽象成一个<strong>状态向量</strong>。状态不一定是你能直接测量到的，它是系统"真正的内部信息"。</p>
+
+<p>比如一架无人机在一维上运动，我们关心它的位置 \(x\) 和速度 \(v\)：</p>
+
+$$\mathbf{x} = \begin{bmatrix} x \\ v \end{bmatrix}$$
+
+<p>如果你还想估计加速度计的偏差 \(b\)（零偏），状态可以扩展为：</p>
+
+$$\mathbf{x} = \begin{bmatrix} x \\ v \\ b \end{bmatrix}$$
+
+<p>状态向量的选择是一门艺术——放太少，滤波器看不到重要的动态；放太多，矩阵变大，计算量暴增。</p>
+
+<h2>二、状态转移方程——"下一秒会怎样？"</h2>
+
+<p>物理告诉我们，如果没有外力，一个匀速运动的物体在 \(\Delta t\) 后的位置和速度是：</p>
+
+$$x_{k+1} = x_k + v_k \cdot \Delta t$$
+$$v_{k+1} = v_k$$
+
+<p>写成矩阵形式就是：</p>
+
+$$\mathbf{x}_{k+1} = \mathbf{F} \cdot \mathbf{x}_k = \begin{bmatrix} 1 & \Delta t \\ 0 & 1 \end{bmatrix} \begin{bmatrix} x_k \\ v_k \end{bmatrix}$$
+
+<p>这个 \(\mathbf{F}\) 就是<strong>状态转移矩阵</strong>（State Transition Matrix）。它编码了系统的物理规律。</p>
+
+<h3>加入控制输入</h3>
+
+<p>如果无人机有一个加速度输入 \(a\)（来自 IMU 测量），状态方程变成：</p>
+
+$$\mathbf{x}_{k+1} = \mathbf{F} \cdot \mathbf{x}_k + \mathbf{B} \cdot u_k$$
+
+<p>其中：</p>
+
+$$\mathbf{B} = \begin{bmatrix} \frac{1}{2}\Delta t^2 \\ \Delta t \end{bmatrix}, \quad u_k = a_k$$
+
+<p>这就是高中物理的运动方程 \(x = x_0 + v_0 t + \frac{1}{2}at^2\)，只不过写成了矩阵的样子。</p>
+
+<h2>从连续时间到离散时间——工程中的第一步</h2>
+
+<p>物理学家喜欢用连续时间描述系统——微分方程既优雅又精确：</p>
+
+$$\dot{\mathbf{x}} = \mathbf{A}\mathbf{x} + \mathbf{B}u$$
+
+<p>但你的 MCU 不会微积分。它只能在离散的时刻（每隔 \(\Delta t\)）读一次传感器、算一次。所以工程实践中的第一步是把连续模型<strong>离散化</strong>：</p>
+
+$$\mathbf{F} = e^{\mathbf{A}\Delta t} \approx \mathbf{I} + \mathbf{A}\Delta t + \frac{(\mathbf{A}\Delta t)^2}{2!} + \cdots$$
+
+<p>这是矩阵指数（matrix exponential）的泰勒展开。在大多数嵌入式场景下，\(\Delta t\) 很小（1~10ms），只取前两项就够了：</p>
+
+$$\mathbf{F} \approx \mathbf{I} + \mathbf{A}\Delta t \quad \text{（一阶近似）}$$
+
+<p>来看一个好消息：对于匀速运动模型，连续时间矩阵是：</p>
+
+$$\mathbf{A} = \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix}$$
+
+<p>注意 \(\mathbf{A}^2 = \mathbf{0}\)（零矩阵），所以泰勒展开在第二项就精确截断了：</p>
+
+$$\mathbf{F} = \mathbf{I} + \mathbf{A}\Delta t = \begin{bmatrix} 1 & \Delta t \\ 0 & 1 \end{bmatrix}$$
+
+<p>这恰好就是上一节得到的 \(\mathbf{F}\)！对于这个特殊系统，一阶近似碰巧就是精确解。但并非所有系统都这么幸运。</p>
+
+<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
+  <p style="margin:0;"><strong>⚠️ 工程警告</strong>：对于快速动态系统（如电机转速控制，带宽 > 100Hz）或 \(\Delta t\) 较大的场景，一阶近似可能导致数值不稳定。症状是协方差 P 发散或状态估计振荡。此时应使用二阶甚至精确的矩阵指数。在 C 语言中，对小矩阵（2×2, 3×3）可以手动展开到二阶或三阶。</p>
+</div>
+
+<h2>三、观测方程——"我能看到什么？"</h2>
+
+<p>传感器不一定能直接看到所有状态。GPS 只给位置，不给速度；加速度计只给加速度，不给位置。</p>
+
+<p>观测方程描述了"状态"和"测量值"之间的关系：</p>
+
+$$\mathbf{z}_k = \mathbf{H} \cdot \mathbf{x}_k + \mathbf{v}_k$$
+
+<p>如果 GPS 只测位置，那么：</p>
+
+$$\mathbf{H} = \begin{bmatrix} 1 & 0 \end{bmatrix}, \quad z_k = x_k + v_k$$
+
+<p>其中 \(\mathbf{v}_k\) 是测量噪声，\(\mathbf{H}\) 就像一个"选择器"——从状态向量中挑出传感器能看到的那部分。</p>
+
+<h2>四、噪声模型——不确定性的量化</h2>
+
+<h3>过程噪声 Q</h3>
+<p>现实中系统不会完美地按照 \(\mathbf{F}\) 运行——有风、有振动、有我们没建模的动态。这些不确定性用过程噪声协方差矩阵 \(\mathbf{Q}\) 来描述：</p>
+
+$$\mathbf{x}_{k+1} = \mathbf{F} \cdot \mathbf{x}_k + \mathbf{B} \cdot u_k + \mathbf{w}_k, \quad \mathbf{w}_k \sim \mathcal{N}(0, \mathbf{Q})$$
+
+<p>对于匀速运动模型（状态 = [位置, 速度]），一个常用的 Q 矩阵是：</p>
+
+$$\mathbf{Q} = q \begin{bmatrix} \frac{\Delta t^3}{3} & \frac{\Delta t^2}{2} \\ \frac{\Delta t^2}{2} & \Delta t \end{bmatrix}$$
+
+<p>其中 \(q\) 是"过程噪声功率谱密度"——说人话就是"你觉得模型有多不靠谱"。\(q\) 越大，滤波器越不信模型，越愿意相信测量。</p>
+
+<h3>测量噪声 R</h3>
+<p>传感器的噪声特性通常写在数据手册里。对 GPS 来说：</p>
+
+$$\mathbf{R} = \sigma_{GPS}^2$$
+
+<p>如果 GPS 精度标称 2.5m CEP（50% 概率圆），换算成标准差大约 \(\sigma \approx 3m\)。</p>
+
+<h2>五、二维无人机的完整状态空间</h2>
+
+<p>把上面的一维模型扩展到二维，状态向量变成 4 维：</p>
+
+$$\mathbf{x} = \begin{bmatrix} x \\ y \\ v_x \\ v_y \end{bmatrix}$$
+
+<p>因为 x 和 y 方向独立（匀速运动模型下），矩阵是：</p>
+
+$$\mathbf{F} = \begin{bmatrix} 1 & 0 & \Delta t & 0 \\ 0 & 1 & 0 & \Delta t \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix}, \quad
+\mathbf{H} = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \end{bmatrix}$$
+
+<p><strong>试一试</strong>：下面的交互实验让你设置初始状态和噪声参数，观察模型预测轨迹、带噪 GPS 测量、以及不确定性椭圆的演变。</p>
+
+<div class="interactive-box">
+  <h3>🎛️ 交互实验：2D 状态空间模型可视化</h3>
+  <p style="font-size:.92em;color:var(--text-light);">设置初始状态和噪声参数，点击"运行仿真"查看模型预测轨迹和 GPS 测量点。不确定性椭圆展示协方差的增长。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>初始 vx (m/s): <span class="val-display" id="vxVal">2.0</span></label>
+      <input type="range" id="vxSlider" min="-5" max="5" step="0.1" value="2.0">
+    </div>
+    <div class="control-group">
+      <label>初始 vy (m/s): <span class="val-display" id="vyVal">1.0</span></label>
+      <input type="range" id="vySlider" min="-5" max="5" step="0.1" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>场景预设:</label>
+      <select id="presetSelect">
+        <option value="calm">静风 + 高精度GPS</option>
+        <option value="windy">大风 + 高精度GPS</option>
+        <option value="lowgps">静风 + 低精度GPS</option>
+        <option value="worst">大风 + 低精度GPS</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button id="runBtn" style="padding:6px 20px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">运行仿真</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <div class="matrix-display" id="matrixF" style="flex:1;min-width:200px;"></div>
+    <div class="matrix-display" id="matrixH" style="flex:1;min-width:200px;"></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <div class="matrix-display" id="matrixQ" style="flex:1;min-width:200px;"></div>
+    <div class="matrix-display" id="matrixR" style="flex:1;min-width:200px;"></div>
+  </div>
+
+  <div id="trajPlot" style="width:100%;height:480px;"></div>
+</div>
+
+<h2>可观测性——你的传感器能看到所有状态吗？</h2>
+
+<p>这是一个容易被初学者忽略但极其重要的问题：<strong>仅凭你的传感器和模型，你能估计出所有状态吗？</strong></p>
+
+<p>判断方法是构造<strong>可观测性矩阵</strong>（Observability Matrix）：</p>
+
+$$\mathcal{O} = \begin{bmatrix} \mathbf{H} \\ \mathbf{H}\mathbf{F} \\ \mathbf{H}\mathbf{F}^2 \\ \vdots \\ \mathbf{H}\mathbf{F}^{n-1} \end{bmatrix}$$
+
+<p>如果 \(\text{rank}(\mathcal{O}) = n\)（状态维度），则所有状态都是<strong>可观测的</strong>。</p>
+
+<h3>例子：GPS 只测位置，能估计速度吗？</h3>
+
+<p>对于二维无人机（状态 = [x, y, vx, vy]），GPS 只测位置：</p>
+
+$$\mathbf{H} = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \end{bmatrix}$$
+
+<p>构造可观测性矩阵（取前两个块就够了，因为 n=4, m=2）：</p>
+
+$$\mathcal{O} = \begin{bmatrix} \mathbf{H} \\ \mathbf{H}\mathbf{F} \end{bmatrix} = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 1 & 0 & \Delta t & 0 \\ 0 & 1 & 0 & \Delta t \end{bmatrix}$$
+
+<p>\(\text{rank}(\mathcal{O}) = 4\) → 所有状态可观测！即使 GPS 不直接测速度，因为 \(\mathbf{F}\) 把位置和速度耦合在一起（位置的变化蕴含了速度信息），滤波器可以从<strong>位置的变化率</strong>中推断出速度。</p>
+
+<h3>但有一个陷阱：弱可观测性</h3>
+
+<p>数学上可观测 ≠ 实际上估计得好。如果无人机静止不动，位置几乎不变，速度信息只能从噪声中微弱地体现——速度的<strong>协方差收敛极慢</strong>。这就是"弱可观测"。</p>
+
+<p>这也解释了为什么 PX4 飞控在初始化时要求你"fly around"（四处飞一飞）——只有在运动中，速度状态才能快速收敛，滤波器才能获得可靠的速度估计。同理，如果你的无人机只做匀速直线飞行，加速度偏差状态就是弱可观测的——需要机动飞行（转弯、加减速）来激发可观测性。</p>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+  <p><strong>Q 和 R 的确定方法</strong>：理论上 R 可以从传感器数据手册得到（但务必在实际安装条件下验证——在工作台上测和装到振动的机架上是两回事）。实际做法：</p>
+  <ol style="margin-left:18px;margin-top:8px;">
+    <li>让无人机静止放置，采集 GPS 数据 5~10 分钟，计算方差 → 这就是你的 R</li>
+    <li>Q 没法直接测量，通常从"你对模型有多大信心"出发拍一个初值，然后用 NIS（归一化新息平方）来在线调整</li>
+  </ol>
+
+  <pre><code>/* 实用代码：在线计算传感器方差（Welford 算法，单遍扫描）*/
+typedef struct {
+    uint32_t n;
+    float mean;
+    float m2;   /* 累积平方差 */
+} Variance_t;
+
+static inline void var_update(Variance_t *v, float x) {
+    v->n++;
+    float delta = x - v->mean;
+    v->mean += delta / v->n;
+    v->m2  += delta * (x - v->mean);
+}
+
+static inline float var_get(const Variance_t *v) {
+    return (v->n > 1) ? v->m2 / (v->n - 1) : 0.0f;
+}</code></pre>
+
+  <p style="margin-top:10px;"><strong>状态向量维度的选择</strong>：每多加一维状态，协方差矩阵 P 就多一行一列。P 是 n×n 对称矩阵，存储量为 n(n+1)/2 个 float。4 维状态只需 10 个 float（40 字节），但 9 维就需要 45 个 float（180 字节）。在 Cortex-M0 上，这点内存可能就是关键瓶颈。</p>
+
+  <p style="margin-top:10px;"><strong>Allan 方差——IMU 噪声标定的标准工具</strong>：传感器数据手册上标注的<strong>噪声密度</strong>（Noise Density）就是 Allan 方差曲线在 \(\tau=1\) s 处的值。对于 MEMS 陀螺仪，关键参数是<strong>角度随机游走</strong>（ARW, Angular Random Walk），典型值为 0.1~1 °/√hr——这直接决定了你的过程噪声 \(\mathbf{Q}\) 中陀螺相关分量的大小。</p>
+
+  <p style="margin-top:10px;"><strong>实用标定方法</strong>：将 IMU 静置在稳定平面上，采集 1 小时以上的数据，然后用 Allan 方差分析工具（MATLAB 的 <code>allanvar</code> 或 Python 的 <code>allantools</code>）自动提取噪声参数。这比从数据手册抄参数可靠得多，因为实际安装环境（振动、温度）会显著改变噪声特性。</p>
+</div>
+
+</div>
+
+<nav style="background:var(--card);border-top:1px solid var(--border);padding:16px 20px;display:flex;justify-content:space-between;">
+  <a href="ch01.html" style="color:var(--primary);text-decoration:none;font-weight:600;">← 第一章</a>
+  <a href="ch03.html" style="color:var(--primary);text-decoration:none;font-weight:600;">第三章：预测与更新 →</a>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
+(function() {
+  const vxSlider = document.getElementById('vxSlider');
+  const vySlider = document.getElementById('vySlider');
+  const presetSelect = document.getElementById('presetSelect');
+  const runBtn = document.getElementById('runBtn');
+
+  function gauss() {
+    let u=0,v=0;
+    while(!u) u=Math.random();
+    while(!v) v=Math.random();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  }
+
+  const presets = {
+    calm:   { q: 0.1,  rGps: 2.0,  label: '静风 + 高精度GPS' },
+    windy:  { q: 2.0,  rGps: 2.0,  label: '大风 + 高精度GPS' },
+    lowgps: { q: 0.1,  rGps: 8.0,  label: '静风 + 低精度GPS' },
+    worst:  { q: 2.0,  rGps: 8.0,  label: '大风 + 低精度GPS' }
+  };
+
+  function fmtMat(name, rows) {
+    let s = `<strong>${name} =</strong><br>`;
+    s += rows.map(r => '[ ' + r.map(v => v.toFixed(3).padStart(7)).join('  ') + ' ]').join('<br>');
+    return s;
+  }
+
+  function ellipsePoints(cx, cy, P, npts) {
+    /* 2x2 covariance → 95% confidence ellipse */
+    const a = P[0][0], b = P[0][1], d = P[1][1];
+    const trace = a + d, det = a*d - b*b;
+    const disc = Math.sqrt(Math.max(0, trace*trace/4 - det));
+    const l1 = trace/2 + disc, l2 = Math.max(0.001, trace/2 - disc);
+    const angle = (b === 0 && a >= d) ? 0 : Math.atan2(l1 - a, b);
+    const scale = 2.448; // sqrt(5.991) for 95%
+    const pts = {x:[], y:[]};
+    for(let i=0;i<=npts;i++){
+      const t = 2*Math.PI*i/npts;
+      const ex = scale*Math.sqrt(l1)*Math.cos(t);
+      const ey = scale*Math.sqrt(l2)*Math.sin(t);
+      pts.x.push(cx + ex*Math.cos(angle) - ey*Math.sin(angle));
+      pts.y.push(cy + ex*Math.sin(angle) + ey*Math.cos(angle));
+    }
+    return pts;
+  }
+
+  vxSlider.addEventListener('input', () => document.getElementById('vxVal').textContent = parseFloat(vxSlider.value).toFixed(1));
+  vySlider.addEventListener('input', () => document.getElementById('vyVal').textContent = parseFloat(vySlider.value).toFixed(1));
+
+  function runSim() {
+    const vx0 = parseFloat(vxSlider.value);
+    const vy0 = parseFloat(vySlider.value);
+    const preset = presets[presetSelect.value];
+    const dt = 0.1, steps = 100;
+    const q = preset.q, rGps = preset.rGps;
+
+    /* Build Q (simplified diagonal-ish) */
+    const Q = [
+      [q*dt*dt*dt/3, 0,           q*dt*dt/2, 0          ],
+      [0,            q*dt*dt*dt/3, 0,         q*dt*dt/2  ],
+      [q*dt*dt/2,    0,           q*dt,      0          ],
+      [0,            q*dt*dt/2,   0,         q*dt       ]
+    ];
+    const R = [[rGps*rGps, 0],[0, rGps*rGps]];
+    const F = [[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]];
+    const H = [[1,0,0,0],[0,1,0,0]];
+
+    document.getElementById('matrixF').innerHTML = fmtMat('F (状态转移)', F);
+    document.getElementById('matrixH').innerHTML = fmtMat('H (观测)', H);
+    document.getElementById('matrixQ').innerHTML = fmtMat('Q (过程噪声)', Q);
+    document.getElementById('matrixR').innerHTML = fmtMat('R (测量噪声)', R);
+
+    const trueX=[0], trueY=[0], predX=[0], predY=[0], gpsX=[], gpsY=[];
+    let x=0, y=0, vx=vx0, vy=vy0;
+    let px=0, py=0, pvx=vx0, pvy=vy0;
+
+    /* Propagate P for ellipse display */
+    let P = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];
+
+    function matMul(A,B){
+      const m=A.length,n=B[0].length,p=B.length;
+      const C=Array.from({length:m},()=>new Array(n).fill(0));
+      for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];
+      return C;
+    }
+    function matAdd(A,B){return A.map((r,i)=>r.map((v,j)=>v+B[i][j]));}
+    function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+
+    const ellipses = [];
+
+    for(let k=0;k<steps;k++){
+      /* True dynamics with process noise */
+      x += vx*dt + Math.sqrt(q)*gauss()*dt;
+      y += vy*dt + Math.sqrt(q)*gauss()*dt;
+      vx += Math.sqrt(q)*gauss()*Math.sqrt(dt);
+      vy += Math.sqrt(q)*gauss()*Math.sqrt(dt);
+      trueX.push(x); trueY.push(y);
+
+      /* Pure model prediction (no noise correction) */
+      px += pvx*dt; py += pvy*dt;
+      predX.push(px); predY.push(py);
+
+      /* GPS measurement every step */
+      gpsX.push(x + rGps*gauss());
+      gpsY.push(y + rGps*gauss());
+
+      /* Propagate covariance: P = F*P*F' + Q */
+      P = matAdd(matMul(matMul(F, P), transpose(F)), Q);
+
+      if(k % 10 === 9) {
+        const Pxy = [[P[0][0],P[0][1]],[P[1][0],P[1][1]]];
+        const e = ellipsePoints(px, py, Pxy, 60);
+        ellipses.push({x:e.x, y:e.y, step:k+1});
+      }
+    }
+
+    const traces = [
+      {x:trueX, y:trueY, name:'真实轨迹', mode:'lines', line:{color:'#16a34a',width:2.5}},
+      {x:predX, y:predY, name:'模型预测（无校正）', mode:'lines', line:{color:'#2563eb',width:2,dash:'dash'}},
+      {x:gpsX, y:gpsY, name:'GPS 测量', mode:'markers', marker:{color:'#ef4444',size:4,opacity:0.5}}
+    ];
+
+    ellipses.forEach((e,i) => {
+      traces.push({
+        x: e.x, y: e.y,
+        name: i===0 ? '预测不确定性 (95%)' : undefined,
+        showlegend: i===0,
+        mode:'lines',
+        line:{color:'rgba(37,99,235,0.3)',width:1},
+        fill:'toself',
+        fillcolor:'rgba(37,99,235,0.06)'
+      });
+    });
+
+    Plotly.react('trajPlot', traces, {
+      margin:{t:30,r:20,b:50,l:55},
+      xaxis:{title:'X (m)', scaleanchor:'y'},
+      yaxis:{title:'Y (m)'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system, sans-serif'}
+    }, {responsive:true});
+  }
+
+  runBtn.addEventListener('click', runSim);
+  runSim();
+})();
+</script>
+</body>
+</html>

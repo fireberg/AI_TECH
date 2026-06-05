@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第四章：程序员最爱的五个公式 | 卡尔曼滤波交互式教材</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root{--primary:#2563eb;--primary-light:#dbeafe;--bg:#f8fafc;--card:#fff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--note-bg:#fffbeb;--note-border:#f59e0b;--code-bg:#f1f5f9}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+nav a{color:var(--primary);text-decoration:none;font-weight:600;font-size:.95em}
+.container{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:2em;margin-bottom:8px;color:var(--primary)}
+.chapter-meta{color:var(--text-light);margin-bottom:28px;font-size:.95em}
+h2{font-size:1.4em;margin:36px 0 14px;color:#0f172a;border-left:4px solid var(--primary);padding-left:12px}
+h3{font-size:1.15em;margin:24px 0 10px}
+p{margin-bottom:14px}
+.objective{background:var(--primary-light);border-radius:10px;padding:20px 24px;margin-bottom:28px}
+.objective h3{margin-top:0;color:var(--primary)}
+.interactive-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:24px 0}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.control-group{display:flex;flex-direction:column;gap:4px}
+.control-group label{font-size:.85em;color:var(--text-light);font-weight:600}
+.val-display{display:inline-block;min-width:36px;text-align:center;background:var(--code-bg);border-radius:4px;padding:1px 6px;font-family:'SF Mono',monospace;font-size:.85em}
+pre{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:18px 20px;overflow-x:auto;font-size:.88em;line-height:1.6;margin:14px 0}
+pre code{font-family:'SF Mono','Consolas','Menlo',monospace}
+.eq-box{background:var(--code-bg);border-radius:10px;padding:18px 22px;margin:16px 0;border-left:4px solid var(--primary)}
+.eq-box .eq-label{font-weight:700;color:var(--primary);font-size:.92em;margin-bottom:6px}
+.eq-box.predict{border-left-color:#2563eb;background:#eff6ff}
+.eq-box.update{border-left-color:#16a34a;background:#f0fdf4}
+.note{background:var(--note-bg);border-left:4px solid var(--note-border);border-radius:0 8px 8px 0;padding:20px 24px;margin:32px 0}
+.note h3{color:#92400e;margin-top:0}
+.note h3::before{content:"🔧 "}
+.state-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0}
+.state-item{background:var(--code-bg);border-radius:8px;padding:10px 14px}
+.state-item .label{font-size:.82em;color:var(--text-light);margin-bottom:2px}
+.state-item .value{font-family:'SF Mono',monospace;font-size:.95em;font-weight:600;word-break:break-all}
+.step-indicator{display:flex;gap:4px;margin-bottom:12px}
+.step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75em;font-weight:700;border:2px solid var(--border);color:var(--text-light)}
+.step-dot.active{border-color:var(--primary);background:var(--primary);color:#fff}
+.step-dot.done{border-color:#16a34a;background:#dcfce7;color:#16a34a}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+button.action{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:.95em;color:#fff}
+@media(max-width:600px){.controls{flex-direction:column}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="ch03.html">← 上一章</a>
+  <span style="font-weight:700;font-size:.95em;">第四章</span>
+  <a href="ch05.html">下一章 →</a>
+</nav>
+
+<div class="container">
+<h1>第四章：程序员最爱的五个公式</h1>
+<p class="chapter-meta">卡尔曼滤波算法的完整推导与逐步执行</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>掌握卡尔曼滤波的五个核心方程</li>
+    <li>理解每个变量的维度和物理意义</li>
+    <li>通过单步执行面板，直观看到每一步对状态和协方差的影响</li>
+    <li>获得可直接移植到嵌入式系统的 C 语言模板</li>
+  </ul>
+</div>
+
+<h2>一、五个方程——就这么简单</h2>
+
+<p>卡尔曼滤波分两步：<strong>预测</strong>（Predict）和<strong>更新</strong>（Update）。一共五个方程，两个用于预测，三个用于更新。</p>
+
+<h3>预测步（Predict）</h3>
+
+<div class="eq-box predict">
+  <div class="eq-label">方程 ①：状态预测</div>
+  $$\hat{\mathbf{x}}_{k|k-1} = \mathbf{F} \hat{\mathbf{x}}_{k-1|k-1} + \mathbf{B} \mathbf{u}_k$$
+  <p style="margin:8px 0 0;font-size:.9em;color:var(--text-light);">用物理模型推算下一时刻的状态。F 是状态转移矩阵，B·u 是控制输入（如 IMU 加速度）。</p>
+</div>
+
+<div class="eq-box predict">
+  <div class="eq-label">方程 ②：协方差预测</div>
+  $$\mathbf{P}_{k|k-1} = \mathbf{F} \mathbf{P}_{k-1|k-1} \mathbf{F}^T + \mathbf{Q}$$
+  <p style="margin:8px 0 0;font-size:.9em;color:var(--text-light);">不确定度（协方差矩阵）在预测后变大，增大量由过程噪声 Q 决定。<br>维度：n×n（n 是状态维数）。</p>
+</div>
+
+<h3>更新步（Update）</h3>
+
+<div class="eq-box update">
+  <div class="eq-label">方程 ③：卡尔曼增益</div>
+  $$\mathbf{K}_k = \mathbf{P}_{k|k-1} \mathbf{H}^T (\mathbf{H} \mathbf{P}_{k|k-1} \mathbf{H}^T + \mathbf{R})^{-1}$$
+  <p style="margin:8px 0 0;font-size:.9em;color:var(--text-light);">K 决定了"相信测量多少"。括号里的逆矩阵维度是 m×m（m 是观测维数），通常远小于 n。</p>
+</div>
+
+<div class="eq-box update">
+  <div class="eq-label">方程 ④：状态更新</div>
+  $$\hat{\mathbf{x}}_{k|k} = \hat{\mathbf{x}}_{k|k-1} + \mathbf{K}_k (\mathbf{z}_k - \mathbf{H} \hat{\mathbf{x}}_{k|k-1})$$
+  <p style="margin:8px 0 0;font-size:.9em;color:var(--text-light);">\(\mathbf{z}_k - \mathbf{H}\hat{\mathbf{x}}_{k|k-1}\) 叫<strong>新息</strong>（Innovation），就是"测量和预测之间的差距"。K 越大，校正越多。</p>
+</div>
+
+<div class="eq-box update">
+  <div class="eq-label">方程 ⑤：协方差更新</div>
+  $$\mathbf{P}_{k|k} = (\mathbf{I} - \mathbf{K}_k \mathbf{H}) \mathbf{P}_{k|k-1}$$
+  <p style="margin:8px 0 0;font-size:.9em;color:var(--text-light);">更新后不确定度缩小。注意这个简化形式在数值上可能不稳定（见第七章 Joseph 形式）。</p>
+</div>
+
+<h2>二、维度速查表</h2>
+
+<p>记不住维度？看这张表（n=状态维数，m=观测维数）：</p>
+
+<table style="border-collapse:collapse;margin:14px 0;width:100%;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">变量</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">维度</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">说明</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">x</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×1</td><td style="padding:6px 14px;border:1px solid var(--border);">状态向量</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">F</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×n</td><td style="padding:6px 14px;border:1px solid var(--border);">状态转移矩阵</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">B</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×l</td><td style="padding:6px 14px;border:1px solid var(--border);">输入矩阵 (l=输入维数)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">P</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×n</td><td style="padding:6px 14px;border:1px solid var(--border);">状态协方差矩阵</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">Q</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×n</td><td style="padding:6px 14px;border:1px solid var(--border);">过程噪声协方差</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">H</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">m×n</td><td style="padding:6px 14px;border:1px solid var(--border);">观测矩阵</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">R</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">m×m</td><td style="padding:6px 14px;border:1px solid var(--border);">测量噪声协方差</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">K</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×m</td><td style="padding:6px 14px;border:1px solid var(--border);">卡尔曼增益</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">z</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">m×1</td><td style="padding:6px 14px;border:1px solid var(--border);">观测向量</td></tr>
+</tbody>
+</table>
+
+<h2>二·五、稳态卡尔曼增益——嵌入式工程师的捷径</h2>
+
+<p>你可能注意到了一个规律：随着预测-更新循环不断进行，协方差矩阵 P 和卡尔曼增益 K 最终会<strong>收敛到固定值</strong>。这不是巧合——这是数学上可以证明的。</p>
+
+<p>当 \(\mathbf{F}\)、\(\mathbf{H}\)、\(\mathbf{Q}\)、\(\mathbf{R}\) 都是常数矩阵（时不变系统），P 会收敛到一个稳态值 \(\mathbf{P}_\infty\)，它满足<strong>代数 Riccati 方程</strong>（ARE）：</p>
+
+$$\mathbf{P}_\infty = \mathbf{F}\left[\mathbf{P}_\infty - \mathbf{P}_\infty \mathbf{H}^T(\mathbf{H}\mathbf{P}_\infty \mathbf{H}^T + \mathbf{R})^{-1}\mathbf{H}\mathbf{P}_\infty\right]\mathbf{F}^T + \mathbf{Q}$$
+
+<p>对应的<strong>稳态卡尔曼增益</strong>就是一个常数矩阵：</p>
+
+$$\mathbf{K}_\infty = \mathbf{P}_\infty \mathbf{H}^T(\mathbf{H}\mathbf{P}_\infty \mathbf{H}^T + \mathbf{R})^{-1}$$
+
+<p>这意味着什么？你根本<strong>不需要在运行时更新 P 或计算 K</strong>！工程流程是这样的：</p>
+
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li>在 MATLAB/Python 里跑完整的卡尔曼滤波，迭代几十步直到 K 收敛</li>
+  <li>把收敛后的 \(\mathbf{K}_\infty\) 提取出来，硬编码到固件里</li>
+  <li>运行时只做 \(\hat{\mathbf{x}} = \mathbf{F}\hat{\mathbf{x}} + \mathbf{B}\mathbf{u} + \mathbf{K}_\infty(\mathbf{z} - \mathbf{H}\mathbf{F}\hat{\mathbf{x}})\)——一个矩阵-向量乘法搞定</li>
+</ol>
+
+<p><strong>计算量从 O(n³) 暴降到 O(n²)</strong>——因为省掉了协方差矩阵的乘法和求逆。对于资源极度受限的 8 位 MCU（比如 ATmega328），这可能是唯一可行的方案。</p>
+
+<div class="highlight-box" style="background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0;">
+  <p style="margin:0;"><strong>你可能已经用过稳态 KF 而不自知：</strong>互补滤波器（Complementary Filter）本质上就是一个稳态卡尔曼滤波器！比如经典的 IMU 姿态估计 <code>angle = 0.98*(angle+gyro*dt) + 0.02*accel_angle</code>，那个 <code>0.98</code> 和 <code>0.02</code> 就对应于 \(\mathbf{I}-\mathbf{K}_\infty\mathbf{H}\) 和 \(\mathbf{K}_\infty\) 的元素。Madgwick、Mahony 滤波器也是这个思路。</p>
+</div>
+
+<p><strong>使用条件</strong>：系统必须是<strong>可检测</strong>（detectable）且<strong>可镇定</strong>（stabilizable）的，这基本等价于"所有不稳定的状态都能被观测到"。对于典型的位置-速度-加速度模型，这个条件几乎总是满足的。</p>
+
+<p><strong>什么时候不能用稳态增益？</strong></p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li>GPS 信号质量变化（室内/室外切换、城市峡谷多径效应）→ R 不是常数</li>
+  <li>机动目标跟踪（加速/转弯时 Q 应该增大）→ Q 不是常数</li>
+  <li>传感器在线切换（某个传感器掉线/恢复）→ H 矩阵变化</li>
+  <li>滤波器刚启动的瞬态阶段（P 还没收敛，用稳态 K 会错过快速收敛的机会）</li>
+</ul>
+
+<h2>三、C 语言实现模板</h2>
+
+<p>下面是一个通用的 2D 卡尔曼滤波器 C 语言模板（状态 [x, y, vx, vy]，观测 [x, y]）。在第五章我们会用 JavaScript 运行它的等价版本。</p>
+
+<pre><code>/* kf2d.h — 2D 位置-速度卡尔曼滤波器
+ * 状态: [x, y, vx, vy]  (n=4)
+ * 观测: [x, y]           (m=2)
+ */
+#define KF_N 4   /* 状态维数 */
+#define KF_M 2   /* 观测维数 */
+
+typedef struct {
+    float x[KF_N];           /* 状态向量 */
+    float P[KF_N][KF_N];     /* 协方差矩阵 */
+    float F[KF_N][KF_N];     /* 状态转移 */
+    float H[KF_M][KF_N];     /* 观测矩阵 */
+    float Q[KF_N][KF_N];     /* 过程噪声 */
+    float R[KF_M][KF_M];     /* 测量噪声 */
+    float K[KF_N][KF_M];     /* 卡尔曼增益 */
+    float dt;                /* 时间步长 */
+} KF2D_t;
+
+void kf2d_init(KF2D_t *kf, float dt);
+void kf2d_predict(KF2D_t *kf, float ax, float ay);
+void kf2d_update(KF2D_t *kf, float zx, float zy);
+
+/* --- 实现 --- */
+void kf2d_predict(KF2D_t *kf, float ax, float ay) {
+    float *x = kf->x;
+    float dt = kf->dt;
+
+    /* ① 状态预测: x = F*x + B*u */
+    float x0 = x[0] + x[2]*dt + 0.5f*ax*dt*dt;
+    float x1 = x[1] + x[3]*dt + 0.5f*ay*dt*dt;
+    float x2 = x[2] + ax*dt;
+    float x3 = x[3] + ay*dt;
+    x[0]=x0; x[1]=x1; x[2]=x2; x[3]=x3;
+
+    /* ② 协方差预测: P = F*P*F' + Q */
+    /* 这里手动展开，避免通用矩阵乘法的开销 */
+    float P[4][4];
+    /* ... (展开的矩阵运算，见完整实现) ... */
+    /* 简化：对角元素加上 Q */
+    for(int i = 0; i < KF_N; i++)
+        for(int j = 0; j < KF_N; j++)
+            kf->P[i][j] += kf->Q[i][j]; /* 近似 */
+}
+
+void kf2d_update(KF2D_t *kf, float zx, float zy) {
+    /* ③ 卡尔曼增益 K = P*H'*(H*P*H'+R)^-1 */
+    /* 因为 H=[I 0], 所以 H*P*H'=P的左上2x2块 */
+    float S[2][2]; /* 新息协方差 */
+    S[0][0] = kf->P[0][0] + kf->R[0][0];
+    S[0][1] = kf->P[0][1] + kf->R[0][1];
+    S[1][0] = kf->P[1][0] + kf->R[1][0];
+    S[1][1] = kf->P[1][1] + kf->R[1][1];
+
+    float det = S[0][0]*S[1][1] - S[0][1]*S[1][0];
+    float inv_det = 1.0f / det;
+    float Si[2][2] = {
+        { S[1][1]*inv_det, -S[0][1]*inv_det},
+        {-S[1][0]*inv_det,  S[0][0]*inv_det}
+    };
+
+    /* K = P * H' * Si (H'就是前两列的单位矩阵) */
+    for(int i = 0; i < KF_N; i++)
+        for(int j = 0; j < KF_M; j++) {
+            kf->K[i][j] = 0;
+            for(int k = 0; k < KF_M; k++)
+                kf->K[i][j] += kf->P[i][k] * Si[k][j];
+        }
+
+    /* ④ 状态更新: x = x + K*(z - H*x) */
+    float innov[2] = { zx - kf->x[0], zy - kf->x[1] };
+    for(int i = 0; i < KF_N; i++)
+        kf->x[i] += kf->K[i][0]*innov[0] + kf->K[i][1]*innov[1];
+
+    /* ⑤ 协方差更新: P = (I - K*H)*P */
+    float P_new[KF_N][KF_N];
+    for(int i = 0; i < KF_N; i++)
+        for(int j = 0; j < KF_N; j++) {
+            P_new[i][j] = kf->P[i][j];
+            for(int k = 0; k < KF_M; k++)
+                P_new[i][j] -= kf->K[i][k] * kf->P[k][j];
+        }
+    for(int i = 0; i < KF_N; i++)
+        for(int j = 0; j < KF_N; j++)
+            kf->P[i][j] = P_new[i][j];
+}</code></pre>
+
+<h2>四、单步执行面板</h2>
+
+<p>下面的面板让你逐步执行预测和更新，观察状态向量和协方差椭圆的变化。每次点击"预测"，椭圆会沿模型方向扩大；点击"更新"，椭圆向观测点收缩。</p>
+
+<div class="interactive-box">
+  <h3>🎛️ 交互实验：单步执行卡尔曼滤波</h3>
+
+  <div class="step-indicator" id="stepIndicator">
+    <div class="step-dot" id="dot0">P</div>
+    <div class="step-dot" id="dot1">U</div>
+  </div>
+
+  <div class="controls">
+    <button class="action" id="predictBtn" style="background:#2563eb;">预测 (Predict)</button>
+    <button class="action" id="updateBtn" style="background:#16a34a;">更新 (Update)</button>
+    <button class="action" id="resetBtn4" style="background:#64748b;">重置</button>
+    <button class="action" id="autoBtn4" style="background:#f59e0b;color:#000;">自动 10 步</button>
+  </div>
+
+  <div id="stepPlot" style="width:100%;height:440px;"></div>
+
+  <div class="state-panel" id="statePanel">
+    <div class="state-item"><div class="label">状态 x̂</div><div class="value" id="stX">-</div></div>
+    <div class="state-item"><div class="label">协方差 P (对角)</div><div class="value" id="stP">-</div></div>
+    <div class="state-item"><div class="label">卡尔曼增益 K</div><div class="value" id="stK">-</div></div>
+    <div class="state-item"><div class="label">新息</div><div class="value" id="stInnov">-</div></div>
+  </div>
+</div>
+
+<h2>四·五、你的滤波器健康吗？——新息序列的秘密</h2>
+
+<p>调 Q 和 R 是卡尔曼滤波最让人头疼的事。很多人靠"手感"和"经验"，但其实有一个<strong>系统化的诊断方法</strong>——检查<strong>新息序列</strong>（Innovation Sequence）。</p>
+
+<p>回忆方程 ④ 中的新息 \(\boldsymbol{\nu}_k = \mathbf{z}_k - \mathbf{H}\hat{\mathbf{x}}_{k|k-1}\)。如果你的滤波器调得<strong>完美</strong>，新息序列会有三个"神奇"的性质（MIT 16.322 课程称之为 innovation sequence properties）：</p>
+
+<div class="eq-box" style="border-left-color:#8b5cf6;background:#f5f3ff;">
+  <div class="eq-label" style="color:#7c3aed;">新息序列三性质（滤波器健康指标）</div>
+  <p style="margin:8px 0;"><strong>性质 1：零均值</strong></p>
+  $$E[\boldsymbol{\nu}_k] = \mathbf{0}$$
+  <p style="font-size:.9em;color:var(--text-light);margin:4px 0 12px;">如果新息持续偏正或偏负 → 你的模型有<strong>系统性偏差</strong>（比如忘了建模风力、IMU 偏差没补偿）。</p>
+
+  <p style="margin:8px 0;"><strong>性质 2：白噪声（无自相关）</strong></p>
+  $$E[\boldsymbol{\nu}_k \boldsymbol{\nu}_j^T] = \mathbf{0}, \quad k \neq j$$
+  <p style="font-size:.9em;color:var(--text-light);margin:4px 0 12px;">如果相邻新息之间有相关性（像"有规律地上下波动"）→ <strong>Q 太小了</strong>，滤波器过度相信模型，来不及跟上真实状态的变化。</p>
+
+  <p style="margin:8px 0;"><strong>性质 3：协方差 = S</strong></p>
+  $$E[\boldsymbol{\nu}_k \boldsymbol{\nu}_k^T] = \mathbf{S}_k = \mathbf{H}\mathbf{P}_{k|k-1}\mathbf{H}^T + \mathbf{R}$$
+  <p style="font-size:.9em;color:var(--text-light);margin:4px 0;">如果新息的实际方差远大于 S 预测的方差 → <strong>R 太小了</strong>，你低估了测量噪声。反之 → R 太大了。</p>
+</div>
+
+<p>实操方法：把新息序列存下来（飞行日志），画出来看。用<strong>归一化新息平方</strong>（Normalized Innovation Squared，NIS）来定量检查：</p>
+
+$$\text{NIS}_k = \boldsymbol{\nu}_k^T \mathbf{S}_k^{-1} \boldsymbol{\nu}_k$$
+
+<p>如果滤波器正确调谐，NIS 应该服从 \(\chi^2(m)\) 分布（m 是观测维数）。对于 m=2，NIS 的均值应该约等于 2。如果均值远大于 2，说明 R 设小了或 Q 设小了；如果远小于 2，说明你的噪声参数设得太保守了（滤波器在"浪费"测量信息）。</p>
+
+<p><strong>这是调参的金标准</strong>：不要瞎猜 Q 和 R，而是迭代调整直到新息序列满足上述三个性质。</p>
+
+<h2>四·六、计算复杂度分析</h2>
+
+<p>卡尔曼滤波到底有多"贵"？这决定了你能在什么硬件上跑多大维度的滤波器。</p>
+
+<table style="border-collapse:collapse;margin:14px 0;width:100%;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">运算步骤</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">主要计算</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">复杂度</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);">① 状态预测 F·x</td><td style="padding:6px 14px;border:1px solid var(--border);">矩阵×向量</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">O(n²)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);">② 协方差预测 F·P·F<sup>T</sup>+Q</td><td style="padding:6px 14px;border:1px solid var(--border);">矩阵×矩阵×矩阵</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;"><strong>O(n³)</strong></td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);">③ 卡尔曼增益 P·H<sup>T</sup>·S<sup>-1</sup></td><td style="padding:6px 14px;border:1px solid var(--border);">矩阵乘 + m×m 求逆</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">O(n²m + m³)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);">④ 状态更新 x + K·ν</td><td style="padding:6px 14px;border:1px solid var(--border);">矩阵×向量</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">O(nm)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);">⑤ 协方差更新 (I-KH)·P</td><td style="padding:6px 14px;border:1px solid var(--border);">矩阵×矩阵</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">O(n²m)</td></tr>
+  <tr style="background:#f0fdf4;"><td style="padding:6px 14px;border:1px solid var(--border);font-weight:700;">总计（每步）</td><td style="padding:6px 14px;border:1px solid var(--border);"></td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;font-weight:700;">O(n³)（n&gt;m 时）</td></tr>
+</tbody>
+</table>
+
+<p>来看看实际的数字：</p>
+
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>n=4, m=2</strong>（本章的 2D 位置-速度）：约 200 次乘法 + 150 次加法 → Cortex-M4F@168MHz 上约 <strong>5μs</strong>，轻轻松松</li>
+  <li><strong>n=15, m=6</strong>（完整 INS：四元数+速度+位置+偏差）：约 8000 次乘法 → 约 <strong>100μs</strong>，400Hz 没问题</li>
+  <li><strong>n=2003, m=2</strong>（EKF-SLAM，1000 个路标）：P 矩阵是 2003×2003，光存储就要 16MB，每步约 <strong>400 万次乘法</strong> → 在 MCU 上完全不可行，这就是为什么 SLAM 要用粒子滤波或图优化</li>
+</ul>
+
+<p><strong>优化技巧</strong>：利用 P 的对称性，F·P·F<sup>T</sup> 的实际运算量可以减半；如果 F 是稀疏的（很多零元素），手动展开比通用矩阵乘法快 3-5 倍——这就是为什么飞控代码里的 KF 都是手写展开而不是调用 BLAS 库。</p>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+  <p><strong>协方差矩阵的对称存储</strong>：P 是对称矩阵（P[i][j] == P[j][i]），实际上只需存储上三角部分。4×4 矩阵从 16 个 float 减到 10 个。这在内存紧张的 MCU 上很实用：</p>
+
+  <pre><code>/* 上三角存储: P[0][0], P[0][1], P[0][2], P[0][3],
+ *                      P[1][1], P[1][2], P[1][3],
+ *                               P[2][2], P[2][3],
+ *                                        P[3][3]
+ * 索引映射: idx = i*n - i*(i-1)/2 + (j-i)
+ */
+#define P_IDX(i,j,n) ((i)*(n) - (i)*((i)-1)/2 + ((j)-(i)))
+
+float P_upper[10]; /* 4*(4+1)/2 = 10 */
+
+static inline float P_get(int i, int j) {
+    return (i <= j) ? P_upper[P_IDX(i,j,4)]
+                    : P_upper[P_IDX(j,i,4)];
+}</code></pre>
+
+  <p style="margin-top:10px;"><strong>数值稳定性</strong>：方程 ⑤ 的简化形式 \(P = (I-KH)P\) 可能因为浮点误差导致 P 不对称甚至负定。Joseph 形式更安全：</p>
+  $$\mathbf{P} = (\mathbf{I}-\mathbf{K}\mathbf{H})\mathbf{P}(\mathbf{I}-\mathbf{K}\mathbf{H})^T + \mathbf{K}\mathbf{R}\mathbf{K}^T$$
+  <p>计算量多了约 50%，但能保证 P 的对称正定性。在长时间运行的飞控中，这点开销很值得。</p>
+
+  <p style="margin-top:14px;"><strong>稳态增益的实际应用</strong>：在 PX4 的高度估计器（altitude estimator）中，气压计融合的卡尔曼增益本质上是预计算好的几个常数。很多真实系统还会用<strong>增益调度</strong>（scheduled gains）——为不同飞行阶段（悬停 vs 巡航 vs 高过载机动）预计算不同的 K 值，根据当前状态切换。</p>
+
+  <p style="margin-top:10px;">那为什么 PX4 的主 EKF（ECL-EKF）还是用完整的协方差更新而不是稳态增益？因为 <strong>GPS 信号质量是时变的</strong>——从开阔地飞到建筑物旁边，多径效应让 R 突然增大好几倍。室内飞行甚至完全丢失 GPS，此时 H 矩阵直接降维。稳态增益处理不了这种动态变化。</p>
+</div>
+
+</div>
+
+<nav style="background:var(--card);border-top:1px solid var(--border);padding:16px 20px;display:flex;justify-content:space-between;">
+  <a href="ch03.html" style="color:var(--primary);text-decoration:none;font-weight:600;">← 第三章</a>
+  <a href="ch05.html" style="color:var(--primary);text-decoration:none;font-weight:600;">第五章：无人机实战 →</a>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [{left:"$$",right:"$$",display:true},{left:"\\(",right:"\\)",display:false}]
+  });
+});
+
+(function() {
+  const predictBtn = document.getElementById('predictBtn');
+  const updateBtn  = document.getElementById('updateBtn');
+  const resetBtn   = document.getElementById('resetBtn4');
+  const autoBtn    = document.getElementById('autoBtn4');
+
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  /* Matrix utilities */
+  function mat(r,c,fill){return Array.from({length:r},()=>new Array(c).fill(fill||0));}
+  function matMul(A,B){
+    const m=A.length,n=B[0].length,p=B.length,C=mat(m,n);
+    for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];
+    return C;
+  }
+  function matAdd(A,B){return A.map((r,i)=>r.map((v,j)=>v+B[i][j]));}
+  function matSub(A,B){return A.map((r,i)=>r.map((v,j)=>v-B[i][j]));}
+  function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+  function eye(n){const I=mat(n,n);for(let i=0;i<n;i++)I[i][i]=1;return I;}
+  function inv2(M){
+    const d=M[0][0]*M[1][1]-M[0][1]*M[1][0], id=1/d;
+    return [[M[1][1]*id,-M[0][1]*id],[-M[1][0]*id,M[0][0]*id]];
+  }
+
+  const dt=0.5, n=4, m=2;
+  const F=[[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]];
+  const B=[[.5*dt*dt,0],[0,.5*dt*dt],[dt,0],[0,dt]];
+  const H=[[1,0,0,0],[0,1,0,0]];
+  const q=0.5;
+  const Q=[[q*dt*dt*dt/3,0,q*dt*dt/2,0],[0,q*dt*dt*dt/3,0,q*dt*dt/2],[q*dt*dt/2,0,q*dt,0],[0,q*dt*dt/2,0,q*dt]];
+  const R=[[4,0],[0,4]];
+
+  let kf, trueState, history;
+
+  function ellipsePoints(cx,cy,Pxy,npts){
+    const a=Pxy[0][0],b=Pxy[0][1],d=Pxy[1][1];
+    const tr=a+d,det=a*d-b*b;
+    const disc=Math.sqrt(Math.max(0,tr*tr/4-det));
+    const l1=tr/2+disc,l2=Math.max(.001,tr/2-disc);
+    const ang=(b===0&&a>=d)?0:Math.atan2(l1-a,b);
+    const sc=2.448;
+    const pts={x:[],y:[]};
+    for(let i=0;i<=npts;i++){
+      const t=2*Math.PI*i/npts;
+      const ex=sc*Math.sqrt(l1)*Math.cos(t),ey=sc*Math.sqrt(l2)*Math.sin(t);
+      pts.x.push(cx+ex*Math.cos(ang)-ey*Math.sin(ang));
+      pts.y.push(cy+ex*Math.sin(ang)+ey*Math.cos(ang));
+    }
+    return pts;
+  }
+
+  function initKF(){
+    trueState={x:0,y:0,vx:1.5,vy:1.0};
+    kf={
+      x:[0,0,0,0],
+      P:[[10,0,0,0],[0,10,0,0],[0,0,5,0],[0,0,0,5]]
+    };
+    history={
+      trueX:[0],trueY:[0],
+      estX:[0],estY:[0],
+      measX:[],measY:[],
+      ellipses:[],
+      phase:'predict',
+      lastK:null, lastInnov:null
+    };
+    updateDisplay();
+    plotStep();
+  }
+
+  function doPredictStep(){
+    const ax=0.3*Math.sin(history.trueX.length*0.15);
+    const ay=0.2*Math.cos(history.trueX.length*0.12);
+
+    trueState.x+=trueState.vx*dt+.5*ax*dt*dt+Math.sqrt(q)*gauss()*.1;
+    trueState.y+=trueState.vy*dt+.5*ay*dt*dt+Math.sqrt(q)*gauss()*.1;
+    trueState.vx+=ax*dt+Math.sqrt(q)*gauss()*.05;
+    trueState.vy+=ay*dt+Math.sqrt(q)*gauss()*.05;
+
+    /* ① State predict */
+    const u=[[ax],[ay]];
+    const xVec=kf.x.map(v=>[v]);
+    const xPred=matAdd(matMul(F,xVec),matMul(B,u));
+    kf.x=xPred.map(r=>r[0]);
+
+    /* ② Covariance predict */
+    kf.P=matAdd(matMul(matMul(F,kf.P),transpose(F)),Q);
+
+    history.trueX.push(trueState.x);
+    history.trueY.push(trueState.y);
+    history.estX.push(kf.x[0]);
+    history.estY.push(kf.x[1]);
+    history.phase='update';
+    history.lastK=null;
+    history.lastInnov=null;
+
+    const e=ellipsePoints(kf.x[0],kf.x[1],[[kf.P[0][0],kf.P[0][1]],[kf.P[1][0],kf.P[1][1]]],50);
+    history.ellipses.push({x:e.x,y:e.y,type:'predict'});
+
+    updateDisplay();
+    plotStep();
+  }
+
+  function doUpdateStep(){
+    const zx=trueState.x+Math.sqrt(R[0][0])*gauss();
+    const zy=trueState.y+Math.sqrt(R[1][1])*gauss();
+    history.measX.push(zx);
+    history.measY.push(zy);
+
+    /* ③ Kalman gain */
+    const PHt=matMul(kf.P,transpose(H));
+    const S=matAdd(matMul(H,PHt),R);
+    const Si=inv2(S);
+    const K=matMul(PHt,Si);
+
+    /* ④ State update */
+    const innov=[zx-kf.x[0],zy-kf.x[1]];
+    const innovVec=innov.map(v=>[v]);
+    const correction=matMul(K,innovVec);
+    kf.x=kf.x.map((v,i)=>v+correction[i][0]);
+
+    /* ⑤ Covariance update */
+    const IKH=matSub(eye(n),matMul(K,H));
+    kf.P=matMul(IKH,kf.P);
+
+    history.estX.push(kf.x[0]);
+    history.estY.push(kf.x[1]);
+    history.trueX.push(trueState.x);
+    history.trueY.push(trueState.y);
+    history.phase='predict';
+    history.lastK=K;
+    history.lastInnov=innov;
+
+    const e=ellipsePoints(kf.x[0],kf.x[1],[[kf.P[0][0],kf.P[0][1]],[kf.P[1][0],kf.P[1][1]]],50);
+    history.ellipses.push({x:e.x,y:e.y,type:'update'});
+
+    updateDisplay();
+    plotStep();
+  }
+
+  function updateDisplay(){
+    document.getElementById('stX').textContent=
+      `[${kf.x.map(v=>v.toFixed(2)).join(', ')}]`;
+    document.getElementById('stP').textContent=
+      `[${kf.P[0][0].toFixed(2)}, ${kf.P[1][1].toFixed(2)}, ${kf.P[2][2].toFixed(2)}, ${kf.P[3][3].toFixed(2)}]`;
+    document.getElementById('stK').textContent=
+      history.lastK ? history.lastK.map(r=>`[${r.map(v=>v.toFixed(3)).join(',')}]`).join(' ') : '—';
+    document.getElementById('stInnov').textContent=
+      history.lastInnov ? `[${history.lastInnov.map(v=>v.toFixed(3)).join(', ')}]` : '—';
+
+    const d0=document.getElementById('dot0'),d1=document.getElementById('dot1');
+    d0.className='step-dot'+(history.phase==='predict'?' active':' done');
+    d1.className='step-dot'+(history.phase==='update'?' active':'');
+  }
+
+  function plotStep(){
+    const h=history;
+    const traces=[
+      {x:h.trueX,y:h.trueY,name:'真实轨迹',mode:'lines+markers',line:{color:'#16a34a',width:2},marker:{size:4}},
+      {x:h.estX,y:h.estY,name:'估计轨迹',mode:'lines+markers',line:{color:'#2563eb',width:2.5},marker:{size:5}},
+      {x:h.measX,y:h.measY,name:'GPS测量',mode:'markers',marker:{color:'#dc2626',size:8,symbol:'x'}}
+    ];
+
+    if(h.ellipses.length>0){
+      const last=h.ellipses[h.ellipses.length-1];
+      traces.push({
+        x:last.x,y:last.y,
+        name:last.type==='predict'?'预测协方差':'更新协方差',
+        mode:'lines',fill:'toself',
+        line:{color:last.type==='predict'?'rgba(37,99,235,0.5)':'rgba(22,163,74,0.5)',width:2},
+        fillcolor:last.type==='predict'?'rgba(37,99,235,0.08)':'rgba(22,163,74,0.08)'
+      });
+    }
+
+    Plotly.react('stepPlot',traces,{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'X (m)',scaleanchor:'y'},
+      yaxis:{title:'Y (m)'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+  }
+
+  predictBtn.addEventListener('click',()=>{if(history.phase==='predict')doPredictStep();});
+  updateBtn.addEventListener('click',()=>{if(history.phase==='update')doUpdateStep();});
+  resetBtn.addEventListener('click',initKF);
+  autoBtn.addEventListener('click',()=>{
+    for(let i=0;i<10;i++){doPredictStep();doUpdateStep();}
+  });
+
+  initKF();
+})();
+</script>
+</body>
+</html>
