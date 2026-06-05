@@ -1,0 +1,3966 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡尔曼滤波交互式教材 — 嵌入式开发者实战指南</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #dbeafe;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --border: #e2e8f0;
+  --accent: #f59e0b;
+  --note-bg: #fffbeb;
+  --note-border: #f59e0b;
+  --code-bg: #f1f5f9;
+  --danger: #dc2626;
+  --danger-light: #fef2f2;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.8;
+  padding-top: 48px;
+}
+
+/* ===== Tab Navigation ===== */
+.tab-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: #1e293b; color: #fff;
+  display: flex; align-items: center;
+  height: 48px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.tab-nav-title {
+  flex-shrink: 0; font-weight: 800; font-size: 0.92em;
+  padding: 0 16px; white-space: nowrap;
+  border-right: 1px solid rgba(255,255,255,0.15);
+}
+.tab-nav-scroll {
+  flex: 1; overflow-x: auto; overflow-y: hidden;
+  display: flex; align-items: stretch; height: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tab-nav-scroll::-webkit-scrollbar { display: none; }
+.tab-nav-btn {
+  flex-shrink: 0; padding: 0 18px; height: 100%;
+  display: flex; align-items: center;
+  cursor: pointer; font-size: 0.9em; font-weight: 600;
+  color: rgba(255,255,255,0.65); white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  transition: color .2s, border-color .2s, background .2s;
+  background: none; border-top: none; border-left: none; border-right: none;
+  font-family: inherit;
+}
+.tab-nav-btn:hover { color: #fff; background: rgba(255,255,255,0.06); }
+.tab-nav-btn.active { color: #fff; border-bottom-color: #60a5fa; }
+
+/* ===== Chapter Sections ===== */
+.chapter-section { display: none; }
+.chapter-section.active { display: block; }
+
+/* ===== Index / Home ===== */
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #0ea5e9 100%);
+  color: #fff; padding: 60px 20px 50px; text-align: center;
+}
+.hero h1 { font-size: 2.2em; margin-bottom: 12px; font-weight: 800; color: #fff; }
+.hero p { font-size: 1.1em; opacity: 0.9; max-width: 680px; margin: 0 auto 8px; }
+.hero .subtitle { font-size: 0.92em; opacity: 0.7; }
+.intro {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 28px 32px; margin-bottom: 36px; font-size: 1.02em;
+}
+.intro h2 { color: var(--primary); margin-bottom: 12px; font-size: 1.3em; border: none; padding: 0; }
+.intro ul { padding-left: 20px; }
+.intro li { margin-bottom: 6px; }
+.chapters { display: grid; gap: 16px; }
+.ch-card {
+  display: flex; align-items: flex-start;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px 28px;
+  text-decoration: none; color: inherit; cursor: pointer;
+  transition: box-shadow .2s, transform .15s;
+}
+.ch-card:hover {
+  box-shadow: 0 4px 20px rgba(37,99,235,.12); transform: translateY(-2px);
+}
+.ch-num {
+  flex-shrink: 0; width: 48px; height: 48px;
+  background: linear-gradient(135deg, var(--primary), #0ea5e9);
+  color: #fff; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.2em; margin-right: 20px; margin-top: 2px;
+}
+.ch-info h3 { font-size: 1.1em; margin-bottom: 4px; color: var(--primary-dark); }
+.ch-info p { font-size: 0.92em; color: var(--text-light); }
+.tag {
+  display: inline-block; font-size: 0.75em; padding: 2px 8px;
+  border-radius: 4px; margin-right: 6px; margin-top: 6px; font-weight: 600;
+}
+.tag-interact { background: #dbeafe; color: #1d4ed8; }
+.tag-code { background: #dcfce7; color: #166534; }
+.tag-math { background: #fef3c7; color: #92400e; }
+
+/* ===== Common Chapter Styles ===== */
+.container { max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
+h1 { font-size: 2em; margin-bottom: 8px; color: var(--primary); }
+.chapter-meta { color: var(--text-light); margin-bottom: 28px; font-size: 0.95em; }
+h2 { font-size: 1.4em; margin: 36px 0 14px; color: #0f172a; border-left: 4px solid var(--primary); padding-left: 12px; }
+h3 { font-size: 1.15em; margin: 24px 0 10px; }
+p { margin-bottom: 14px; }
+.objective {
+  background: var(--primary-light); border-radius: 10px;
+  padding: 20px 24px; margin-bottom: 28px;
+}
+.objective h3 { margin-top: 0; color: var(--primary); }
+.interactive-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px; margin: 24px 0;
+}
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+.control-group { display: flex; flex-direction: column; gap: 4px; }
+.control-group label { font-size: 0.85em; color: var(--text-light); font-weight: 600; }
+.control-group input[type="range"] { width: 170px; }
+.control-group select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); }
+.val-display {
+  display: inline-block; min-width: 40px; text-align: center;
+  background: var(--code-bg); border-radius: 4px; padding: 1px 6px;
+  font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.85em;
+}
+pre {
+  background: #1e293b; color: #e2e8f0; border-radius: 8px;
+  padding: 18px 20px; overflow-x: auto; font-size: 0.88em;
+  line-height: 1.6; margin: 14px 0; position: relative;
+}
+pre code { font-family: 'SF Mono', 'Consolas', 'Menlo', monospace; }
+.note {
+  background: var(--note-bg); border-left: 4px solid var(--note-border);
+  border-radius: 0 8px 8px 0; padding: 20px 24px; margin: 32px 0;
+}
+.note h3 { color: #92400e; margin-top: 0; }
+.note h3::before { content: "\1F527  "; }
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+button.action {
+  padding: 8px 18px; border: none; border-radius: 6px;
+  cursor: pointer; font-weight: 600; color: #fff; font-size: 0.92em;
+}
+
+/* ===== Ch02 extras ===== */
+.matrix-display {
+  background: var(--code-bg); border-radius: 8px; padding: 14px 18px;
+  margin: 10px 0; overflow-x: auto; font-family: 'SF Mono', monospace; font-size: 0.92em;
+}
+table.matrix-table { border-collapse: collapse; margin: 10px 0; }
+table.matrix-table td {
+  padding: 6px 14px; text-align: center; border: 1px solid var(--border);
+  font-family: 'SF Mono', monospace;
+}
+table.matrix-table th {
+  padding: 6px 14px; background: var(--primary-light);
+  border: 1px solid var(--border); font-size: 0.88em;
+}
+
+/* ===== Ch03/Ch05/Ch06/Ch07 extras ===== */
+.stats-panel, .stats-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.stat-box {
+  background: var(--code-bg); border-radius: 8px; padding: 8px 14px;
+  flex: 1; min-width: 120px;
+}
+.stat-box .label { font-size: 0.78em; color: var(--text-light); margin-bottom: 2px; }
+.stat-box .value {
+  font-family: 'SF Mono', monospace; font-weight: 700; font-size: 0.95em;
+}
+.highlight-box {
+  background: #f0f9ff; border: 2px solid var(--primary);
+  border-radius: 10px; padding: 20px 24px; margin: 20px 0;
+}
+
+/* ===== Ch04 extras ===== */
+.eq-box {
+  background: var(--code-bg); border-radius: 10px; padding: 18px 22px;
+  margin: 16px 0; border-left: 4px solid var(--primary);
+}
+.eq-box .eq-label { font-weight: 700; color: var(--primary); font-size: 0.92em; margin-bottom: 6px; }
+.eq-box.predict { border-left-color: #2563eb; background: #eff6ff; }
+.eq-box.update { border-left-color: #16a34a; background: #f0fdf4; }
+.state-panel {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px; margin: 12px 0;
+}
+.state-item { background: var(--code-bg); border-radius: 8px; padding: 10px 14px; }
+.state-item .label { font-size: 0.82em; color: var(--text-light); margin-bottom: 2px; }
+.state-item .value {
+  font-family: 'SF Mono', monospace; font-size: 0.95em;
+  font-weight: 600; word-break: break-all;
+}
+.step-indicator { display: flex; gap: 4px; margin-bottom: 12px; }
+.step-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75em; font-weight: 700;
+  border: 2px solid var(--border); color: var(--text-light);
+}
+.step-dot.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+.step-dot.done { border-color: #16a34a; background: #dcfce7; color: #16a34a; }
+
+/* ===== Ch07 extras ===== */
+.warn-box {
+  background: var(--danger-light); border: 2px solid var(--danger);
+  border-radius: 10px; padding: 16px 20px; margin: 16px 0;
+}
+.warn-box strong { color: var(--danger); }
+.checklist { list-style: none; padding: 0; }
+.checklist li {
+  padding: 8px 0 8px 32px; position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.checklist li::before {
+  content: "\2713"; position: absolute; left: 4px;
+  color: #16a34a; font-weight: 700; font-size: 1.1em;
+}
+
+/* ===== Ch08 extras ===== */
+.card-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px; margin: 20px 0;
+}
+.app-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 20px; transition: box-shadow .2s;
+}
+.app-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+.app-card h4 { color: var(--primary); margin-bottom: 8px; font-size: 1.05em; }
+.app-card .specs {
+  font-size: 0.82em; color: var(--text-light); margin-top: 8px;
+  padding-top: 8px; border-top: 1px solid var(--border);
+}
+.compare-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+.compare-table th, .compare-table td {
+  padding: 10px 14px; border: 1px solid var(--border); text-align: left;
+}
+.compare-table th { background: var(--primary-light); font-weight: 700; }
+.compare-table tr:nth-child(even) { background: #f8fafc; }
+.flow-box {
+  background: var(--code-bg); border-radius: 10px; padding: 20px;
+  margin: 16px 0; text-align: center;
+}
+.flow-box .step {
+  display: inline-block; padding: 8px 16px; margin: 4px;
+  border-radius: 6px; font-weight: 600; font-size: 0.9em;
+}
+.flow-box .arrow { color: var(--text-light); margin: 0 4px; font-size: 1.2em; }
+
+/* ===== Ch09 extras ===== */
+.sandbox {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px; margin: 24px 0;
+}
+.form-row {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  margin-bottom: 16px; align-items: flex-start;
+}
+.form-col { flex: 1; min-width: 220px; }
+.form-col label {
+  display: block; font-size: 0.88em; color: var(--text-light);
+  font-weight: 600; margin-bottom: 4px;
+}
+.form-col select, .form-col input[type="number"] {
+  width: 100%; padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 0.92em; font-family: inherit;
+}
+textarea.matrix-input {
+  width: 100%; height: 72px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: 6px;
+  font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.88em;
+  resize: vertical;
+}
+textarea.matrix-input.tall { height: 100px; }
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  padding: 4px 12px; background: rgba(255,255,255,.15);
+  color: #e2e8f0; border: none; border-radius: 4px;
+  cursor: pointer; font-size: 0.82em;
+}
+.copy-btn:hover { background: rgba(255,255,255,.25); }
+.ch09-tab, .tabs .tab {
+  padding: 8px 18px; cursor: pointer; font-weight: 600; font-size: 0.92em;
+  color: var(--text-light); border-bottom: 2px solid transparent;
+  margin-bottom: -2px; transition: all .2s;
+  background: none; border-top: none; border-left: none; border-right: none;
+}
+.ch09-tab.active, .tabs .tab.active {
+  color: var(--primary); border-bottom-color: var(--primary);
+}
+.tabs {
+  display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 16px;
+}
+.ch09-tab-content { display: none; }
+.ch09-tab-content.active { display: block; }
+
+/* ===== Footer ===== */
+footer {
+  text-align: center; padding: 30px 20px;
+  color: var(--text-light); font-size: 0.88em;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .controls { flex-direction: column; }
+  .control-group input[type="range"] { width: 100%; }
+  .form-row { flex-direction: column; }
+  .tab-nav-title { font-size: 0.82em; padding: 0 10px; }
+  .tab-nav-btn { padding: 0 12px; font-size: 0.82em; }
+  .hero h1 { font-size: 1.6em; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="tab-nav">
+  <div class="tab-nav-title">卡尔曼滤波教材</div>
+  <div class="tab-nav-scroll">
+    <button class="tab-nav-btn active" data-target="home">首页</button>
+    <button class="tab-nav-btn" data-target="ch01">第一章</button>
+    <button class="tab-nav-btn" data-target="ch02">第二章</button>
+    <button class="tab-nav-btn" data-target="ch03">第三章</button>
+    <button class="tab-nav-btn" data-target="ch04">第四章</button>
+    <button class="tab-nav-btn" data-target="ch05">第五章</button>
+    <button class="tab-nav-btn" data-target="ch06">第六章</button>
+    <button class="tab-nav-btn" data-target="ch07">第七章</button>
+    <button class="tab-nav-btn" data-target="ch08">第八章</button>
+    <button class="tab-nav-btn" data-target="ch09">第九章</button>
+  </div>
+</div>
+
+<section id="home" class="chapter-section active">
+<div class="hero">
+  <h1>卡尔曼滤波交互式教材</h1>
+  <p>从噪声传感器数据到精准状态估计 —— 一本写给嵌入式开发者的实战指南</p>
+  <div class="subtitle">全部内容在浏览器中运行 · 无需安装任何工具 · 边学边动手</div>
+<div class="container">
+<div class="intro">
+    <h2>这本教材适合谁？</h2>
+    <ul>
+      <li>有一定编程基础（C / Python / JS 任意一门），了解基本微积分和矩阵运算</li>
+      <li>想把卡尔曼滤波<strong>用到实际项目</strong>中（无人机、机器人、电机控制……）</li>
+      <li>不想看满屏数学推导，更想知道<strong>怎么用、怎么调、怎么避坑</strong></li>
+    </ul>
+    <p style="margin-top:12px;">贯穿案例：<strong>无人机水平位置估计</strong>（融合 IMU 加速度计 + GPS），从一维到二维再到 EKF。</p>
+  </div>
+
+  <div class="chapters">
+
+    <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch01')">
+      <div class="ch-num">01</div>
+      <div class="ch-info">
+        <h3>从振动噪声说起 —— 为什么需要卡尔曼滤波？</h3>
+        <p>加速度计漂移、GPS 噪声、平均滤波和低通的局限。引出模型预测 vs 测量值的核心矛盾。</p>
+        <span class="tag tag-interact">交互可视化</span>
+        <span class="tag tag-code">信号滤波对比</span>
+      </div>
+    </a>
+
+    <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch02')">
+      <div class="ch-num">02</div>
+      <div class="ch-info">
+        <h3>系统是台机器 —— 状态空间建模</h3>
+        <p>状态向量、F/B/H 矩阵的物理含义，噪声模型 Q 和 R 从哪里来。</p>
+        <span class="tag tag-interact">2D 轨迹演示</span>
+        <span class="tag tag-math">矩阵可视化</span>
+      </div>
+    </a>
+
+    <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch03')">
+      <div class="ch-num">03</div>
+      <div class="ch-info">
+        <h3>一场数据的融合 —— 预测与更新的直觉</h3>
+        <p>两个高斯分布如何融合，卡尔曼增益 K 的直觉理解。</p>
+        <span class="tag tag-interact">高斯融合交互</span>
+        <span class="tag tag-math">K 值实时显示</span>
+      </div>
+    </a>
+
+    <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch04')">
+      <div class="ch-num">04</div>
+      <div class="ch-info">
+        <h3>程序员最爱的五个公式 —— 卡尔曼滤波算法</h3>
+        <p>预测与更新五步方程，附带 C 语言实现模板和单步执行面板。</p>
+        <span class="tag tag-interact">单步执行</span>
+        <span class="tag tag-code">C 语言模板</span>
+        <span class="tag tag-math">协方差椭圆</span>
+      </div>
+    </a>
+
+    <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch05')">
+      <div class="ch-num">05</div>
+      <div class="ch-info">
+        <h3>实战 —— 无人机水平位置估计</h3>
+        <p>完整 2D 卡尔曼滤波器：[x,y,vx,vy]，IMU+GPS 融合，实时动态轨迹。</p>
+        <span class="tag tag-interact">实时动画</span>
+        <span class="tag tag-code">完整实现</span>
+      </div>
+    </a>
+
+    <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch06')">
+      <div class="ch-num">06</div>
+      <div class="ch-info">
+        <h3>当系统变"弯"了 —— 扩展卡尔曼滤波（EKF）</h3>
+        <p>非线性观测、雅可比线性化，EKF vs 线性 KF 对比实验。</p>
+        <span class="tag tag-interact">KF vs EKF 对比</span>
+        <span class="tag tag-math">雅可比矩阵</span>
+      </div>
+    </a>
+
+    <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch07')">
+      <div class="ch-num">07</div>
+      <div class="ch-info">
+        <h3>嵌入式系统上的卡尔曼滤波 —— 工程实战清单</h3>
+        <p>数值稳定性、定点优化、内存布局、故障诊断实验室。</p>
+        <span class="tag tag-interact">故障诊断实验</span>
+        <span class="tag tag-code">ARM 优化代码</span>
+      </div>
+    </a>
+
+    <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch08')">
+      <div class="ch-num">08</div>
+      <div class="ch-info">
+        <h3>更远的道路 —— 其他卡尔曼变体与应用场景</h3>
+        <p>UKF、信息滤波、自适应卡尔曼；电机控制、定高、SLAM 速览。</p>
+        <span class="tag tag-interact">场景对比</span>
+        <span class="tag tag-math">变体总结</span>
+      </div>
+    </a>
+
+    <a class="ch-card" href="javascript:void(0)" onclick="switchTab('ch09')">
+      <div class="ch-num">09</div>
+      <div class="ch-info">
+        <h3>动手吧 —— 建造你自己的卡尔曼滤波器沙盒</h3>
+        <p>自定义 F/H/Q/R 矩阵，生成模拟数据或上传 CSV，一键导出 C 代码。</p>
+        <span class="tag tag-interact">全功能沙盒</span>
+        <span class="tag tag-code">C 代码生成</span>
+      </div>
+    </a>
+
+  </div>
+</div>
+<footer>
+  卡尔曼滤波交互式教材 · 面向嵌入式开发者 · 浏览器即教室
+</footer>
+</section>
+
+<section id="ch01" class="chapter-section">
+<div class="container">
+<h1>第一章：从振动噪声说起</h1>
+<p class="chapter-meta">为什么需要卡尔曼滤波？——从传感器噪声到智能融合的必经之路</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>理解传感器噪声的来源和危害（加速度计漂移、GPS 随机误差）</li>
+    <li>体验简单滤波方法（均值滤波、指数滑动平均）的局限性</li>
+    <li>建立"模型预测 vs 测量值"的核心矛盾意识</li>
+  </ul>
+</div>
+
+<h2>一、无人机上的传感器困境</h2>
+
+<p>假设你正在开发一架小型四旋翼无人机的飞控系统。你需要知道无人机在水平面内的位置，但你手上的传感器各有各的毛病：</p>
+
+<p><strong>加速度计（IMU）</strong>：采样率很高（100~1000Hz），但数据里掺杂着电机振动、温漂和零偏。如果你对加速度做二次积分来求位置，误差会随时间的平方增长——几秒钟就飞到天上去了（字面意思）。</p>
+
+<p><strong>GPS</strong>：直接给出位置，不会漂移，但更新慢（1~10Hz），而且有几米的随机噪声。你的无人机可能已经飞出去两米了，GPS 还在报上一个位置。</p>
+
+<p>这就是我们面对的核心问题：<strong>没有一个传感器是完美的</strong>，但我们能不能把它们的优势结合起来？</p>
+
+<h2>二、先试试最直觉的办法</h2>
+
+<p>学过信号处理的同学可能会说："加个滤波器不就行了？"好，我们来试试。</p>
+
+<h3>均值滤波（Moving Average）</h3>
+<p>取最近 \(N\) 个采样的算术平均。公式很简单：</p>
+$$\hat{x}_k = \frac{1}{N}\sum_{i=0}^{N-1} x_{k-i}$$
+<p>问题是：窗口太小，噪声压不下去；窗口太大，信号被拖得面目全非，而且需要存 \(N\) 个历史值——在只有几 KB RAM 的 MCU 上，这很奢侈。</p>
+
+<h3>指数滑动平均（EMA / 低通滤波）</h3>
+<p>只存一个上一次的滤波值，每次做加权平均：</p>
+$$\hat{x}_k = \alpha \cdot z_k + (1-\alpha) \cdot \hat{x}_{k-1}$$
+<p>其中 \(\alpha \in (0,1)\) 是平滑系数。\(\alpha\) 越小越平滑，但相位滞后越严重。在飞控里，200ms 的滞后足以让无人机撞墙。</p>
+
+<p><strong>试一试：</strong>下面的交互图让你亲手感受这些滤波器的表现。</p>
+
+<div class="interactive-box">
+  <h3>🎛️ 交互实验：噪声与滤波效果对比</h3>
+  <p style="font-size:0.92em;color:var(--text-light);">调节下方滑块，观察不同滤波方法对含噪正弦信号的处理效果。注意均值滤波的延迟和 EMA 的相位滞后。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>噪声强度 σ: <span class="val-display" id="ch01_noiseVal">0.5</span></label>
+      <input type="range" id="ch01_noiseSlider" min="0" max="2" step="0.05" value="0.5">
+    </div>
+    <div class="control-group">
+      <label>信号频率 (Hz): <span class="val-display" id="ch01_freqVal">1.0</span></label>
+      <input type="range" id="ch01_freqSlider" min="0.2" max="3" step="0.1" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>均值窗口 N: <span class="val-display" id="ch01_windowVal">10</span></label>
+      <input type="range" id="ch01_windowSlider" min="2" max="50" step="1" value="10">
+    </div>
+    <div class="control-group">
+      <label>EMA α: <span class="val-display" id="ch01_alphaVal">0.1</span></label>
+      <input type="range" id="ch01_alphaSlider" min="0.01" max="0.5" step="0.01" value="0.1">
+    </div>
+  </div>
+  <div id="ch01_filterPlot" style="width:100%;height:420px;"></div>
+</div>
+
+<h2>三、为什么简单滤波不够？</h2>
+
+<p>通过上面的实验，你应该注意到几个关键问题：</p>
+
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>延迟</strong>：无论均值还是 EMA，滤波越激进，信号延迟越大。在实时控制中，这意味着你看到的是"过去的世界"。</li>
+  <li><strong>没有"预测"能力</strong>：这些滤波器只是被动地处理观测数据，完全不知道系统的物理规律（比如"位置 = 上一次位置 + 速度 × 时间"）。</li>
+  <li><strong>不区分信源</strong>：所有数据被一视同仁，但实际上 GPS 和 IMU 的可靠程度不同，在不同场景下应该"更相信"不同的传感器。</li>
+</ol>
+
+<p>这就引出了一个核心问题：</p>
+
+<div style="background:#f0f9ff;border:2px solid var(--primary);border-radius:10px;padding:20px 24px;margin:20px 0;text-align:center;">
+  <p style="font-size:1.15em;font-weight:700;margin:0;">我有一个物理模型的预测值，也有一个传感器的测量值，<br>它们都不完美——我该<span style="color:var(--primary);">相信谁、相信多少</span>？</p>
+</div>
+
+<p>卡尔曼滤波的回答是：<strong>谁更靠谱就更相信谁，而且靠谱程度可以用方差来量化</strong>。下一章我们会看到，它如何用一个优雅的数学框架回答这个问题。</p>
+
+<h2>四、加速度二次积分的灾难</h2>
+
+<p>为了更直观地理解"为什么不能只用 IMU"，来看加速度二次积分求位置的误差增长。假设加速度计有一个恒定偏差 \(b\)（零偏）：</p>
+
+$$x_{err}(t) = \frac{1}{2} b \cdot t^2$$
+
+<p>即使 \(b\) 只有 0.01 m/s²（这在 MEMS 传感器中很常见），10 秒后位置误差就达到 0.5 米，100 秒后达到 50 米。这就是所谓的<strong>积分漂移</strong>。</p>
+
+<div class="interactive-box">
+  <h3>📈 交互实验：积分漂移的灾难</h3>
+  <p style="font-size:0.92em;color:var(--text-light);">调节加速度计偏差，观察积分位置误差随时间的增长。</p>
+  <div class="controls">
+    <div class="control-group">
+      <label>加速度计偏差 b (m/s²): <span class="val-display" id="ch01_biasVal">0.01</span></label>
+      <input type="range" id="ch01_biasSlider" min="0.001" max="0.1" step="0.001" value="0.01">
+    </div>
+    <div class="control-group">
+      <label>时间范围 (s): <span class="val-display" id="ch01_timeVal">60</span></label>
+      <input type="range" id="ch01_timeSlider" min="10" max="300" step="10" value="60">
+    </div>
+  </div>
+  <div id="ch01_driftPlot" style="width:100%;height:340px;"></div>
+</div>
+
+<h2>五、GPS 噪声长什么样？</h2>
+
+<p>而 GPS 的问题恰好相反：它不会漂移（长期均值是对的），但每个测量点都有几米的随机误差。这个噪声大致符合高斯分布，标准差通常在 1~5 米（民用单频 GPS）。</p>
+
+<p>有意思的是，IMU 和 GPS 的误差特性恰好互补：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li>IMU：短期准、长期飘 → 高频信息可靠</li>
+  <li>GPS：短期吵、长期准 → 低频信息可靠</li>
+</ul>
+<p>卡尔曼滤波器本质上就是一个<strong>最优的融合器</strong>，把两个传感器的优势结合起来。我们在第五章会完整实现它。</p>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+  <p><strong>均值滤波的内存代价</strong>：一个 N=64 窗口的 float32 均值滤波器需要 256 字节的环形缓冲区。在 STM32F103（只有 20KB SRAM）上，如果你对 6 轴 IMU 都做滤波，就要消耗近 1.5KB——这在小型 MCU 上是不可接受的。</p>
+  <p style="margin-top:10px;"><strong>低通滤波的相位滞后</strong>：一阶 IIR 低通滤波器（即 EMA）在截止频率处有 45° 的相位滞后。对于 100Hz 采样、10Hz 截止的典型飞控配置，这意味着大约 25ms 的延迟。如果控制回路带宽接近 10Hz，这个滞后可能导致振荡。</p>
+  <p style="margin-top:10px;"><strong>工程中的常见做法</strong>：IMU 数据先过一个简单的低通滤波去掉电机振动（通常切在 30~80Hz），然后送进卡尔曼滤波器。卡尔曼滤波不是要取代简单滤波，而是在简单滤波的基础上做<strong>多传感器融合</strong>。</p>
+
+  <pre><code>/* 嵌入式 C：一阶 IIR 低通滤波 —— 最省资源的预滤波 */
+typedef struct {
+    float out;    /* 上一次输出 */
+    float alpha;  /* 平滑系数, 0 < alpha < 1 */
+} LPF_t;
+
+static inline float lpf_update(LPF_t *f, float in) {
+    f->out += f->alpha * (in - f->out);
+    return f->out;
+}</code></pre>
+</div>
+</div>
+</section>
+<section id="ch02" class="chapter-section">
+<div class="container">
+<h1>第二章：系统是台机器——状态空间建模</h1>
+<p class="chapter-meta">用矩阵描述物理世界：状态转移、观测模型、噪声来源</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>理解状态向量、状态转移矩阵 F、输入矩阵 B、观测矩阵 H</li>
+    <li>知道过程噪声 Q 和测量噪声 R 的物理来源</li>
+    <li>能用状态空间方程描述"无人机在平面上运动"的场景</li>
+  </ul>
+</div>
+
+<h2>一、状态——系统的"内心独白"</h2>
+
+<p>在卡尔曼滤波的世界里，所有东西都被抽象成一个<strong>状态向量</strong>。状态不一定是你能直接测量到的，它是系统"真正的内部信息"。</p>
+
+<p>比如一架无人机在一维上运动，我们关心它的位置 \(x\) 和速度 \(v\)：</p>
+
+$$\mathbf{x} = \begin{bmatrix} x \\ v \end{bmatrix}$$
+
+<p>如果你还想估计加速度计的偏差 \(b\)（零偏），状态可以扩展为：</p>
+
+$$\mathbf{x} = \begin{bmatrix} x \\ v \\ b \end{bmatrix}$$
+
+<p>状态向量的选择是一门艺术——放太少，滤波器看不到重要的动态；放太多，矩阵变大，计算量暴增。</p>
+
+<h2>二、状态转移方程——"下一秒会怎样？"</h2>
+
+<p>物理告诉我们，如果没有外力，一个匀速运动的物体在 \(\Delta t\) 后的位置和速度是：</p>
+
+$$x_{k+1} = x_k + v_k \cdot \Delta t$$
+$$v_{k+1} = v_k$$
+
+<p>写成矩阵形式就是：</p>
+
+$$\mathbf{x}_{k+1} = \mathbf{F} \cdot \mathbf{x}_k = \begin{bmatrix} 1 & \Delta t \\ 0 & 1 \end{bmatrix} \begin{bmatrix} x_k \\ v_k \end{bmatrix}$$
+
+<p>这个 \(\mathbf{F}\) 就是<strong>状态转移矩阵</strong>（State Transition Matrix）。它编码了系统的物理规律。</p>
+
+<h3>加入控制输入</h3>
+
+<p>如果无人机有一个加速度输入 \(a\)（来自 IMU 测量），状态方程变成：</p>
+
+$$\mathbf{x}_{k+1} = \mathbf{F} \cdot \mathbf{x}_k + \mathbf{B} \cdot u_k$$
+
+<p>其中：</p>
+
+$$\mathbf{B} = \begin{bmatrix} \frac{1}{2}\Delta t^2 \\ \Delta t \end{bmatrix}, \quad u_k = a_k$$
+
+<p>这就是高中物理的运动方程 \(x = x_0 + v_0 t + \frac{1}{2}at^2\)，只不过写成了矩阵的样子。</p>
+
+<h2>三、观测方程——"我能看到什么？"</h2>
+
+<p>传感器不一定能直接看到所有状态。GPS 只给位置，不给速度；加速度计只给加速度，不给位置。</p>
+
+<p>观测方程描述了"状态"和"测量值"之间的关系：</p>
+
+$$\mathbf{z}_k = \mathbf{H} \cdot \mathbf{x}_k + \mathbf{v}_k$$
+
+<p>如果 GPS 只测位置，那么：</p>
+
+$$\mathbf{H} = \begin{bmatrix} 1 & 0 \end{bmatrix}, \quad z_k = x_k + v_k$$
+
+<p>其中 \(\mathbf{v}_k\) 是测量噪声，\(\mathbf{H}\) 就像一个"选择器"——从状态向量中挑出传感器能看到的那部分。</p>
+
+<h2>四、噪声模型——不确定性的量化</h2>
+
+<h3>过程噪声 Q</h3>
+<p>现实中系统不会完美地按照 \(\mathbf{F}\) 运行——有风、有振动、有我们没建模的动态。这些不确定性用过程噪声协方差矩阵 \(\mathbf{Q}\) 来描述：</p>
+
+$$\mathbf{x}_{k+1} = \mathbf{F} \cdot \mathbf{x}_k + \mathbf{B} \cdot u_k + \mathbf{w}_k, \quad \mathbf{w}_k \sim \mathcal{N}(0, \mathbf{Q})$$
+
+<p>对于匀速运动模型（状态 = [位置, 速度]），一个常用的 Q 矩阵是：</p>
+
+$$\mathbf{Q} = q \begin{bmatrix} \frac{\Delta t^3}{3} & \frac{\Delta t^2}{2} \\ \frac{\Delta t^2}{2} & \Delta t \end{bmatrix}$$
+
+<p>其中 \(q\) 是"过程噪声功率谱密度"——说人话就是"你觉得模型有多不靠谱"。\(q\) 越大，滤波器越不信模型，越愿意相信测量。</p>
+
+<h3>测量噪声 R</h3>
+<p>传感器的噪声特性通常写在数据手册里。对 GPS 来说：</p>
+
+$$\mathbf{R} = \sigma_{GPS}^2$$
+
+<p>如果 GPS 精度标称 2.5m CEP（50% 概率圆），换算成标准差大约 \(\sigma \approx 3m\)。</p>
+
+<h2>五、二维无人机的完整状态空间</h2>
+
+<p>把上面的一维模型扩展到二维，状态向量变成 4 维：</p>
+
+$$\mathbf{x} = \begin{bmatrix} x \\ y \\ v_x \\ v_y \end{bmatrix}$$
+
+<p>因为 x 和 y 方向独立（匀速运动模型下），矩阵是：</p>
+
+$$\mathbf{F} = \begin{bmatrix} 1 & 0 & \Delta t & 0 \\ 0 & 1 & 0 & \Delta t \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix}, \quad
+\mathbf{H} = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \end{bmatrix}$$
+
+<p><strong>试一试</strong>：下面的交互实验让你设置初始状态和噪声参数，观察模型预测轨迹、带噪 GPS 测量、以及不确定性椭圆的演变。</p>
+
+<div class="interactive-box">
+  <h3>🎛️ 交互实验：2D 状态空间模型可视化</h3>
+  <p style="font-size:.92em;color:var(--text-light);">设置初始状态和噪声参数，点击"运行仿真"查看模型预测轨迹和 GPS 测量点。不确定性椭圆展示协方差的增长。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>初始 vx (m/s): <span class="val-display" id="ch02_vxVal">2.0</span></label>
+      <input type="range" id="ch02_vxSlider" min="-5" max="5" step="0.1" value="2.0">
+    </div>
+    <div class="control-group">
+      <label>初始 vy (m/s): <span class="val-display" id="ch02_vyVal">1.0</span></label>
+      <input type="range" id="ch02_vySlider" min="-5" max="5" step="0.1" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>场景预设:</label>
+      <select id="ch02_presetSelect">
+        <option value="calm">静风 + 高精度GPS</option>
+        <option value="windy">大风 + 高精度GPS</option>
+        <option value="lowgps">静风 + 低精度GPS</option>
+        <option value="worst">大风 + 低精度GPS</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button id="ch02_runBtn" style="padding:6px 20px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">运行仿真</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <div class="matrix-display" id="ch02_matrixF" style="flex:1;min-width:200px;"></div>
+    <div class="matrix-display" id="ch02_matrixH" style="flex:1;min-width:200px;"></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <div class="matrix-display" id="ch02_matrixQ" style="flex:1;min-width:200px;"></div>
+    <div class="matrix-display" id="ch02_matrixR" style="flex:1;min-width:200px;"></div>
+  </div>
+
+  <div id="ch02_trajPlot" style="width:100%;height:480px;"></div>
+</div>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+  <p><strong>Q 和 R 的确定方法</strong>：理论上 R 可以从传感器数据手册得到（但务必在实际安装条件下验证——在工作台上测和装到振动的机架上是两回事）。实际做法：</p>
+  <ol style="margin-left:18px;margin-top:8px;">
+    <li>让无人机静止放置，采集 GPS 数据 5~10 分钟，计算方差 → 这就是你的 R</li>
+    <li>Q 没法直接测量，通常从"你对模型有多大信心"出发拍一个初值，然后用 NIS（归一化新息平方）来在线调整</li>
+  </ol>
+
+  <pre><code>/* 实用代码：在线计算传感器方差（Welford 算法，单遍扫描）*/
+typedef struct {
+    uint32_t n;
+    float mean;
+    float m2;   /* 累积平方差 */
+} Variance_t;
+
+static inline void var_update(Variance_t *v, float x) {
+    v->n++;
+    float delta = x - v->mean;
+    v->mean += delta / v->n;
+    v->m2  += delta * (x - v->mean);
+}
+
+static inline float var_get(const Variance_t *v) {
+    return (v->n > 1) ? v->m2 / (v->n - 1) : 0.0f;
+}</code></pre>
+
+  <p style="margin-top:10px;"><strong>状态向量维度的选择</strong>：每多加一维状态，协方差矩阵 P 就多一行一列。P 是 n×n 对称矩阵，存储量为 n(n+1)/2 个 float。4 维状态只需 10 个 float（40 字节），但 9 维就需要 45 个 float（180 字节）。在 Cortex-M0 上，这点内存可能就是关键瓶颈。</p>
+</div>
+</div>
+</section>
+<section id="ch03" class="chapter-section">
+<div class="container">
+<h1>第三章：一场数据的融合</h1>
+<p class="chapter-meta">预测与更新的直觉——两个高斯分布如何"合体"</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>直观理解"预测分布"和"测量分布"的融合过程</li>
+    <li>掌握卡尔曼增益 K 的物理含义</li>
+    <li>为下一章的五个公式做好直觉铺垫</li>
+  </ul>
+</div>
+
+<h2>一、一个最简单的融合问题</h2>
+
+<p>先忘掉矩阵，回到最简单的情况：你有两个关于同一个量（比如温度、位置）的估计：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>预测</strong>：基于你的物理模型，你认为温度是 22°C，但你对这个估计不太确定（标准差 3°C）</li>
+  <li><strong>测量</strong>：温度计读数是 25°C，精度还不错（标准差 1°C）</li>
+</ul>
+
+<p>最终你应该更相信温度计（因为它更准），结果应该接近 25°C。但具体是多少？卡尔曼滤波给出了<strong>数学上最优的答案</strong>。</p>
+
+<h2>二、高斯分布的乘积——融合的数学</h2>
+
+<p>如果预测和测量都服从高斯分布：</p>
+
+$$\text{预测: } \mathcal{N}(\mu_p, \sigma_p^2), \quad \text{测量: } \mathcal{N}(\mu_z, \sigma_z^2)$$
+
+<p>那么融合后的后验分布也是高斯的（这是卡尔曼滤波只适用于线性高斯系统的根本原因），其参数为：</p>
+
+$$\mu_{后验} = \mu_p + K \cdot (\mu_z - \mu_p)$$
+$$\sigma_{后验}^2 = (1 - K) \cdot \sigma_p^2$$
+
+<p>其中<strong>卡尔曼增益</strong>：</p>
+
+$$K = \frac{\sigma_p^2}{\sigma_p^2 + \sigma_z^2}$$
+
+<div class="highlight-box">
+  <p style="margin:0;"><strong>直觉解读：</strong></p>
+  <ul style="margin:8px 0 0 18px;">
+    <li>当测量很准（\(\sigma_z \to 0\)）→ \(K \to 1\) → 完全相信测量</li>
+    <li>当测量很差（\(\sigma_z \to \infty\)）→ \(K \to 0\) → 完全相信预测</li>
+    <li>融合后的不确定度 \(\sigma_{后验}\) <strong>永远比两个输入都小</strong>——信息只会增加！</li>
+  </ul>
+</div>
+
+<h2>三、动手试一试</h2>
+
+<p>下面的交互实验让你拖动滑块来调整预测和测量的参数，实时观察融合结果。注意紫色曲线（融合后）总是比蓝色（预测）和红色（测量）都"瘦"——这就是信息融合的力量。</p>
+
+<div class="interactive-box">
+  <h3>🎛️ 交互实验：高斯分布融合</h3>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>预测均值 μ_p: <span class="val-display" id="ch03_muPVal">5.0</span></label>
+      <input type="range" id="ch03_muPSlider" min="-5" max="15" step="0.1" value="5.0">
+    </div>
+    <div class="control-group">
+      <label>预测标准差 σ_p: <span class="val-display" id="ch03_sigPVal">3.0</span></label>
+      <input type="range" id="ch03_sigPSlider" min="0.3" max="8" step="0.1" value="3.0">
+    </div>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>测量均值 μ_z: <span class="val-display" id="ch03_muZVal">8.0</span></label>
+      <input type="range" id="ch03_muZSlider" min="-5" max="15" step="0.1" value="8.0">
+    </div>
+    <div class="control-group">
+      <label>测量标准差 σ_z: <span class="val-display" id="ch03_sigZVal">1.5</span></label>
+      <input type="range" id="ch03_sigZSlider" min="0.3" max="8" step="0.1" value="1.5">
+    </div>
+  </div>
+
+  <div id="ch03_fusionPlot" style="width:100%;height:400px;"></div>
+
+  <div class="stats-panel">
+    <div class="stat-box">
+      <div class="label">卡尔曼增益 K</div>
+      <div class="value" id="ch03_kValue">-</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">融合均值 μ_post</div>
+      <div class="value" id="ch03_muPostValue">-</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">融合标准差 σ_post</div>
+      <div class="value" id="ch03_sigPostValue">-</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">信任偏向</div>
+      <div class="value" id="ch03_trustLabel" style="font-size:.95em;">-</div>
+    </div>
+  </div>
+</div>
+
+<h2>四、预测-更新循环的可视化</h2>
+
+<p>在真正的卡尔曼滤波中，这个融合过程反复进行：</p>
+
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>预测步</strong>：用物理模型推算下一时刻的状态 → 不确定度增大（协方差变大）</li>
+  <li><strong>更新步</strong>：拿到新的测量值 → 融合 → 不确定度减小（协方差变小）</li>
+</ol>
+
+<p>就像呼吸一样，一胀一缩，不确定度在每一步收敛到一个稳定范围。</p>
+
+<div class="interactive-box">
+  <h3>📈 交互实验：预测-更新循环演示</h3>
+  <p style="font-size:.92em;color:var(--text-light);">点击按钮观察协方差在预测和更新之间的变化。真实值是一个缓慢移动的目标。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>过程噪声 q: <span class="val-display" id="ch03_qCycVal">1.0</span></label>
+      <input type="range" id="ch03_qCycSlider" min="0.1" max="5" step="0.1" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>测量噪声 r: <span class="val-display" id="ch03_rCycVal">2.0</span></label>
+      <input type="range" id="ch03_rCycSlider" min="0.5" max="10" step="0.5" value="2.0">
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <div style="display:flex;gap:8px;">
+        <button id="ch03_stepBtn" style="padding:6px 16px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">下一步</button>
+        <button id="ch03_autoBtn" style="padding:6px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">自动运行</button>
+        <button id="ch03_resetCycBtn" style="padding:6px 16px;background:#64748b;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">重置</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ch03_cyclePlot" style="width:100%;height:360px;"></div>
+  <div id="ch03_covPlot" style="width:100%;height:200px;margin-top:8px;"></div>
+</div>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+  <p><strong>K 的计算是瓶颈</strong>：在一维情况下 K 只是一个除法。但在多维系统中，卡尔曼增益的计算涉及矩阵求逆：</p>
+
+  $$\mathbf{K} = \mathbf{P}\mathbf{H}^T(\mathbf{H}\mathbf{P}\mathbf{H}^T + \mathbf{R})^{-1}$$
+
+  <p>对于 n 维状态、m 维观测，需要对 m×m 矩阵求逆。当 m=2（GPS 输出 x,y）时只需求 2×2 逆矩阵（用公式法就行）；但如果你融合了多个传感器（比如 GPS + 气压计 + 磁力计），m 可能达到 6 或更多，这时候可能需要 Cholesky 分解。</p>
+
+  <pre><code>/* 2x2 矩阵求逆 —— 大部分飞控的 GPS 融合够用了 */
+static void mat2_inv(const float A[2][2], float Ainv[2][2]) {
+    float det = A[0][0]*A[1][1] - A[0][1]*A[1][0];
+    float inv_det = 1.0f / det;  /* 实际使用前检查 det != 0 */
+    Ainv[0][0] =  A[1][1] * inv_det;
+    Ainv[0][1] = -A[0][1] * inv_det;
+    Ainv[1][0] = -A[1][0] * inv_det;
+    Ainv[1][1] =  A[0][0] * inv_det;
+}</code></pre>
+
+  <p style="margin-top:10px;"><strong>定点数实现</strong>：如果你的 MCU 没有 FPU（比如 Cortex-M0），可以用 Q16.16 定点数表示 K。K 的范围总是 [0, 1]，非常适合定点表示。但要注意协方差矩阵的数值范围可能很大（位置单位是米的平方），需要仔细选择定点格式。</p>
+</div>
+</div>
+</section>
+<section id="ch04" class="chapter-section">
+<div class="container">
+<h1>第四章：程序员最爱的五个公式</h1>
+<p class="chapter-meta">卡尔曼滤波算法的完整推导与逐步执行</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>掌握卡尔曼滤波的五个核心方程</li>
+    <li>理解每个变量的维度和物理意义</li>
+    <li>通过单步执行面板，直观看到每一步对状态和协方差的影响</li>
+    <li>获得可直接移植到嵌入式系统的 C 语言模板</li>
+  </ul>
+</div>
+
+<h2>一、五个方程——就这么简单</h2>
+
+<p>卡尔曼滤波分两步：<strong>预测</strong>（Predict）和<strong>更新</strong>（Update）。一共五个方程，两个用于预测，三个用于更新。</p>
+
+<h3>预测步（Predict）</h3>
+
+<div class="eq-box predict">
+  <div class="eq-label">方程 ①：状态预测</div>
+  $$\hat{\mathbf{x}}_{k|k-1} = \mathbf{F} \hat{\mathbf{x}}_{k-1|k-1} + \mathbf{B} \mathbf{u}_k$$
+  <p style="margin:8px 0 0;font-size:.9em;color:var(--text-light);">用物理模型推算下一时刻的状态。F 是状态转移矩阵，B·u 是控制输入（如 IMU 加速度）。</p>
+</div>
+
+<div class="eq-box predict">
+  <div class="eq-label">方程 ②：协方差预测</div>
+  $$\mathbf{P}_{k|k-1} = \mathbf{F} \mathbf{P}_{k-1|k-1} \mathbf{F}^T + \mathbf{Q}$$
+  <p style="margin:8px 0 0;font-size:.9em;color:var(--text-light);">不确定度（协方差矩阵）在预测后变大，增大量由过程噪声 Q 决定。<br>维度：n×n（n 是状态维数）。</p>
+</div>
+
+<h3>更新步（Update）</h3>
+
+<div class="eq-box update">
+  <div class="eq-label">方程 ③：卡尔曼增益</div>
+  $$\mathbf{K}_k = \mathbf{P}_{k|k-1} \mathbf{H}^T (\mathbf{H} \mathbf{P}_{k|k-1} \mathbf{H}^T + \mathbf{R})^{-1}$$
+  <p style="margin:8px 0 0;font-size:.9em;color:var(--text-light);">K 决定了"相信测量多少"。括号里的逆矩阵维度是 m×m（m 是观测维数），通常远小于 n。</p>
+</div>
+
+<div class="eq-box update">
+  <div class="eq-label">方程 ④：状态更新</div>
+  $$\hat{\mathbf{x}}_{k|k} = \hat{\mathbf{x}}_{k|k-1} + \mathbf{K}_k (\mathbf{z}_k - \mathbf{H} \hat{\mathbf{x}}_{k|k-1})$$
+  <p style="margin:8px 0 0;font-size:.9em;color:var(--text-light);">\(\mathbf{z}_k - \mathbf{H}\hat{\mathbf{x}}_{k|k-1}\) 叫<strong>新息</strong>（Innovation），就是"测量和预测之间的差距"。K 越大，校正越多。</p>
+</div>
+
+<div class="eq-box update">
+  <div class="eq-label">方程 ⑤：协方差更新</div>
+  $$\mathbf{P}_{k|k} = (\mathbf{I} - \mathbf{K}_k \mathbf{H}) \mathbf{P}_{k|k-1}$$
+  <p style="margin:8px 0 0;font-size:.9em;color:var(--text-light);">更新后不确定度缩小。注意这个简化形式在数值上可能不稳定（见第七章 Joseph 形式）。</p>
+</div>
+
+<h2>二、维度速查表</h2>
+
+<p>记不住维度？看这张表（n=状态维数，m=观测维数）：</p>
+
+<table style="border-collapse:collapse;margin:14px 0;width:100%;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">变量</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);">维度</th>
+  <th style="padding:8px 14px;border:1px solid var(--border);text-align:left;">说明</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">x</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×1</td><td style="padding:6px 14px;border:1px solid var(--border);">状态向量</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">F</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×n</td><td style="padding:6px 14px;border:1px solid var(--border);">状态转移矩阵</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">B</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×l</td><td style="padding:6px 14px;border:1px solid var(--border);">输入矩阵 (l=输入维数)</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">P</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×n</td><td style="padding:6px 14px;border:1px solid var(--border);">状态协方差矩阵</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">Q</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×n</td><td style="padding:6px 14px;border:1px solid var(--border);">过程噪声协方差</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">H</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">m×n</td><td style="padding:6px 14px;border:1px solid var(--border);">观测矩阵</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">R</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">m×m</td><td style="padding:6px 14px;border:1px solid var(--border);">测量噪声协方差</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">K</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">n×m</td><td style="padding:6px 14px;border:1px solid var(--border);">卡尔曼增益</td></tr>
+  <tr><td style="padding:6px 14px;border:1px solid var(--border);font-family:monospace;">z</td><td style="padding:6px 14px;border:1px solid var(--border);text-align:center;">m×1</td><td style="padding:6px 14px;border:1px solid var(--border);">观测向量</td></tr>
+</tbody>
+</table>
+
+<h2>三、C 语言实现模板</h2>
+
+<p>下面是一个通用的 2D 卡尔曼滤波器 C 语言模板（状态 [x, y, vx, vy]，观测 [x, y]）。在第五章我们会用 JavaScript 运行它的等价版本。</p>
+
+<pre><code>/* kf2d.h — 2D 位置-速度卡尔曼滤波器
+ * 状态: [x, y, vx, vy]  (n=4)
+ * 观测: [x, y]           (m=2)
+ */
+#define KF_N 4   /* 状态维数 */
+#define KF_M 2   /* 观测维数 */
+
+typedef struct {
+    float x[KF_N];           /* 状态向量 */
+    float P[KF_N][KF_N];     /* 协方差矩阵 */
+    float F[KF_N][KF_N];     /* 状态转移 */
+    float H[KF_M][KF_N];     /* 观测矩阵 */
+    float Q[KF_N][KF_N];     /* 过程噪声 */
+    float R[KF_M][KF_M];     /* 测量噪声 */
+    float K[KF_N][KF_M];     /* 卡尔曼增益 */
+    float dt;                /* 时间步长 */
+} KF2D_t;
+
+void kf2d_init(KF2D_t *kf, float dt);
+void kf2d_predict(KF2D_t *kf, float ax, float ay);
+void kf2d_update(KF2D_t *kf, float zx, float zy);
+
+/* --- 实现 --- */
+void kf2d_predict(KF2D_t *kf, float ax, float ay) {
+    float *x = kf->x;
+    float dt = kf->dt;
+
+    /* ① 状态预测: x = F*x + B*u */
+    float x0 = x[0] + x[2]*dt + 0.5f*ax*dt*dt;
+    float x1 = x[1] + x[3]*dt + 0.5f*ay*dt*dt;
+    float x2 = x[2] + ax*dt;
+    float x3 = x[3] + ay*dt;
+    x[0]=x0; x[1]=x1; x[2]=x2; x[3]=x3;
+
+    /* ② 协方差预测: P = F*P*F' + Q */
+    /* 这里手动展开，避免通用矩阵乘法的开销 */
+    float P[4][4];
+    /* ... (展开的矩阵运算，见完整实现) ... */
+    /* 简化：对角元素加上 Q */
+    for(int i = 0; i < KF_N; i++)
+        for(int j = 0; j < KF_N; j++)
+            kf->P[i][j] += kf->Q[i][j]; /* 近似 */
+}
+
+void kf2d_update(KF2D_t *kf, float zx, float zy) {
+    /* ③ 卡尔曼增益 K = P*H'*(H*P*H'+R)^-1 */
+    /* 因为 H=[I 0], 所以 H*P*H'=P的左上2x2块 */
+    float S[2][2]; /* 新息协方差 */
+    S[0][0] = kf->P[0][0] + kf->R[0][0];
+    S[0][1] = kf->P[0][1] + kf->R[0][1];
+    S[1][0] = kf->P[1][0] + kf->R[1][0];
+    S[1][1] = kf->P[1][1] + kf->R[1][1];
+
+    float det = S[0][0]*S[1][1] - S[0][1]*S[1][0];
+    float inv_det = 1.0f / det;
+    float Si[2][2] = {
+        { S[1][1]*inv_det, -S[0][1]*inv_det},
+        {-S[1][0]*inv_det,  S[0][0]*inv_det}
+    };
+
+    /* K = P * H' * Si (H'就是前两列的单位矩阵) */
+    for(int i = 0; i < KF_N; i++)
+        for(int j = 0; j < KF_M; j++) {
+            kf->K[i][j] = 0;
+            for(int k = 0; k < KF_M; k++)
+                kf->K[i][j] += kf->P[i][k] * Si[k][j];
+        }
+
+    /* ④ 状态更新: x = x + K*(z - H*x) */
+    float innov[2] = { zx - kf->x[0], zy - kf->x[1] };
+    for(int i = 0; i < KF_N; i++)
+        kf->x[i] += kf->K[i][0]*innov[0] + kf->K[i][1]*innov[1];
+
+    /* ⑤ 协方差更新: P = (I - K*H)*P */
+    float P_new[KF_N][KF_N];
+    for(int i = 0; i < KF_N; i++)
+        for(int j = 0; j < KF_N; j++) {
+            P_new[i][j] = kf->P[i][j];
+            for(int k = 0; k < KF_M; k++)
+                P_new[i][j] -= kf->K[i][k] * kf->P[k][j];
+        }
+    for(int i = 0; i < KF_N; i++)
+        for(int j = 0; j < KF_N; j++)
+            kf->P[i][j] = P_new[i][j];
+}</code></pre>
+
+<h2>四、单步执行面板</h2>
+
+<p>下面的面板让你逐步执行预测和更新，观察状态向量和协方差椭圆的变化。每次点击"预测"，椭圆会沿模型方向扩大；点击"更新"，椭圆向观测点收缩。</p>
+
+<div class="interactive-box">
+  <h3>🎛️ 交互实验：单步执行卡尔曼滤波</h3>
+
+  <div class="step-indicator" id="ch04_stepIndicator">
+    <div class="step-dot" id="ch04_dot0">P</div>
+    <div class="step-dot" id="ch04_dot1">U</div>
+  </div>
+
+  <div class="controls">
+    <button class="action" id="ch04_predictBtn" style="background:#2563eb;">预测 (Predict)</button>
+    <button class="action" id="ch04_updateBtn" style="background:#16a34a;">更新 (Update)</button>
+    <button class="action" id="ch04_resetBtn4" style="background:#64748b;">重置</button>
+    <button class="action" id="ch04_autoBtn4" style="background:#f59e0b;color:#000;">自动 10 步</button>
+  </div>
+
+  <div id="ch04_stepPlot" style="width:100%;height:440px;"></div>
+
+  <div class="state-panel" id="ch04_statePanel">
+    <div class="state-item"><div class="label">状态 x̂</div><div class="value" id="ch04_stX">-</div></div>
+    <div class="state-item"><div class="label">协方差 P (对角)</div><div class="value" id="ch04_stP">-</div></div>
+    <div class="state-item"><div class="label">卡尔曼增益 K</div><div class="value" id="ch04_stK">-</div></div>
+    <div class="state-item"><div class="label">新息</div><div class="value" id="ch04_stInnov">-</div></div>
+  </div>
+</div>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+  <p><strong>协方差矩阵的对称存储</strong>：P 是对称矩阵（P[i][j] == P[j][i]），实际上只需存储上三角部分。4×4 矩阵从 16 个 float 减到 10 个。这在内存紧张的 MCU 上很实用：</p>
+
+  <pre><code>/* 上三角存储: P[0][0], P[0][1], P[0][2], P[0][3],
+ *                      P[1][1], P[1][2], P[1][3],
+ *                               P[2][2], P[2][3],
+ *                                        P[3][3]
+ * 索引映射: idx = i*n - i*(i-1)/2 + (j-i)
+ */
+#define P_IDX(i,j,n) ((i)*(n) - (i)*((i)-1)/2 + ((j)-(i)))
+
+float P_upper[10]; /* 4*(4+1)/2 = 10 */
+
+static inline float P_get(int i, int j) {
+    return (i <= j) ? P_upper[P_IDX(i,j,4)]
+                    : P_upper[P_IDX(j,i,4)];
+}</code></pre>
+
+  <p style="margin-top:10px;"><strong>数值稳定性</strong>：方程 ⑤ 的简化形式 \(P = (I-KH)P\) 可能因为浮点误差导致 P 不对称甚至负定。Joseph 形式更安全：</p>
+  $$\mathbf{P} = (\mathbf{I}-\mathbf{K}\mathbf{H})\mathbf{P}(\mathbf{I}-\mathbf{K}\mathbf{H})^T + \mathbf{K}\mathbf{R}\mathbf{K}^T$$
+  <p>计算量多了约 50%，但能保证 P 的对称正定性。在长时间运行的飞控中，这点开销很值得。</p>
+</div>
+</div>
+</section>
+<section id="ch05" class="chapter-section">
+<div class="container">
+<h1>第五章：实战——无人机水平位置估计</h1>
+<p class="chapter-meta">完整 2D 卡尔曼滤波器：IMU + GPS 融合，从代码到可视化</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>构建一个完整的 4 维卡尔曼滤波器（[x, y, vx, vy]）</li>
+    <li>模拟真实的无人机圆形轨迹飞行，融合 IMU 加速度和 GPS 位置</li>
+    <li>实时调参并观察滤波效果，体验 Q/R 调参的手感</li>
+  </ul>
+</div>
+
+<h2>一、系统设定</h2>
+
+<p>我们模拟一架无人机沿椭圆/圆形轨迹飞行：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>状态</strong>：\(\mathbf{x} = [x, y, v_x, v_y]^T\)</li>
+  <li><strong>IMU 输入</strong>：加速度 \([a_x, a_y]\)，采样率 50Hz，含噪声和偏差</li>
+  <li><strong>GPS 测量</strong>：位置 \([x_{gps}, y_{gps}]\)，采样率 5Hz，标准差约 3m</li>
+  <li><strong>关键差异</strong>：IMU 每步都有，GPS 每 10 步才来一次</li>
+</ul>
+
+$$\mathbf{F} = \begin{bmatrix}1&0&\Delta t&0\\0&1&0&\Delta t\\0&0&1&0\\0&0&0&1\end{bmatrix}, \quad
+\mathbf{B} = \begin{bmatrix}\frac{\Delta t^2}{2}&0\\0&\frac{\Delta t^2}{2}\\\Delta t&0\\0&\Delta t\end{bmatrix}, \quad
+\mathbf{H} = \begin{bmatrix}1&0&0&0\\0&1&0&0\end{bmatrix}$$
+
+<h2>二、完整 JavaScript 实现</h2>
+
+<p>下面是核心滤波器的 JavaScript 代码，注释对照第四章的五个方程：</p>
+
+<pre><code>/* KF2D: 2D 位置-速度卡尔曼滤波器 (JS 版) */
+function createKF2D(dt, q, r, p0) {
+  const n = 4, m = 2;
+  return {
+    x: [0, 0, 0, 0],
+    P: diagMat(n, p0),
+    F: [[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]],
+    B: [[.5*dt*dt,0],[0,.5*dt*dt],[dt,0],[0,dt]],
+    H: [[1,0,0,0],[0,1,0,0]],
+    Q: buildQ(dt, q),
+    R: [[r, 0],[0, r]],
+
+    predict: function(ax, ay) {
+      /* ① x = F*x + B*u */
+      const x = this.x, F = this.F;
+      this.x = [
+        F[0][0]*x[0]+F[0][2]*x[2] + this.B[0][0]*ax,
+        F[1][1]*x[1]+F[1][3]*x[3] + this.B[1][1]*ay,
+        x[2] + this.B[2][0]*ax,
+        x[3] + this.B[3][1]*ay
+      ];
+      /* ② P = F*P*F' + Q */
+      this.P = matAdd(matMul(matMul(F,this.P),transpose(F)),this.Q);
+    },
+
+    update: function(zx, zy) {
+      /* ③ K = P*H'*(H*P*H'+R)^-1 */
+      const PHt = matMul(this.P, transpose(this.H));
+      const S = matAdd(matMul(this.H, PHt), this.R);
+      const Si = inv2x2(S);
+      const K = matMul(PHt, Si);
+      /* ④ x = x + K*(z - H*x) */
+      const innov = [zx-this.x[0], zy-this.x[1]];
+      for(let i=0;i<n;i++)
+        this.x[i] += K[i][0]*innov[0] + K[i][1]*innov[1];
+      /* ⑤ P = (I-K*H)*P */
+      const IKH = matSub(eye(n), matMul(K, this.H));
+      this.P = matMul(IKH, this.P);
+      return { K, innov };
+    }
+  };
+}</code></pre>
+
+<h2>三、实时仿真</h2>
+
+<div class="interactive-box">
+  <h3>🚁 交互实验：无人机 2D 位置估计</h3>
+  <p style="font-size:.92em;color:var(--text-light);">点击"开始"后无人机沿轨迹飞行。调节 Q/R 滑块观察滤波效果——Q 太小会跟不上机动，R 太小会被噪声带偏。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>过程噪声 q: <span class="val-display" id="ch05_qVal">0.5</span></label>
+      <input type="range" id="ch05_qSlider5" min="0.01" max="5" step="0.01" value="0.5">
+    </div>
+    <div class="control-group">
+      <label>GPS 噪声 σ (m): <span class="val-display" id="ch05_rVal">3.0</span></label>
+      <input type="range" id="ch05_rSlider5" min="0.5" max="15" step="0.5" value="3.0">
+    </div>
+    <div class="control-group">
+      <label>初始 P₀: <span class="val-display" id="ch05_p0Val">100</span></label>
+      <input type="range" id="ch05_p0Slider" min="1" max="500" step="1" value="100">
+    </div>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>
+        <input type="checkbox" id="ch05_useIMU" checked> 使用 IMU 加速度输入
+      </label>
+    </div>
+    <div class="control-group">
+      <label>速度倍率:</label>
+      <select id="ch05_speedSelect">
+        <option value="1">1×</option>
+        <option value="2" selected>2×</option>
+        <option value="5">5×</option>
+      </select>
+    </div>
+    <div class="control-group" style="flex-direction:row;gap:8px;align-items:flex-end;">
+      <button class="action" id="ch05_startBtn" style="background:#16a34a;">开始</button>
+      <button class="action" id="ch05_pauseBtn" style="background:#f59e0b;color:#000;">暂停</button>
+      <button class="action" id="ch05_resetBtn5" style="background:#64748b;">重置</button>
+    </div>
+  </div>
+
+  <div id="ch05_trajPlot5" style="width:100%;height:480px;"></div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="label">位置 RMS 误差 (m)</div><div class="value" id="ch05_rmsVal">-</div></div>
+    <div class="stat-box"><div class="label">当前步数</div><div class="value" id="ch05_stepVal">0</div></div>
+    <div class="stat-box"><div class="label">GPS 更新次数</div><div class="value" id="ch05_gpsCount">0</div></div>
+    <div class="stat-box"><div class="label">K 范数</div><div class="value" id="ch05_kNorm">-</div></div>
+  </div>
+
+  <div id="ch05_errorPlot5" style="width:100%;height:220px;margin-top:12px;"></div>
+</div>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+
+  <p><strong>异步更新——飞控中的关键设计</strong></p>
+  <p>在真实飞控中，IMU 跑 100~400Hz，GPS 只有 1~10Hz。代码结构应该是这样的：</p>
+
+  <pre><code>/* 主循环伪代码 (典型飞控架构) */
+void main_loop(void) {  /* 400Hz tick */
+    imu_read(&ax, &ay, &az);
+
+    /* 每次 tick 都做预测 */
+    kf2d_predict(&kf, ax, ay);
+
+    /* 只有 GPS 数据到来时才做更新 */
+    if (gps_data_ready()) {
+        gps_read(&gps_x, &gps_y);
+        kf2d_update(&kf, gps_x, gps_y);
+        gps_clear_flag();
+    }
+
+    /* 输出融合后的位置和速度 */
+    nav_output.x  = kf.x[0];
+    nav_output.y  = kf.x[1];
+    nav_output.vx = kf.x[2];
+    nav_output.vy = kf.x[3];
+}</code></pre>
+
+  <p style="margin-top:12px;"><strong>dt 的处理</strong>：如果 IMU 和主循环不完全同步，最好用实际时间差 dt 来构建 F 和 B 矩阵，而不是用固定的标称值。在 STM32 上可以用 DWT 周期计数器或 TIM 定时器来获取精确的 dt。</p>
+
+  <p style="margin-top:10px;"><strong>数值检查</strong>：每次更新后，检查 P 的对角元素是否全部为正。如果出现负值，说明滤波器已经发散了——这通常意味着 Q 设得太小或者观测模型有误。</p>
+</div>
+</div>
+</section>
+<section id="ch06" class="chapter-section">
+<div class="container">
+<h1>第六章：当系统变"弯"了</h1>
+<p class="chapter-meta">扩展卡尔曼滤波（EKF）——处理非线性的工程利器</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>理解为什么线性卡尔曼滤波无法处理非线性观测</li>
+    <li>掌握 EKF 的核心思想：局部线性化 + 雅可比矩阵</li>
+    <li>对比 KF 和 EKF 在非线性场景下的表现差异</li>
+  </ul>
+</div>
+
+<h2>一、为什么需要 EKF？</h2>
+
+<p>在第五章中，我们假设 GPS 直接给出了 \((x, y)\) 坐标——这是一个线性的观测关系。但在很多实际场景中，传感器的输出和状态之间是<strong>非线性</strong>的：</p>
+
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>雷达测距测角</strong>：测量的是距离 \(r = \sqrt{x^2 + y^2}\) 和角度 \(\theta = \arctan(y/x)\)，而不是 x, y</li>
+  <li><strong>GPS 伪距</strong>：实际测量的是到每颗卫星的距离，需要经过非线性方程解算</li>
+  <li><strong>磁力计</strong>：磁场方向和机体姿态之间是三角函数关系</li>
+</ul>
+
+<p>这时候观测方程变成：</p>
+
+$$\mathbf{z}_k = h(\mathbf{x}_k) + \mathbf{v}_k$$
+
+<p>注意这里的 \(h(\cdot)\) 是一个<strong>非线性函数</strong>，不再是简单的矩阵乘法 \(\mathbf{H}\mathbf{x}\)。标准卡尔曼滤波的公式直接用不了了。</p>
+
+<h2>二、EKF 的核心思想：在当前点展开</h2>
+
+<p>EKF 的处理方式简单粗暴但有效：在当前估计点对非线性函数做<strong>一阶泰勒展开</strong>（线性化），然后用标准卡尔曼滤波的公式。</p>
+
+<p>具体来说，对于观测函数 \(h(\mathbf{x})\)，在当前预测值 \(\hat{\mathbf{x}}_{k|k-1}\) 处求<strong>雅可比矩阵</strong>：</p>
+
+$$\mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}=\hat{\mathbf{x}}_{k|k-1}}$$
+
+<p>然后用这个局部线性化的 \(\mathbf{H}_k\) 代替常数矩阵 H，其余步骤和标准 KF 一样——就这么简单。</p>
+
+<h3>雷达测距测角的例子</h3>
+
+<p>状态 \(\mathbf{x} = [x, y, v_x, v_y]^T\)，观测 \(\mathbf{z} = [r, \theta]^T\)：</p>
+
+$$h(\mathbf{x}) = \begin{bmatrix} \sqrt{x^2 + y^2} \\ \arctan(y / x) \end{bmatrix}$$
+
+<p>雅可比矩阵：</p>
+
+$$\mathbf{H}_k = \begin{bmatrix}
+\frac{x}{\sqrt{x^2+y^2}} & \frac{y}{\sqrt{x^2+y^2}} & 0 & 0 \\
+\frac{-y}{x^2+y^2} & \frac{x}{x^2+y^2} & 0 & 0
+\end{bmatrix}$$
+
+<div class="highlight-box">
+  <p style="margin:0;"><strong>EKF 的改动很小：</strong></p>
+  <ol style="margin:8px 0 0 18px;">
+    <li>预测步：不变（如果状态方程是线性的）</li>
+    <li>更新步：把 \(\mathbf{H}\) 替换为 \(\mathbf{H}_k\)（在当前估计点算的雅可比），把 \(\mathbf{H}\mathbf{x}\) 替换为 \(h(\mathbf{x})\)</li>
+    <li>新息变成 \(\mathbf{z}_k - h(\hat{\mathbf{x}}_{k|k-1})\) 而不是 \(\mathbf{z}_k - \mathbf{H}\hat{\mathbf{x}}_{k|k-1}\)</li>
+  </ol>
+</div>
+
+<h2>三、KF vs EKF 实时对比</h2>
+
+<p>下面的实验模拟无人机绕圈飞行，一个雷达站在原点测量到无人机的距离和角度。我们同时运行两个滤波器：</p>
+<ul style="margin-left:20px;margin-bottom:14px;">
+  <li><strong>线性 KF</strong>（错误使用）：假装观测是直接的 (x, y)，但实际数据是 (r, θ) 转换来的（引入了额外误差）</li>
+  <li><strong>EKF</strong>（正确方法）：直接在 (r, θ) 空间做更新</li>
+</ul>
+
+<div class="interactive-box">
+  <h3>🎛️ 交互实验：KF vs EKF 对比</h3>
+  <p style="font-size:.92em;color:var(--text-light);">无人机绕圈飞行，雷达在原点测距测角。调节参数观察两种方法的表现差异，特别注意大半径和大噪声时的区别。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>轨迹半径 (m): <span class="val-display" id="ch06_radiusVal">30</span></label>
+      <input type="range" id="ch06_radiusSlider" min="10" max="80" step="1" value="30">
+    </div>
+    <div class="control-group">
+      <label>距离噪声 σ_r (m): <span class="val-display" id="ch06_sigRVal">2.0</span></label>
+      <input type="range" id="ch06_sigRSlider" min="0.5" max="10" step="0.5" value="2.0">
+    </div>
+    <div class="control-group">
+      <label>角度噪声 σ_θ (°): <span class="val-display" id="ch06_sigTVal">3.0</span></label>
+      <input type="range" id="ch06_sigTSlider" min="0.5" max="15" step="0.5" value="3.0">
+    </div>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>过程噪声 q: <span class="val-display" id="ch06_qVal6">0.5</span></label>
+      <input type="range" id="ch06_qSlider6" min="0.01" max="3" step="0.01" value="0.5">
+    </div>
+    <div class="control-group" style="flex-direction:row;gap:8px;align-items:flex-end;">
+      <button class="action" id="ch06_startBtn6" style="background:#16a34a;">开始</button>
+      <button class="action" id="ch06_pauseBtn6" style="background:#f59e0b;color:#000;">暂停</button>
+      <button class="action" id="ch06_resetBtn6" style="background:#64748b;">重置</button>
+    </div>
+  </div>
+
+  <div id="ch06_ekfPlot" style="width:100%;height:480px;"></div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="label">KF RMS 误差 (m)</div><div class="value" id="ch06_kfRms" style="color:#f59e0b;">-</div></div>
+    <div class="stat-box"><div class="label">EKF RMS 误差 (m)</div><div class="value" id="ch06_ekfRms" style="color:#7c3aed;">-</div></div>
+    <div class="stat-box"><div class="label">EKF 优势</div><div class="value" id="ch06_advantage">-</div></div>
+    <div class="stat-box"><div class="label">步数</div><div class="value" id="ch06_stepVal6">0</div></div>
+  </div>
+
+  <div id="ch06_errPlot6" style="width:100%;height:200px;margin-top:8px;"></div>
+</div>
+
+<h2>四、EKF 的 C 语言实现要点</h2>
+
+<pre><code>/* EKF 雷达观测更新 —— 关键差异标注 */
+void ekf_radar_update(KF2D_t *kf, float r_meas, float theta_meas) {
+    float x = kf->x[0], y = kf->x[1];
+    float r_pred = sqrtf(x*x + y*y);
+    float theta_pred = atan2f(y, x);
+
+    /* 防止 r_pred 为零导致除零 */
+    if (r_pred < 1e-6f) r_pred = 1e-6f;
+
+    /* EKF 关键：在当前估计点计算雅可比 */
+    float H[2][4] = {
+        { x/r_pred,        y/r_pred,       0, 0 },
+        { -y/(r_pred*r_pred), x/(r_pred*r_pred), 0, 0 }
+    };
+
+    /* 新息 = 实测 - h(x_pred)，注意角度要归一化 */
+    float innov[2] = {
+        r_meas - r_pred,
+        angle_wrap(theta_meas - theta_pred)  /* 关键！ */
+    };
+
+    /* 后续步骤和标准 KF 完全一样：算 S, K, 更新 x 和 P */
+    /* ... */
+}
+
+/* 角度归一化到 [-π, π] —— EKF 处理角度时必须做 */
+static inline float angle_wrap(float a) {
+    while (a >  M_PI) a -= 2*M_PI;
+    while (a < -M_PI) a += 2*M_PI;
+    return a;
+}</code></pre>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+
+  <p><strong>雅可比矩阵的计算策略</strong></p>
+  <ul style="margin-left:18px;margin-top:8px;">
+    <li><strong>解析法</strong>：手动推导，效率最高，适合固定的观测模型。大部分飞控项目用这种。</li>
+    <li><strong>数值法</strong>：用 \(\frac{\partial h}{\partial x_i} \approx \frac{h(x+\delta e_i) - h(x-\delta e_i)}{2\delta}\)，实现简单但计算量翻倍。调试阶段好用。</li>
+    <li><strong>自动微分</strong>：在 PC 端用 AD 工具生成 C 代码，然后移植到嵌入式。适合复杂模型。</li>
+  </ul>
+
+  <p style="margin-top:12px;"><strong>EKF 的常见坑</strong></p>
+  <ul style="margin-left:18px;">
+    <li><strong>角度跳变</strong>：当 θ 从 π 跳到 -π 时，新息会爆表。必须做角度归一化。</li>
+    <li><strong>线性化误差</strong>：如果系统高度非线性（比如目标在雷达正上方），EKF 可能发散。这时考虑 UKF。</li>
+    <li><strong>atan2 vs atan</strong>：永远用 atan2(y,x)，不要用 atan(y/x)。后者分不清象限，而且 x=0 时除零。</li>
+  </ul>
+
+  <p style="margin-top:12px;"><strong>计算量对比</strong>：EKF 相比 KF 多了雅可比矩阵计算（对 4 维状态 2 维观测，多了约 8 次乘法加几次三角函数）。在 Cortex-M4F 上，一次 sqrtf + atan2f 大约 30~50 个时钟周期，微不足道。</p>
+</div>
+</div>
+</section>
+<section id="ch07" class="chapter-section">
+<div class="container">
+<h1>第七章：嵌入式系统上的卡尔曼滤波</h1>
+<p class="chapter-meta">工程实战清单——从"能跑"到"跑得好"的最后一公里</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>掌握卡尔曼滤波在嵌入式系统中的常见问题和解决方案</li>
+    <li>学会用新息序列诊断滤波器健康状态</li>
+    <li>通过"故障诊断实验室"体验错误调参的后果和修复方法</li>
+  </ul>
+</div>
+
+<h2>一、数值稳定性——协方差矩阵的保卫战</h2>
+
+<p>在教科书上，卡尔曼滤波完美无缺。但在 32 位浮点数的世界里，魔鬼藏在细节中。</p>
+
+<h3>问题 1：P 矩阵失去对称性</h3>
+<p>反复执行 \(P = (I-KH)P\) 后，浮点舍入会让 P 不再精确对称。解法很简单：</p>
+<pre><code>/* 每次更新后强制对称化 */
+for (int i = 0; i < n; i++)
+    for (int j = i+1; j < n; j++)
+        kf.P[i][j] = kf.P[j][i] = 0.5f * (kf.P[i][j] + kf.P[j][i]);</code></pre>
+
+<h3>问题 2：P 矩阵变为负定</h3>
+<p>更严重的问题是 P 的对角元素可能变负——这意味着"方差为负"，物理上毫无意义。原因通常是 \((I-KH)P\) 这个简化形式的数值误差累积。</p>
+
+<p><strong>Joseph 形式</strong>——推荐的更新方程：</p>
+$$\mathbf{P} = (\mathbf{I}-\mathbf{K}\mathbf{H})\mathbf{P}(\mathbf{I}-\mathbf{K}\mathbf{H})^T + \mathbf{K}\mathbf{R}\mathbf{K}^T$$
+<p>数学上等价，但数值上保证了 P 的正半定性。代价是额外一次矩阵乘法。</p>
+
+<h3>问题 3：P 矩阵爆炸（发散）</h3>
+<div class="warn-box">
+  <strong>如果 Q 设得太小</strong>，滤波器过于相信模型，拒绝接受新的测量信息，P 越来越小，K 接近零，然后如果真实系统突然发生变化（比如一阵风），滤波器完全跟不上——<strong>这叫"滤波器锁死"</strong>。
+</div>
+
+<h2>二、诊断方法——新息序列分析</h2>
+
+<p><strong>新息</strong>（Innovation）\(\nu_k = z_k - H\hat{x}_{k|k-1}\) 是判断滤波器是否健康的最佳指标。对于调参正确的滤波器：</p>
+
+<ul class="checklist">
+  <li>新息序列均值应该接近零（无偏）</li>
+  <li>新息方差应该和 \(S = HPH^T + R\) 一致</li>
+  <li>归一化新息平方（NIS）：\(\nu^T S^{-1} \nu\) 应该服从 \(\chi^2(m)\) 分布，均值等于观测维数 m</li>
+  <li>新息不应该有明显的自相关——如果有，说明 Q 或模型不对</li>
+</ul>
+
+<h2>三、故障诊断实验室</h2>
+
+<div class="interactive-box">
+  <h3>🔬 故障诊断实验室</h3>
+  <p style="font-size:.92em;color:var(--text-light);">选择一个预设的"故障模式"，观察滤波器的异常行为。然后调节滑块"修复"它，让新息序列回到正常范围。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>故障预设:</label>
+      <select id="ch07_faultSelect">
+        <option value="normal">正常工作</option>
+        <option value="q_small">Q 太小（滤波器锁死）</option>
+        <option value="r_big">R 太大（过度平滑）</option>
+        <option value="p0_small">初始 P₀ 太小（收敛慢）</option>
+        <option value="model_wrong">模型错误（实际有加速度，模型是匀速）</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Q 调节 (×倍): <span class="val-display" id="ch07_qFixVal">1.0</span></label>
+      <input type="range" id="ch07_qFixSlider" min="0.01" max="10" step="0.01" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>R 调节 (×倍): <span class="val-display" id="ch07_rFixVal">1.0</span></label>
+      <input type="range" id="ch07_rFixSlider" min="0.1" max="10" step="0.1" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>P₀ 调节: <span class="val-display" id="ch07_p0FixVal">10</span></label>
+      <input type="range" id="ch07_p0FixSlider" min="0.1" max="200" step="0.1" value="10">
+    </div>
+    <div class="control-group" style="flex-direction:row;gap:8px;align-items:flex-end;">
+      <button class="action" id="ch07_runDiag" style="background:#16a34a;">运行诊断</button>
+    </div>
+  </div>
+
+  <div id="ch07_diagPlot" style="width:100%;height:320px;"></div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="label">新息均值</div><div class="value" id="ch07_innovMean">-</div></div>
+    <div class="stat-box"><div class="label">新息标准差</div><div class="value" id="ch07_innovStd">-</div></div>
+    <div class="stat-box"><div class="label">NIS 均值 (期望=1)</div><div class="value" id="ch07_nisVal">-</div></div>
+    <div class="stat-box"><div class="label">诊断</div><div class="value" id="ch07_diagResult" style="font-size:.85em">-</div></div>
+  </div>
+
+  <div id="ch07_innovPlot" style="width:100%;height:240px;margin-top:8px;"></div>
+  <div id="ch07_nisPlot" style="width:100%;height:200px;margin-top:8px;"></div>
+</div>
+
+<h2>四、计算优化清单</h2>
+
+<h3>浮点 vs 定点</h3>
+<p>在没有 FPU 的 MCU（如 Cortex-M0/M0+）上，一次 float 乘法需要 ~50 个时钟周期（软件浮点），而 32 位整数乘法只需 1 个周期。对于 4 维状态的 KF，P 的更新涉及约 200 次乘法——差距从 200 到 10000 周期。</p>
+
+<pre><code>/* Q16.16 定点数运算示例 */
+typedef int32_t q16_t;
+#define Q16_ONE  (1 << 16)   /* 1.0 的定点表示 */
+#define Q16_HALF (1 << 15)   /* 0.5 */
+
+static inline q16_t q16_mul(q16_t a, q16_t b) {
+    return (q16_t)(((int64_t)a * b) >> 16);
+}
+
+static inline q16_t q16_div(q16_t a, q16_t b) {
+    return (q16_t)(((int64_t)a << 16) / b);
+}
+
+/* 卡尔曼增益 K = P / (P + R)  (一维情况) */
+q16_t kf1d_gain(q16_t P, q16_t R) {
+    return q16_div(P, P + R);  /* 结果范围 [0, Q16_ONE] */
+}</code></pre>
+
+<h3>内存布局建议</h3>
+<pre><code>/* 对齐到 4 字节（ARM 要求），紧凑存储 */
+typedef struct __attribute__((aligned(4))) {
+    float x[4];          /* 16B: 状态 */
+    float P_upper[10];   /* 40B: 协方差上三角 */
+    float K[8];          /* 32B: 增益 (4x2) */
+    float innov[2];      /*  8B: 新息 */
+    /* 总计: 96 字节 — 一个 cache line 就够了 */
+} KF2D_Compact_t;</code></pre>
+
+<h2>五、调试方法总结</h2>
+
+<table style="border-collapse:collapse;width:100%;margin:14px 0;">
+<thead><tr style="background:var(--primary-light);">
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">现象</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">可能原因</th>
+  <th style="padding:8px 12px;border:1px solid var(--border);text-align:left;">修复方法</th>
+</tr></thead>
+<tbody>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">估计值不跟踪真实值</td><td style="padding:6px 12px;border:1px solid var(--border);">Q 太小 / P₀ 太小</td><td style="padding:6px 12px;border:1px solid var(--border);">增大 Q，增大 P₀</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">估计值抖动太大</td><td style="padding:6px 12px;border:1px solid var(--border);">R 太小 / Q 太大</td><td style="padding:6px 12px;border:1px solid var(--border);">增大 R，减小 Q</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">P 对角元素变负</td><td style="padding:6px 12px;border:1px solid var(--border);">数值不稳定</td><td style="padding:6px 12px;border:1px solid var(--border);">用 Joseph 形式</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">新息有明显趋势</td><td style="padding:6px 12px;border:1px solid var(--border);">模型偏差</td><td style="padding:6px 12px;border:1px solid var(--border);">检查 F 矩阵或加入偏差状态</td></tr>
+  <tr><td style="padding:6px 12px;border:1px solid var(--border);">NIS 持续 >> m</td><td style="padding:6px 12px;border:1px solid var(--border);">R 设太小 / 未建模误差</td><td style="padding:6px 12px;border:1px solid var(--border);">增大 R 或改进模型</td></tr>
+</tbody>
+</table>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+
+  <p><strong>ARM Cortex-M 简化滤波器示例</strong>（1D 温度估计，适合理解核心结构）：</p>
+
+  <pre><code>/* kf1d.c — 最小化实现，适合 Cortex-M0+ */
+typedef struct {
+    float x;    /* 状态估计 */
+    float P;    /* 估计方差 */
+    float Q;    /* 过程噪声方差 */
+    float R;    /* 测量噪声方差 */
+} KF1D_t;
+
+void kf1d_predict(KF1D_t *kf) {
+    /* 状态不变（温度缓慢变化模型） */
+    kf->P += kf->Q;
+}
+
+void kf1d_update(KF1D_t *kf, float z) {
+    float K = kf->P / (kf->P + kf->R);
+    kf->x += K * (z - kf->x);
+    kf->P *= (1.0f - K);
+}
+
+/* 用法：
+ * KF1D_t kf = {.x=25.0, .P=10.0, .Q=0.01, .R=1.0};
+ * while(1) {
+ *     kf1d_predict(&kf);
+ *     float temp = read_adc_temperature();
+ *     kf1d_update(&kf, temp);
+ *     printf("估计温度: %.2f, 不确定度: %.4f\n", kf.x, kf.P);
+ * }
+ */</code></pre>
+
+  <p style="margin-top:12px;"><strong>实时性预算参考</strong>：</p>
+  <ul style="margin-left:18px;">
+    <li>4 维 KF，Cortex-M4F @168MHz：约 5~10μs（包括协方差更新）</li>
+    <li>9 维 KF，同平台：约 30~50μs</li>
+    <li>4 维 EKF（含雅可比+三角函数）：约 15~25μs</li>
+    <li>以上时间都远小于 1ms（1kHz 控制周期），所以卡尔曼滤波在飞控中完全可行</li>
+  </ul>
+</div>
+</div>
+</section>
+<section id="ch08" class="chapter-section">
+<div class="container">
+<h1>第八章：更远的道路</h1>
+<p class="chapter-meta">其他卡尔曼变体与应用场景速览</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>了解 UKF、信息滤波、自适应卡尔曼等主要变体的适用场景</li>
+    <li>速览电机控制、无人机定高、SLAM 等典型应用</li>
+    <li>知道在不同场景下该选择哪种滤波器</li>
+  </ul>
+</div>
+
+<h2>一、卡尔曼滤波家族</h2>
+
+<table class="compare-table">
+<thead><tr>
+  <th>变体</th><th>核心思想</th><th>优点</th><th>缺点</th><th>典型应用</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><strong>KF</strong></td>
+  <td>线性系统 + 高斯噪声</td>
+  <td>最优解、计算简单</td>
+  <td>仅限线性系统</td>
+  <td>惯导预积分、温度滤波</td>
+</tr>
+<tr>
+  <td><strong>EKF</strong></td>
+  <td>一阶泰勒展开线性化</td>
+  <td>实现简单、计算可控</td>
+  <td>高度非线性时精度差</td>
+  <td>GPS/INS 融合、姿态估计</td>
+</tr>
+<tr>
+  <td><strong>UKF</strong></td>
+  <td>Sigma 点采样传递</td>
+  <td>无需雅可比、二阶精度</td>
+  <td>需存储 2n+1 个 sigma 点</td>
+  <td>姿态估计、目标跟踪</td>
+</tr>
+<tr>
+  <td><strong>信息滤波</strong></td>
+  <td>用信息矩阵(P⁻¹)代替协方差</td>
+  <td>多传感器融合更自然</td>
+  <td>预测步需要矩阵求逆</td>
+  <td>分布式传感器网络</td>
+</tr>
+<tr>
+  <td><strong>自适应 KF</strong></td>
+  <td>在线调整 Q 或 R</td>
+  <td>应对未知/变化噪声</td>
+  <td>可能不收敛</td>
+  <td>环境变化的导航系统</td>
+</tr>
+<tr>
+  <td><strong>平方根 KF</strong></td>
+  <td>Cholesky 分解 P=SS'</td>
+  <td>数值稳定性极佳</td>
+  <td>实现复杂度高</td>
+  <td>航天、高精度导航</td>
+</tr>
+</tbody>
+</table>
+
+<h2>二、UKF——不用算雅可比的妙招</h2>
+
+<p>UKF（Unscented Kalman Filter）的核心思想是：与其线性化函数（EKF），不如直接用有代表性的采样点通过非线性函数，然后从输出重建统计量。</p>
+
+<p>具体步骤：</p>
+<ol style="margin-left:20px;margin-bottom:14px;">
+  <li>生成 \(2n+1\) 个 Sigma 点：\(\chi_0 = \mu\)，\(\chi_i = \mu \pm \sqrt{(n+\lambda)P}\)</li>
+  <li>每个点通过非线性函数：\(\gamma_i = f(\chi_i)\)</li>
+  <li>从输出计算加权均值和协方差</li>
+</ol>
+
+<div class="interactive-box">
+  <h3>📊 交互对比：EKF vs UKF</h3>
+  <p style="font-size:.92em;color:var(--text-light);">一个简单的非线性变换示例：高斯分布通过 \(y = x^2 + 0.2x^3\)。观察 EKF（线性化）和 UKF（sigma点）对输出分布的估计差异。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>输入均值 μ: <span class="val-display" id="ch08_ukfMuVal">2.0</span></label>
+      <input type="range" id="ch08_ukfMuSlider" min="-3" max="5" step="0.1" value="2.0">
+    </div>
+    <div class="control-group">
+      <label>输入标准差 σ: <span class="val-display" id="ch08_ukfSigVal">1.0</span></label>
+      <input type="range" id="ch08_ukfSigSlider" min="0.1" max="3" step="0.1" value="1.0">
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button class="action" id="ch08_ukfRunBtn" style="background:var(--primary);">计算</button>
+    </div>
+  </div>
+
+  <div id="ch08_ukfPlot" style="width:100%;height:380px;"></div>
+</div>
+
+<h2>三、应用场景速览</h2>
+
+<div class="card-grid">
+
+  <div class="app-card">
+    <h4>电机转子位置估计</h4>
+    <p>无传感器（Sensorless）电机控制：用反电动势观测器估计转子角度和转速，替代昂贵的编码器。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">电压/电流 →</span>
+      <span class="step" style="background:#dcfce7;">电机模型(EKF) →</span>
+      <span class="step" style="background:#fef3c7;">θ, ω</span>
+    </div>
+    <div class="specs">
+      状态: [θ, ω, id, iq] | 更新率: 10~20kHz | 模型: 非线性(EKF)
+    </div>
+  </div>
+
+  <div class="app-card">
+    <h4>无人机定高</h4>
+    <p>融合气压计（慢但稳定）和加速度计（快但飘），估计海拔高度和垂直速度。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">气压计 + IMU →</span>
+      <span class="step" style="background:#dcfce7;">KF 融合 →</span>
+      <span class="step" style="background:#fef3c7;">高度, vz</span>
+    </div>
+    <div class="specs">
+      状态: [h, vz, bias] | 更新率: 100Hz(IMU) + 25Hz(baro) | 线性 KF
+    </div>
+  </div>
+
+  <div class="app-card">
+    <h4>扫地机器人 SLAM</h4>
+    <p>同时定位与建图：用激光雷达或视觉构建环境地图，同时估计机器人位姿。EKF-SLAM 是早期经典方法。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">LiDAR/视觉 →</span>
+      <span class="step" style="background:#dcfce7;">EKF-SLAM →</span>
+      <span class="step" style="background:#fef3c7;">位姿 + 地图</span>
+    </div>
+    <div class="specs">
+      状态: [x,y,θ,landmarks...] | 更新率: 5~30Hz | 状态维度可达 100+
+    </div>
+  </div>
+
+  <div class="app-card">
+    <h4>电池 SOC 估计</h4>
+    <p>通过电压和电流测量，估计电池荷电状态（State of Charge）。等效电路模型非线性，常用 EKF。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">V, I →</span>
+      <span class="step" style="background:#dcfce7;">EKF + 电池模型 →</span>
+      <span class="step" style="background:#fef3c7;">SOC%</span>
+    </div>
+    <div class="specs">
+      状态: [SOC, V_RC1, V_RC2] | 更新率: 1~10Hz | EKF/UKF
+    </div>
+  </div>
+
+  <div class="app-card">
+    <h4>AHRS 姿态估计</h4>
+    <p>融合陀螺仪、加速度计、磁力计估计 roll/pitch/yaw。Madgwick/Mahony 是简化版，完整版用 EKF/UKF。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">9-axis IMU →</span>
+      <span class="step" style="background:#dcfce7;">EKF(四元数) →</span>
+      <span class="step" style="background:#fef3c7;">姿态角</span>
+    </div>
+    <div class="specs">
+      状态: [q0,q1,q2,q3,bias_gx,gy,gz] | 更新率: 200~1000Hz | 非线性
+    </div>
+  </div>
+
+  <div class="app-card">
+    <h4>目标跟踪（雷达）</h4>
+    <p>从雷达回波中跟踪飞行器或导弹的位置和速度。典型的多目标跟踪场景需要数据关联 + KF。</p>
+    <div class="flow-box" style="text-align:left;padding:12px;">
+      <span class="step" style="background:#dbeafe;">r,θ 测量 →</span>
+      <span class="step" style="background:#dcfce7;">数据关联+EKF →</span>
+      <span class="step" style="background:#fef3c7;">航迹</span>
+    </div>
+    <div class="specs">
+      状态: [x,y,z,vx,vy,vz] | 更新率: 1~20Hz | Singer/IMM 模型
+    </div>
+  </div>
+
+</div>
+
+<h2>四、自适应卡尔曼滤波简介</h2>
+
+<p>标准 KF 假设 Q 和 R 是已知常数。但实际中噪声会变：GPS 在城市峡谷中精度急剧下降，电机在变速时过程噪声增大。</p>
+
+<p><strong>简单方法：基于新息的自适应</strong></p>
+
+<p>监测新息序列的实际方差，和理论方差 \(S = HPH^T + R\) 比较。如果实际方差明显大于理论值，说明 R 被低估了（或 Q 被低估了），动态调整：</p>
+
+$$\hat{R}_k = \frac{1}{W}\sum_{i=k-W+1}^{k} \nu_i \nu_i^T - HPH^T$$
+
+<div class="interactive-box">
+  <h3>📊 交互实验：自适应 KF vs 固定 KF</h3>
+  <p style="font-size:.92em;color:var(--text-light);">信号在第 100 步时噪声突然增大 5 倍。观察固定参数 KF 和自适应 KF 的表现差异。</p>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>自适应窗口 W: <span class="val-display" id="ch08_adaptWVal">20</span></label>
+      <input type="range" id="ch08_adaptWSlider" min="5" max="50" step="1" value="20">
+    </div>
+    <div class="control-group">
+      <label>噪声跳变倍数: <span class="val-display" id="ch08_jumpVal">5</span></label>
+      <input type="range" id="ch08_jumpSlider" min="2" max="20" step="1" value="5">
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button class="action" id="ch08_adaptRunBtn" style="background:var(--primary);">运行</button>
+    </div>
+  </div>
+
+  <div id="ch08_adaptPlot" style="width:100%;height:360px;"></div>
+</div>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+
+  <p><strong>不同场景的循环时间预算</strong></p>
+
+  <table class="compare-table" style="font-size:.88em;">
+  <thead><tr><th>应用</th><th>更新频率</th><th>状态维度</th><th>时间预算</th><th>推荐 MCU</th></tr></thead>
+  <tbody>
+    <tr><td>电机 FOC</td><td>10~20kHz</td><td>4~6</td><td>10~50μs</td><td>Cortex-M4F+</td></tr>
+    <tr><td>飞控姿态</td><td>200~1000Hz</td><td>7~10</td><td>100~500μs</td><td>Cortex-M4F</td></tr>
+    <tr><td>导航 GPS+INS</td><td>100Hz(P) + 10Hz(U)</td><td>9~15</td><td>1~5ms</td><td>Cortex-M7 / A系</td></tr>
+    <tr><td>SLAM</td><td>5~30Hz</td><td>50~1000</td><td>10~100ms</td><td>Cortex-A / x86</td></tr>
+    <tr><td>电池 SOC</td><td>1~10Hz</td><td>2~3</td><td>100ms+</td><td>任意 MCU</td></tr>
+  </tbody>
+  </table>
+
+  <p style="margin-top:12px;"><strong>选型建议</strong></p>
+  <ul style="margin-left:18px;">
+    <li>能用 KF 就用 KF（观测模型是线性的时候）</li>
+    <li>EKF 是 80% 场景的默认选择，雅可比手动推导一次后代码很简洁</li>
+    <li>UKF 适合"懒得推雅可比"或者非线性很强的场景，但内存开销约 2×</li>
+    <li>粒子滤波适合多模态分布（机器人绑架问题），但不适合嵌入式实时场景</li>
+  </ul>
+</div>
+</div>
+</section>
+<section id="ch09" class="chapter-section">
+<div class="container">
+<h1>第九章：动手吧——建造你自己的卡尔曼滤波器</h1>
+<p class="chapter-meta">全功能在线沙盒：自定义矩阵、模拟数据、一键运行、导出 C 代码</p>
+
+<div class="objective">
+  <h3>本章目标</h3>
+  <ul>
+    <li>搭建一个全功能的卡尔曼滤波在线实验台</li>
+    <li>支持自定义 F、H、Q、R 矩阵，或从预设场景选择</li>
+    <li>生成模拟数据（正弦、阶跃、随机游走），或上传 CSV</li>
+    <li>一键导出可移植的 C 语言代码</li>
+  </ul>
+</div>
+
+<div class="sandbox">
+  <h2 style="border:none;padding:0;margin:0 0 16px;">🧪 卡尔曼滤波器沙盒</h2>
+
+  <!-- Step 1: Choose scenario -->
+  <div class="tabs" id="ch09_mainTabs">
+    <div class="ch09-tab active" data-tab="preset">预设场景</div>
+    <div class="ch09-tab" data-tab="custom">自定义矩阵</div>
+    <div class="ch09-tab" data-tab="csv">CSV 数据</div>
+  </div>
+
+  <div class="ch09-tab-content active" id="ch09_tab-preset">
+    <div class="form-row">
+      <div class="form-col">
+        <label>选择场景:</label>
+        <select id="ch09_presetSelect">
+          <option value="pos_vel_1d">1D 位置-速度 (GPS)</option>
+          <option value="pos_vel_2d">2D 位置-速度 (GPS+IMU)</option>
+          <option value="temperature">温度估计</option>
+          <option value="altitude">无人机定高 (气压+IMU)</option>
+        </select>
+      </div>
+      <div class="form-col">
+        <label>信号类型:</label>
+        <select id="ch09_signalType">
+          <option value="sine">正弦波</option>
+          <option value="step">阶跃信号</option>
+          <option value="ramp">斜坡</option>
+          <option value="random_walk">随机游走</option>
+        </select>
+      </div>
+      <div class="form-col">
+        <label>仿真步数:</label>
+        <input type="number" id="ch09_simSteps" value="200" min="50" max="2000" step="50">
+      </div>
+    </div>
+    <button class="action" id="ch09_loadPreset" style="background:var(--primary);">加载预设</button>
+  </div>
+
+  <div class="ch09-tab-content" id="ch09_tab-custom">
+    <p style="font-size:.9em;color:var(--text-light);margin-bottom:12px;">输入矩阵，每行用逗号分隔，行之间换行。例如 2×2 单位矩阵: "1,0\n0,1"</p>
+    <div class="form-row">
+      <div class="form-col">
+        <label>状态维度 n:</label>
+        <input type="number" id="ch09_dimN" value="2" min="1" max="8">
+      </div>
+      <div class="form-col">
+        <label>观测维度 m:</label>
+        <input type="number" id="ch09_dimM" value="1" min="1" max="8">
+      </div>
+      <div class="form-col">
+        <label>时间步长 dt:</label>
+        <input type="number" id="ch09_customDt" value="0.1" min="0.001" max="1" step="0.001">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-col">
+        <label>F (n×n):</label>
+        <textarea class="matrix-input" id="ch09_matF">1, 0.1
+0, 1</textarea>
+      </div>
+      <div class="form-col">
+        <label>H (m×n):</label>
+        <textarea class="matrix-input" id="ch09_matH">1, 0</textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-col">
+        <label>Q (n×n):</label>
+        <textarea class="matrix-input" id="ch09_matQ">0.001, 0
+0, 0.1</textarea>
+      </div>
+      <div class="form-col">
+        <label>R (m×m):</label>
+        <textarea class="matrix-input" id="ch09_matR">4</textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-col">
+        <label>初始状态 x₀ (n×1):</label>
+        <textarea class="matrix-input" id="ch09_matX0" style="height:40px">0, 0</textarea>
+      </div>
+      <div class="form-col">
+        <label>初始 P₀ (对角值):</label>
+        <input type="number" id="ch09_customP0" value="100" min="0.1" max="10000">
+      </div>
+    </div>
+  </div>
+
+  <div class="ch09-tab-content" id="ch09_tab-csv">
+    <p style="font-size:.9em;color:var(--text-light);margin-bottom:12px;">
+      上传 CSV 文件：第一列为时间戳，后续列为观测值。确保已在"自定义矩阵"标签页设置好 F、H、Q、R。
+    </p>
+    <input type="file" id="ch09_csvFile" accept=".csv,.txt" style="margin-bottom:12px;">
+    <div id="ch09_csvPreview" style="font-size:.85em;color:var(--text-light);"></div>
+  </div>
+
+  <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+
+  <!-- Current matrices display -->
+  <h3>当前矩阵配置</h3>
+  <div id="ch09_matrixDisplay" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+    <div id="ch09_dispF" style="flex:1;min-width:150px;background:var(--code-bg);border-radius:8px;padding:10px;font-family:monospace;font-size:.85em;white-space:pre;overflow-x:auto;"></div>
+    <div id="ch09_dispH" style="flex:1;min-width:150px;background:var(--code-bg);border-radius:8px;padding:10px;font-family:monospace;font-size:.85em;white-space:pre;overflow-x:auto;"></div>
+    <div id="ch09_dispQ" style="flex:1;min-width:150px;background:var(--code-bg);border-radius:8px;padding:10px;font-family:monospace;font-size:.85em;white-space:pre;overflow-x:auto;"></div>
+    <div id="ch09_dispR" style="flex:1;min-width:150px;background:var(--code-bg);border-radius:8px;padding:10px;font-family:monospace;font-size:.85em;white-space:pre;overflow-x:auto;"></div>
+  </div>
+
+  <!-- Run button -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="action" id="ch09_runBtn" style="background:#16a34a;font-size:1em;padding:10px 28px;">▶ 运行滤波器</button>
+    <button class="action" id="ch09_exportBtn" style="background:#7c3aed;font-size:1em;padding:10px 28px;">导出 C 代码</button>
+  </div>
+
+  <!-- Results -->
+  <div id="ch09_resultsSection" style="display:none;margin-top:24px;">
+    <h3>滤波结果</h3>
+    <div class="stats-row">
+      <div class="stat-box"><div class="label">位置 RMS 误差</div><div class="value" id="ch09_rmsResult">-</div></div>
+      <div class="stat-box"><div class="label">最大误差</div><div class="value" id="ch09_maxErrResult">-</div></div>
+      <div class="stat-box"><div class="label">平均 K 范数</div><div class="value" id="ch09_avgKResult">-</div></div>
+      <div class="stat-box"><div class="label">收敛步数</div><div class="value" id="ch09_convResult">-</div></div>
+    </div>
+    <div id="ch09_resultPlot" style="width:100%;height:400px;margin-top:12px;"></div>
+    <div id="ch09_errorPlot" style="width:100%;height:200px;margin-top:8px;"></div>
+  </div>
+
+  <!-- C code output -->
+  <div id="ch09_codeSection" style="display:none;margin-top:24px;">
+    <h3>生成的 C 代码</h3>
+    <p style="font-size:.9em;color:var(--text-light);">以下代码可直接复制到你的嵌入式工程中。包含初始化和滤波器运行函数。</p>
+    <pre id="ch09_cCodeBlock"><code id="ch09_cCodeContent"></code><button class="copy-btn" id="ch09_copyBtn">复制</button></pre>
+  </div>
+</div>
+
+<div class="note">
+  <h3>嵌入式开发者笔记</h3>
+  <p><strong>从沙盒到产品的迁移清单：</strong></p>
+  <ol style="margin-left:18px;">
+    <li>用沙盒确定 F、H、Q、R 的初始值</li>
+    <li>导出 C 代码，集成到你的 MCU 工程</li>
+    <li>在真实硬件上采集传感器数据，用 Welford 算法计算 R（参见第二章）</li>
+    <li>在线调 Q：太小跟不上 → 增大；估计抖动 → 减小</li>
+    <li>监测新息序列和 NIS（参见第七章），确保滤波器健康</li>
+    <li>考虑用 Joseph 形式替换标准 P 更新以增强稳定性</li>
+    <li>如果性能不够，用上三角存储 P 并展开矩阵运算</li>
+    <li>在 release 模式下做一次运行时间测量，确保不超时</li>
+  </ol>
+
+  <p style="margin-top:12px;">恭喜你完成了整本教材！现在你已经掌握了卡尔曼滤波从理论到实践的核心知识。去造点东西吧。</p>
+</div>
+</div>
+</section>
+
+<script>
+
+/* ============================================================
+ * Master Tab Switching & Lazy Initialization
+ * ============================================================ */
+var chapterInitialized = {};
+
+function switchTab(targetId) {
+  document.querySelectorAll('.chapter-section').forEach(function(s) {
+    s.classList.remove('active');
+  });
+  document.querySelectorAll('.tab-nav-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+
+  var section = document.getElementById(targetId);
+  if (section) {
+    section.classList.add('active');
+  }
+  var btn = document.querySelector('.tab-nav-btn[data-target="' + targetId + '"]');
+  if (btn) {
+    btn.classList.add('active');
+    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
+  window.scrollTo(0, 0);
+
+  if (targetId !== 'home') {
+    renderMathInElement(section, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ]
+    });
+  }
+
+  if (!chapterInitialized[targetId] && typeof window['init_' + targetId] === 'function') {
+    window['init_' + targetId]();
+    chapterInitialized[targetId] = true;
+  }
+
+  setTimeout(function() {
+    window.dispatchEvent(new Event('resize'));
+  }, 100);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.tab-nav-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      switchTab(this.getAttribute('data-target'));
+    });
+  });
+});
+
+
+/* ===== Chapter 01 ===== */
+window.init_ch01 = function() {
+/* ============================================================
+ * Interactive Plot 1: Noise & Filter Comparison
+ * ============================================================ */
+(function() {
+  const noiseSlider = document.getElementById('ch01_noiseSlider');
+  const freqSlider  = document.getElementById('ch01_freqSlider');
+  const windowSlider= document.getElementById('ch01_windowSlider');
+  const alphaSlider = document.getElementById('ch01_alphaSlider');
+
+  function gauss() {
+    let u = 0, v = 0;
+    while(u === 0) u = Math.random();
+    while(v === 0) v = Math.random();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  }
+
+  /* Pre-generate random seed for consistent noise across updates */
+  const N = 500;
+  const randSeed = Array.from({length: N}, () => gauss());
+
+  function updateFilterPlot() {
+    const sigma  = parseFloat(noiseSlider.value);
+    const freq   = parseFloat(freqSlider.value);
+    const winN   = parseInt(windowSlider.value);
+    const alpha  = parseFloat(alphaSlider.value);
+
+    document.getElementById('ch01_noiseVal').textContent  = sigma.toFixed(2);
+    document.getElementById('ch01_freqVal').textContent   = freq.toFixed(1);
+    document.getElementById('ch01_windowVal').textContent  = winN;
+    document.getElementById('ch01_alphaVal').textContent   = alpha.toFixed(2);
+
+    const dt = 0.005;
+    const t = [], clean = [], noisy = [], ma = [], ema = [];
+
+    for(let i = 0; i < N; i++) {
+      const ti = i * dt;
+      t.push(ti);
+      const s = Math.sin(2 * Math.PI * freq * ti);
+      clean.push(s);
+      noisy.push(s + sigma * randSeed[i]);
+    }
+
+    /* Moving Average */
+    for(let i = 0; i < N; i++) {
+      let sum = 0, count = 0;
+      for(let j = Math.max(0, i - winN + 1); j <= i; j++) {
+        sum += noisy[j];
+        count++;
+      }
+      ma.push(sum / count);
+    }
+
+    /* Exponential Moving Average */
+    ema.push(noisy[0]);
+    for(let i = 1; i < N; i++) {
+      ema.push(alpha * noisy[i] + (1 - alpha) * ema[i-1]);
+    }
+
+    const traces = [
+      { x: t, y: clean, name: '原始信号', line: { color: '#16a34a', width: 2.5 } },
+      { x: t, y: noisy, name: '含噪信号', line: { color: '#cbd5e1', width: 1 }, opacity: 0.7 },
+      { x: t, y: ma,    name: `均值滤波 (N=${winN})`, line: { color: '#dc2626', width: 2, dash: 'dash' } },
+      { x: t, y: ema,   name: `EMA (α=${alpha.toFixed(2)})`, line: { color: '#2563eb', width: 2, dash: 'dot' } }
+    ];
+
+    const layout = {
+      margin: { t: 30, r: 20, b: 50, l: 55 },
+      xaxis: { title: '时间 (s)' },
+      yaxis: { title: '幅值' },
+      legend: { x: 0, y: 1.15, orientation: 'h' },
+      plot_bgcolor: '#fafafa',
+      font: { family: '-apple-system, sans-serif' }
+    };
+
+    Plotly.react('ch01_filterPlot', traces, layout, { responsive: true });
+  }
+
+  [noiseSlider, freqSlider, windowSlider, alphaSlider].forEach(
+    s => s.addEventListener('input', updateFilterPlot)
+  );
+  updateFilterPlot();
+})();
+
+/* ============================================================
+ * Interactive Plot 2: Integration Drift
+ * ============================================================ */
+(function() {
+  const biasSlider = document.getElementById('ch01_biasSlider');
+  const timeSlider = document.getElementById('ch01_timeSlider');
+
+  function updateDriftPlot() {
+    const b    = parseFloat(biasSlider.value);
+    const tMax = parseInt(timeSlider.value);
+
+    document.getElementById('ch01_biasVal').textContent = b.toFixed(3);
+    document.getElementById('ch01_timeVal').textContent = tMax;
+
+    const steps = 300;
+    const t = [], velErr = [], posErr = [];
+    for(let i = 0; i <= steps; i++) {
+      const ti = tMax * i / steps;
+      t.push(ti);
+      velErr.push(b * ti);
+      posErr.push(0.5 * b * ti * ti);
+    }
+
+    const traces = [
+      { x: t, y: posErr, name: '位置误差 (m)', line: { color: '#dc2626', width: 2.5 }, yaxis: 'y' },
+      { x: t, y: velErr, name: '速度误差 (m/s)', line: { color: '#2563eb', width: 2, dash: 'dash' }, yaxis: 'y2' }
+    ];
+
+    const layout = {
+      margin: { t: 30, r: 60, b: 50, l: 60 },
+      xaxis: { title: '时间 (s)' },
+      yaxis: { title: '位置误差 (m)', titlefont: { color: '#dc2626' }, tickfont: { color: '#dc2626' } },
+      yaxis2: {
+        title: '速度误差 (m/s)', titlefont: { color: '#2563eb' }, tickfont: { color: '#2563eb' },
+        overlaying: 'y', side: 'right'
+      },
+      legend: { x: 0, y: 1.12, orientation: 'h' },
+      plot_bgcolor: '#fafafa',
+      font: { family: '-apple-system, sans-serif' },
+      annotations: [{
+        x: t[steps], y: posErr[steps],
+        text: posErr[steps].toFixed(1) + ' m',
+        showarrow: true, arrowhead: 2, ax: -40, ay: -30,
+        font: { color: '#dc2626', size: 13, weight: 'bold' }
+      }]
+    };
+
+    Plotly.react('ch01_driftPlot', traces, layout, { responsive: true });
+  }
+
+  biasSlider.addEventListener('input', updateDriftPlot);
+  timeSlider.addEventListener('input', updateDriftPlot);
+  updateDriftPlot();
+})();
+};
+
+/* ===== Chapter 02 ===== */
+window.init_ch02 = function() {
+(function() {
+  const vxSlider = document.getElementById('ch02_vxSlider');
+  const vySlider = document.getElementById('ch02_vySlider');
+  const presetSelect = document.getElementById('ch02_presetSelect');
+  const runBtn = document.getElementById('ch02_runBtn');
+
+  function gauss() {
+    let u=0,v=0;
+    while(!u) u=Math.random();
+    while(!v) v=Math.random();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  }
+
+  const presets = {
+    calm:   { q: 0.1,  rGps: 2.0,  label: '静风 + 高精度GPS' },
+    windy:  { q: 2.0,  rGps: 2.0,  label: '大风 + 高精度GPS' },
+    lowgps: { q: 0.1,  rGps: 8.0,  label: '静风 + 低精度GPS' },
+    worst:  { q: 2.0,  rGps: 8.0,  label: '大风 + 低精度GPS' }
+  };
+
+  function fmtMat(name, rows) {
+    let s = `<strong>${name} =</strong><br>`;
+    s += rows.map(r => '[ ' + r.map(v => v.toFixed(3).padStart(7)).join('  ') + ' ]').join('<br>');
+    return s;
+  }
+
+  function ellipsePoints(cx, cy, P, npts) {
+    /* 2x2 covariance → 95% confidence ellipse */
+    const a = P[0][0], b = P[0][1], d = P[1][1];
+    const trace = a + d, det = a*d - b*b;
+    const disc = Math.sqrt(Math.max(0, trace*trace/4 - det));
+    const l1 = trace/2 + disc, l2 = Math.max(0.001, trace/2 - disc);
+    const angle = (b === 0 && a >= d) ? 0 : Math.atan2(l1 - a, b);
+    const scale = 2.448; // sqrt(5.991) for 95%
+    const pts = {x:[], y:[]};
+    for(let i=0;i<=npts;i++){
+      const t = 2*Math.PI*i/npts;
+      const ex = scale*Math.sqrt(l1)*Math.cos(t);
+      const ey = scale*Math.sqrt(l2)*Math.sin(t);
+      pts.x.push(cx + ex*Math.cos(angle) - ey*Math.sin(angle));
+      pts.y.push(cy + ex*Math.sin(angle) + ey*Math.cos(angle));
+    }
+    return pts;
+  }
+
+  vxSlider.addEventListener('input', () => document.getElementById('ch02_vxVal').textContent = parseFloat(vxSlider.value).toFixed(1));
+  vySlider.addEventListener('input', () => document.getElementById('ch02_vyVal').textContent = parseFloat(vySlider.value).toFixed(1));
+
+  function runSim() {
+    const vx0 = parseFloat(vxSlider.value);
+    const vy0 = parseFloat(vySlider.value);
+    const preset = presets[presetSelect.value];
+    const dt = 0.1, steps = 100;
+    const q = preset.q, rGps = preset.rGps;
+
+    /* Build Q (simplified diagonal-ish) */
+    const Q = [
+      [q*dt*dt*dt/3, 0,           q*dt*dt/2, 0          ],
+      [0,            q*dt*dt*dt/3, 0,         q*dt*dt/2  ],
+      [q*dt*dt/2,    0,           q*dt,      0          ],
+      [0,            q*dt*dt/2,   0,         q*dt       ]
+    ];
+    const R = [[rGps*rGps, 0],[0, rGps*rGps]];
+    const F = [[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]];
+    const H = [[1,0,0,0],[0,1,0,0]];
+
+    document.getElementById('ch02_matrixF').innerHTML = fmtMat('F (状态转移)', F);
+    document.getElementById('ch02_matrixH').innerHTML = fmtMat('H (观测)', H);
+    document.getElementById('ch02_matrixQ').innerHTML = fmtMat('Q (过程噪声)', Q);
+    document.getElementById('ch02_matrixR').innerHTML = fmtMat('R (测量噪声)', R);
+
+    const trueX=[0], trueY=[0], predX=[0], predY=[0], gpsX=[], gpsY=[];
+    let x=0, y=0, vx=vx0, vy=vy0;
+    let px=0, py=0, pvx=vx0, pvy=vy0;
+
+    /* Propagate P for ellipse display */
+    let P = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];
+
+    function matMul(A,B){
+      const m=A.length,n=B[0].length,p=B.length;
+      const C=Array.from({length:m},()=>new Array(n).fill(0));
+      for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];
+      return C;
+    }
+    function matAdd(A,B){return A.map((r,i)=>r.map((v,j)=>v+B[i][j]));}
+    function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+
+    const ellipses = [];
+
+    for(let k=0;k<steps;k++){
+      /* True dynamics with process noise */
+      x += vx*dt + Math.sqrt(q)*gauss()*dt;
+      y += vy*dt + Math.sqrt(q)*gauss()*dt;
+      vx += Math.sqrt(q)*gauss()*Math.sqrt(dt);
+      vy += Math.sqrt(q)*gauss()*Math.sqrt(dt);
+      trueX.push(x); trueY.push(y);
+
+      /* Pure model prediction (no noise correction) */
+      px += pvx*dt; py += pvy*dt;
+      predX.push(px); predY.push(py);
+
+      /* GPS measurement every step */
+      gpsX.push(x + rGps*gauss());
+      gpsY.push(y + rGps*gauss());
+
+      /* Propagate covariance: P = F*P*F' + Q */
+      P = matAdd(matMul(matMul(F, P), transpose(F)), Q);
+
+      if(k % 10 === 9) {
+        const Pxy = [[P[0][0],P[0][1]],[P[1][0],P[1][1]]];
+        const e = ellipsePoints(px, py, Pxy, 60);
+        ellipses.push({x:e.x, y:e.y, step:k+1});
+      }
+    }
+
+    const traces = [
+      {x:trueX, y:trueY, name:'真实轨迹', mode:'lines', line:{color:'#16a34a',width:2.5}},
+      {x:predX, y:predY, name:'模型预测（无校正）', mode:'lines', line:{color:'#2563eb',width:2,dash:'dash'}},
+      {x:gpsX, y:gpsY, name:'GPS 测量', mode:'markers', marker:{color:'#ef4444',size:4,opacity:0.5}}
+    ];
+
+    ellipses.forEach((e,i) => {
+      traces.push({
+        x: e.x, y: e.y,
+        name: i===0 ? '预测不确定性 (95%)' : undefined,
+        showlegend: i===0,
+        mode:'lines',
+        line:{color:'rgba(37,99,235,0.3)',width:1},
+        fill:'toself',
+        fillcolor:'rgba(37,99,235,0.06)'
+      });
+    });
+
+    Plotly.react('ch02_trajPlot', traces, {
+      margin:{t:30,r:20,b:50,l:55},
+      xaxis:{title:'X (m)', scaleanchor:'y'},
+      yaxis:{title:'Y (m)'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system, sans-serif'}
+    }, {responsive:true});
+  }
+
+  runBtn.addEventListener('click', runSim);
+  runSim();
+})();
+};
+
+/* ===== Chapter 03 ===== */
+window.init_ch03 = function() {
+/* ============================================================
+ * Gaussian Fusion Interactive
+ * ============================================================ */
+(function() {
+  const muPSlider  = document.getElementById('ch03_muPSlider');
+  const sigPSlider = document.getElementById('ch03_sigPSlider');
+  const muZSlider  = document.getElementById('ch03_muZSlider');
+  const sigZSlider = document.getElementById('ch03_sigZSlider');
+
+  function gaussian(x, mu, sig) {
+    return Math.exp(-0.5 * ((x - mu) / sig) ** 2) / (sig * Math.sqrt(2 * Math.PI));
+  }
+
+  function updateFusion() {
+    const muP  = parseFloat(muPSlider.value);
+    const sigP = parseFloat(sigPSlider.value);
+    const muZ  = parseFloat(muZSlider.value);
+    const sigZ = parseFloat(sigZSlider.value);
+
+    document.getElementById('ch03_muPVal').textContent  = muP.toFixed(1);
+    document.getElementById('ch03_sigPVal').textContent  = sigP.toFixed(1);
+    document.getElementById('ch03_muZVal').textContent   = muZ.toFixed(1);
+    document.getElementById('ch03_sigZVal').textContent   = sigZ.toFixed(1);
+
+    const K = (sigP * sigP) / (sigP * sigP + sigZ * sigZ);
+    const muPost  = muP + K * (muZ - muP);
+    const sigPost = Math.sqrt((1 - K) * sigP * sigP);
+
+    document.getElementById('ch03_kValue').textContent      = K.toFixed(4);
+    document.getElementById('ch03_muPostValue').textContent  = muPost.toFixed(3);
+    document.getElementById('ch03_sigPostValue').textContent = sigPost.toFixed(3);
+
+    let trust = '';
+    if(K > 0.7) trust = '📡 偏信测量';
+    else if(K < 0.3) trust = '🧠 偏信模型';
+    else trust = '⚖️ 均衡';
+    document.getElementById('ch03_trustLabel').textContent = trust;
+
+    const lo = Math.min(muP - 4*sigP, muZ - 4*sigZ, muPost - 4*sigPost);
+    const hi = Math.max(muP + 4*sigP, muZ + 4*sigZ, muPost + 4*sigPost);
+    const N = 400;
+    const x = [], yP = [], yZ = [], yF = [];
+    for(let i = 0; i <= N; i++) {
+      const xi = lo + (hi - lo) * i / N;
+      x.push(xi);
+      yP.push(gaussian(xi, muP, sigP));
+      yZ.push(gaussian(xi, muZ, sigZ));
+      yF.push(gaussian(xi, muPost, sigPost));
+    }
+
+    const traces = [
+      {x, y: yP, name: '预测分布', line: {color:'#2563eb', width: 2.5}, fill:'tozeroy', fillcolor:'rgba(37,99,235,0.08)'},
+      {x, y: yZ, name: '测量分布', line: {color:'#dc2626', width: 2.5}, fill:'tozeroy', fillcolor:'rgba(220,38,38,0.08)'},
+      {x, y: yF, name: '融合后验', line: {color:'#7c3aed', width: 3}, fill:'tozeroy', fillcolor:'rgba(124,58,237,0.12)'}
+    ];
+
+    Plotly.react('ch03_fusionPlot', traces, {
+      margin:{t:30,r:20,b:50,l:55},
+      xaxis:{title:'状态值'},
+      yaxis:{title:'概率密度'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      shapes:[
+        {type:'line',x0:muPost,x1:muPost,y0:0,y1:gaussian(muPost,muPost,sigPost),line:{color:'#7c3aed',width:2,dash:'dot'}}
+      ]
+    }, {responsive:true});
+  }
+
+  [muPSlider, sigPSlider, muZSlider, sigZSlider].forEach(
+    s => s.addEventListener('input', updateFusion)
+  );
+  updateFusion();
+})();
+
+/* ============================================================
+ * Predict-Update Cycle
+ * ============================================================ */
+(function() {
+  const qSlider = document.getElementById('ch03_qCycSlider');
+  const rSlider = document.getElementById('ch03_rCycSlider');
+  const stepBtn = document.getElementById('ch03_stepBtn');
+  const autoBtn = document.getElementById('ch03_autoBtn');
+  const resetBtn= document.getElementById('ch03_resetCycBtn');
+
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  let state, autoId;
+
+  function initState() {
+    if(autoId) { clearInterval(autoId); autoId = null; }
+    state = {
+      xTrue: 0, xEst: 0, P: 10,
+      step: 0, phase: 'predict',
+      histTrue: [0], histEst: [0], histP: [10], histSteps: [0],
+      histMeas: [], histMeasSteps: []
+    };
+    updateCyclePlots();
+  }
+
+  function doStep() {
+    const q = parseFloat(qSlider.value);
+    const r = parseFloat(rSlider.value);
+
+    if(state.phase === 'predict') {
+      state.xTrue += 0.3 + 0.5 * Math.sin(state.step * 0.2) + Math.sqrt(q) * gauss() * 0.3;
+      state.xEst = state.xEst;
+      state.P = state.P + q;
+      state.phase = 'update';
+    } else {
+      const z = state.xTrue + r * gauss();
+      state.histMeas.push(z);
+      state.histMeasSteps.push(state.step + 0.5);
+      const K = state.P / (state.P + r * r);
+      state.xEst = state.xEst + K * (z - state.xEst);
+      state.P = (1 - K) * state.P;
+      state.phase = 'predict';
+      state.step++;
+    }
+
+    state.histTrue.push(state.xTrue);
+    state.histEst.push(state.xEst);
+    state.histP.push(state.P);
+    state.histSteps.push(state.step + (state.phase === 'update' ? 0.5 : 0));
+
+    updateCyclePlots();
+  }
+
+  function updateCyclePlots() {
+    document.getElementById('ch03_qCycVal').textContent = parseFloat(qSlider.value).toFixed(1);
+    document.getElementById('ch03_rCycVal').textContent = parseFloat(rSlider.value).toFixed(1);
+
+    const s = state;
+    const upper = s.histEst.map((e,i) => e + 2*Math.sqrt(s.histP[i]));
+    const lower = s.histEst.map((e,i) => e - 2*Math.sqrt(s.histP[i]));
+
+    const traces = [
+      {x:s.histSteps,y:upper,mode:'lines',line:{width:0},showlegend:false,hoverinfo:'skip'},
+      {x:s.histSteps,y:lower,mode:'lines',line:{width:0},fill:'tonexty',fillcolor:'rgba(37,99,235,0.12)',name:'2σ 置信区间',showlegend:true},
+      {x:s.histSteps,y:s.histTrue,name:'真实值',line:{color:'#16a34a',width:2}},
+      {x:s.histSteps,y:s.histEst,name:'估计值',line:{color:'#2563eb',width:2.5}},
+      {x:s.histMeasSteps,y:s.histMeas,name:'测量值',mode:'markers',marker:{color:'#dc2626',size:7,symbol:'x'}}
+    ];
+
+    Plotly.react('ch03_cyclePlot', traces, {
+      margin:{t:20,r:20,b:40,l:55},
+      xaxis:{title:'步数'},
+      yaxis:{title:'状态值'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    /* Covariance plot */
+    const covColors = s.histP.map((_,i) => {
+      const ph = i < s.histSteps.length ? (s.histSteps[i] % 1 > 0.1 ? '#dc2626' : '#2563eb') : '#64748b';
+      return ph;
+    });
+    Plotly.react('ch03_covPlot', [{
+      x: s.histSteps, y: s.histP,
+      type: 'bar', marker: { color: s.histSteps.map(st => st % 1 > 0.1 ? 'rgba(220,38,38,0.6)' : 'rgba(37,99,235,0.6)') },
+      name: '协方差 P'
+    }], {
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'步数'},
+      yaxis:{title:'P (方差)'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      showlegend:false
+    },{responsive:true});
+  }
+
+  stepBtn.addEventListener('click', doStep);
+  resetBtn.addEventListener('click', initState);
+  autoBtn.addEventListener('click', function() {
+    if(autoId) { clearInterval(autoId); autoId=null; autoBtn.textContent='自动运行'; return; }
+    autoBtn.textContent = '停止';
+    autoId = setInterval(doStep, 400);
+  });
+  qSlider.addEventListener('input', () => { document.getElementById('ch03_qCycVal').textContent = parseFloat(qSlider.value).toFixed(1); });
+  rSlider.addEventListener('input', () => { document.getElementById('ch03_rCycVal').textContent = parseFloat(rSlider.value).toFixed(1); });
+
+  initState();
+})();
+};
+
+/* ===== Chapter 04 ===== */
+window.init_ch04 = function() {
+(function() {
+  const predictBtn = document.getElementById('ch04_predictBtn');
+  const updateBtn  = document.getElementById('ch04_updateBtn');
+  const resetBtn   = document.getElementById('ch04_resetBtn4');
+  const autoBtn    = document.getElementById('ch04_autoBtn4');
+
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  /* Matrix utilities */
+  function mat(r,c,fill){return Array.from({length:r},()=>new Array(c).fill(fill||0));}
+  function matMul(A,B){
+    const m=A.length,n=B[0].length,p=B.length,C=mat(m,n);
+    for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];
+    return C;
+  }
+  function matAdd(A,B){return A.map((r,i)=>r.map((v,j)=>v+B[i][j]));}
+  function matSub(A,B){return A.map((r,i)=>r.map((v,j)=>v-B[i][j]));}
+  function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+  function eye(n){const I=mat(n,n);for(let i=0;i<n;i++)I[i][i]=1;return I;}
+  function inv2(M){
+    const d=M[0][0]*M[1][1]-M[0][1]*M[1][0], id=1/d;
+    return [[M[1][1]*id,-M[0][1]*id],[-M[1][0]*id,M[0][0]*id]];
+  }
+
+  const dt=0.5, n=4, m=2;
+  const F=[[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]];
+  const B=[[.5*dt*dt,0],[0,.5*dt*dt],[dt,0],[0,dt]];
+  const H=[[1,0,0,0],[0,1,0,0]];
+  const q=0.5;
+  const Q=[[q*dt*dt*dt/3,0,q*dt*dt/2,0],[0,q*dt*dt*dt/3,0,q*dt*dt/2],[q*dt*dt/2,0,q*dt,0],[0,q*dt*dt/2,0,q*dt]];
+  const R=[[4,0],[0,4]];
+
+  let kf, trueState, history;
+
+  function ellipsePoints(cx,cy,Pxy,npts){
+    const a=Pxy[0][0],b=Pxy[0][1],d=Pxy[1][1];
+    const tr=a+d,det=a*d-b*b;
+    const disc=Math.sqrt(Math.max(0,tr*tr/4-det));
+    const l1=tr/2+disc,l2=Math.max(.001,tr/2-disc);
+    const ang=(b===0&&a>=d)?0:Math.atan2(l1-a,b);
+    const sc=2.448;
+    const pts={x:[],y:[]};
+    for(let i=0;i<=npts;i++){
+      const t=2*Math.PI*i/npts;
+      const ex=sc*Math.sqrt(l1)*Math.cos(t),ey=sc*Math.sqrt(l2)*Math.sin(t);
+      pts.x.push(cx+ex*Math.cos(ang)-ey*Math.sin(ang));
+      pts.y.push(cy+ex*Math.sin(ang)+ey*Math.cos(ang));
+    }
+    return pts;
+  }
+
+  function initKF(){
+    trueState={x:0,y:0,vx:1.5,vy:1.0};
+    kf={
+      x:[0,0,0,0],
+      P:[[10,0,0,0],[0,10,0,0],[0,0,5,0],[0,0,0,5]]
+    };
+    history={
+      trueX:[0],trueY:[0],
+      estX:[0],estY:[0],
+      measX:[],measY:[],
+      ellipses:[],
+      phase:'predict',
+      lastK:null, lastInnov:null
+    };
+    updateDisplay();
+    plotStep();
+  }
+
+  function doPredictStep(){
+    const ax=0.3*Math.sin(history.trueX.length*0.15);
+    const ay=0.2*Math.cos(history.trueX.length*0.12);
+
+    trueState.x+=trueState.vx*dt+.5*ax*dt*dt+Math.sqrt(q)*gauss()*.1;
+    trueState.y+=trueState.vy*dt+.5*ay*dt*dt+Math.sqrt(q)*gauss()*.1;
+    trueState.vx+=ax*dt+Math.sqrt(q)*gauss()*.05;
+    trueState.vy+=ay*dt+Math.sqrt(q)*gauss()*.05;
+
+    /* ① State predict */
+    const u=[[ax],[ay]];
+    const xVec=kf.x.map(v=>[v]);
+    const xPred=matAdd(matMul(F,xVec),matMul(B,u));
+    kf.x=xPred.map(r=>r[0]);
+
+    /* ② Covariance predict */
+    kf.P=matAdd(matMul(matMul(F,kf.P),transpose(F)),Q);
+
+    history.trueX.push(trueState.x);
+    history.trueY.push(trueState.y);
+    history.estX.push(kf.x[0]);
+    history.estY.push(kf.x[1]);
+    history.phase='update';
+    history.lastK=null;
+    history.lastInnov=null;
+
+    const e=ellipsePoints(kf.x[0],kf.x[1],[[kf.P[0][0],kf.P[0][1]],[kf.P[1][0],kf.P[1][1]]],50);
+    history.ellipses.push({x:e.x,y:e.y,type:'predict'});
+
+    updateDisplay();
+    plotStep();
+  }
+
+  function doUpdateStep(){
+    const zx=trueState.x+Math.sqrt(R[0][0])*gauss();
+    const zy=trueState.y+Math.sqrt(R[1][1])*gauss();
+    history.measX.push(zx);
+    history.measY.push(zy);
+
+    /* ③ Kalman gain */
+    const PHt=matMul(kf.P,transpose(H));
+    const S=matAdd(matMul(H,PHt),R);
+    const Si=inv2(S);
+    const K=matMul(PHt,Si);
+
+    /* ④ State update */
+    const innov=[zx-kf.x[0],zy-kf.x[1]];
+    const innovVec=innov.map(v=>[v]);
+    const correction=matMul(K,innovVec);
+    kf.x=kf.x.map((v,i)=>v+correction[i][0]);
+
+    /* ⑤ Covariance update */
+    const IKH=matSub(eye(n),matMul(K,H));
+    kf.P=matMul(IKH,kf.P);
+
+    history.estX.push(kf.x[0]);
+    history.estY.push(kf.x[1]);
+    history.trueX.push(trueState.x);
+    history.trueY.push(trueState.y);
+    history.phase='predict';
+    history.lastK=K;
+    history.lastInnov=innov;
+
+    const e=ellipsePoints(kf.x[0],kf.x[1],[[kf.P[0][0],kf.P[0][1]],[kf.P[1][0],kf.P[1][1]]],50);
+    history.ellipses.push({x:e.x,y:e.y,type:'update'});
+
+    updateDisplay();
+    plotStep();
+  }
+
+  function updateDisplay(){
+    document.getElementById('ch04_stX').textContent=
+      `[${kf.x.map(v=>v.toFixed(2)).join(', ')}]`;
+    document.getElementById('ch04_stP').textContent=
+      `[${kf.P[0][0].toFixed(2)}, ${kf.P[1][1].toFixed(2)}, ${kf.P[2][2].toFixed(2)}, ${kf.P[3][3].toFixed(2)}]`;
+    document.getElementById('ch04_stK').textContent=
+      history.lastK ? history.lastK.map(r=>`[${r.map(v=>v.toFixed(3)).join(',')}]`).join(' ') : '—';
+    document.getElementById('ch04_stInnov').textContent=
+      history.lastInnov ? `[${history.lastInnov.map(v=>v.toFixed(3)).join(', ')}]` : '—';
+
+    const d0=document.getElementById('ch04_dot0'),d1=document.getElementById('ch04_dot1');
+    d0.className='step-dot'+(history.phase==='predict'?' active':' done');
+    d1.className='step-dot'+(history.phase==='update'?' active':'');
+  }
+
+  function plotStep(){
+    const h=history;
+    const traces=[
+      {x:h.trueX,y:h.trueY,name:'真实轨迹',mode:'lines+markers',line:{color:'#16a34a',width:2},marker:{size:4}},
+      {x:h.estX,y:h.estY,name:'估计轨迹',mode:'lines+markers',line:{color:'#2563eb',width:2.5},marker:{size:5}},
+      {x:h.measX,y:h.measY,name:'GPS测量',mode:'markers',marker:{color:'#dc2626',size:8,symbol:'x'}}
+    ];
+
+    if(h.ellipses.length>0){
+      const last=h.ellipses[h.ellipses.length-1];
+      traces.push({
+        x:last.x,y:last.y,
+        name:last.type==='predict'?'预测协方差':'更新协方差',
+        mode:'lines',fill:'toself',
+        line:{color:last.type==='predict'?'rgba(37,99,235,0.5)':'rgba(22,163,74,0.5)',width:2},
+        fillcolor:last.type==='predict'?'rgba(37,99,235,0.08)':'rgba(22,163,74,0.08)'
+      });
+    }
+
+    Plotly.react('ch04_stepPlot',traces,{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'X (m)',scaleanchor:'y'},
+      yaxis:{title:'Y (m)'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+  }
+
+  predictBtn.addEventListener('click',()=>{if(history.phase==='predict')doPredictStep();});
+  updateBtn.addEventListener('click',()=>{if(history.phase==='update')doUpdateStep();});
+  resetBtn.addEventListener('click',initKF);
+  autoBtn.addEventListener('click',()=>{
+    for(let i=0;i<10;i++){doPredictStep();doUpdateStep();}
+  });
+
+  initKF();
+})();
+};
+
+/* ===== Chapter 05 ===== */
+window.init_ch05 = function() {
+(function(){
+  /* Matrix utilities */
+  function mat(r,c){return Array.from({length:r},()=>new Array(c).fill(0));}
+  function matMul(A,B){const m=A.length,n=B[0].length,p=B.length,C=mat(m,n);for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];return C;}
+  function matAdd(A,B){return A.map((r,i)=>r.map((v,j)=>v+B[i][j]));}
+  function matSub(A,B){return A.map((r,i)=>r.map((v,j)=>v-B[i][j]));}
+  function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+  function eye(n){const I=mat(n,n);for(let i=0;i<n;i++)I[i][i]=1;return I;}
+  function diagMat(n,v){const M=mat(n,n);for(let i=0;i<n;i++)M[i][i]=v;return M;}
+  function inv2x2(M){const d=M[0][0]*M[1][1]-M[0][1]*M[1][0],id=1/d;return[[M[1][1]*id,-M[0][1]*id],[-M[1][0]*id,M[0][0]*id]];}
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  function buildQ(dt,q){
+    const d3=dt*dt*dt/3,d2=dt*dt/2,d1=dt;
+    return[[q*d3,0,q*d2,0],[0,q*d3,0,q*d2],[q*d2,0,q*d1,0],[0,q*d2,0,q*d1]];
+  }
+
+  const dt=0.02; // 50Hz
+  const gpsInterval=10; // GPS every 10 steps -> 5Hz
+
+  let kf,simState,animId,step,gpsN,errors;
+
+  function createKF(q,r,p0){
+    return{
+      x:[0,0,0,0],P:diagMat(4,p0),
+      F:[[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]],
+      B:[[.5*dt*dt,0],[0,.5*dt*dt],[dt,0],[0,dt]],
+      H:[[1,0,0,0],[0,1,0,0]],
+      Q:buildQ(dt,q), R:[[r*r,0],[0,r*r]]
+    };
+  }
+
+  function initSim(){
+    if(animId){cancelAnimationFrame(animId);animId=null;}
+    const q=parseFloat(document.getElementById('ch05_qSlider5').value);
+    const r=parseFloat(document.getElementById('ch05_rSlider5').value);
+    const p0=parseFloat(document.getElementById('ch05_p0Slider').value);
+    kf=createKF(q,r,p0);
+    simState={t:0,radius:20,omega:0.3};
+    step=0; gpsN=0; errors=[];
+    plotData={trueX:[],trueY:[],estX:[],estY:[],gpsX:[],gpsY:[],errHist:[]};
+    updatePlots();
+  }
+
+  let plotData;
+
+  function simStep(){
+    const s=simState;
+    const useIMU=document.getElementById('ch05_useIMU').checked;
+
+    s.t+=dt;
+
+    /* True trajectory: elliptical path */
+    const trueX=s.radius*Math.cos(s.omega*s.t);
+    const trueY=s.radius*0.7*Math.sin(s.omega*s.t);
+    const trueAx=-s.radius*s.omega*s.omega*Math.cos(s.omega*s.t);
+    const trueAy=-s.radius*0.7*s.omega*s.omega*Math.sin(s.omega*s.t);
+
+    /* IMU reading (true + noise + small bias) */
+    const imuAx=trueAx+0.5*gauss()+0.02;
+    const imuAy=trueAy+0.5*gauss()-0.01;
+
+    /* Predict */
+    if(useIMU){
+      const x=kf.x,F=kf.F;
+      kf.x=[
+        x[0]+x[2]*dt+.5*imuAx*dt*dt,
+        x[1]+x[3]*dt+.5*imuAy*dt*dt,
+        x[2]+imuAx*dt,
+        x[3]+imuAy*dt
+      ];
+    }else{
+      const x=kf.x;
+      kf.x=[x[0]+x[2]*dt,x[1]+x[3]*dt,x[2],x[3]];
+    }
+    kf.P=matAdd(matMul(matMul(kf.F,kf.P),transpose(kf.F)),kf.Q);
+
+    /* GPS update */
+    let lastK=null;
+    if(step%gpsInterval===0){
+      const r=Math.sqrt(kf.R[0][0]);
+      const gx=trueX+r*gauss(), gy=trueY+r*gauss();
+      plotData.gpsX.push(gx); plotData.gpsY.push(gy);
+
+      const PHt=matMul(kf.P,transpose(kf.H));
+      const S=matAdd(matMul(kf.H,PHt),kf.R);
+      const Si=inv2x2(S);
+      const K=matMul(PHt,Si);
+      const innov=[gx-kf.x[0],gy-kf.x[1]];
+      for(let i=0;i<4;i++) kf.x[i]+=K[i][0]*innov[0]+K[i][1]*innov[1];
+      const IKH=matSub(eye(4),matMul(K,kf.H));
+      kf.P=matMul(IKH,kf.P);
+      gpsN++;
+      lastK=K;
+    }
+
+    plotData.trueX.push(trueX); plotData.trueY.push(trueY);
+    plotData.estX.push(kf.x[0]); plotData.estY.push(kf.x[1]);
+
+    const err=Math.sqrt((kf.x[0]-trueX)**2+(kf.x[1]-trueY)**2);
+    errors.push(err);
+    plotData.errHist.push(err);
+
+    step++;
+
+    if(lastK){
+      const kn=Math.sqrt(lastK.reduce((s,r)=>s+r.reduce((a,v)=>a+v*v,0),0));
+      document.getElementById('ch05_kNorm').textContent=kn.toFixed(4);
+    }
+    document.getElementById('ch05_stepVal').textContent=step;
+    document.getElementById('ch05_gpsCount').textContent=gpsN;
+    if(errors.length>0){
+      const rms=Math.sqrt(errors.reduce((s,e)=>s+e*e,0)/errors.length);
+      document.getElementById('ch05_rmsVal').textContent=rms.toFixed(3);
+    }
+  }
+
+  function updatePlots(){
+    const d=plotData||{trueX:[],trueY:[],estX:[],estY:[],gpsX:[],gpsY:[],errHist:[]};
+    const traces=[
+      {x:d.trueX,y:d.trueY,name:'真实轨迹',mode:'lines',line:{color:'#16a34a',width:2}},
+      {x:d.estX,y:d.estY,name:'KF 估计',mode:'lines',line:{color:'#2563eb',width:2.5}},
+      {x:d.gpsX,y:d.gpsY,name:'GPS 测量',mode:'markers',marker:{color:'#dc2626',size:5,opacity:0.6}}
+    ];
+    Plotly.react('ch05_trajPlot5',traces,{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'X (m)',range:[-35,35],scaleanchor:'y'},
+      yaxis:{title:'Y (m)',range:[-25,25]},
+      legend:{x:0,y:1.1,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    Plotly.react('ch05_errorPlot5',[{
+      y:d.errHist,name:'位置误差 (m)',
+      line:{color:'#dc2626',width:1.5},fill:'tozeroy',fillcolor:'rgba(220,38,38,0.1)'
+    }],{
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'步数'},
+      yaxis:{title:'误差 (m)'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      showlegend:false
+    },{responsive:true});
+  }
+
+  let running=false;
+  function animate(){
+    if(!running)return;
+    const speed=parseInt(document.getElementById('ch05_speedSelect').value);
+    for(let i=0;i<speed;i++) simStep();
+    if(step%5===0) updatePlots();
+    animId=requestAnimationFrame(animate);
+  }
+
+  document.getElementById('ch05_startBtn').addEventListener('click',()=>{
+    if(!plotData) initSim();
+    running=true; animate();
+  });
+  document.getElementById('ch05_pauseBtn').addEventListener('click',()=>{
+    running=false;
+  });
+  document.getElementById('ch05_resetBtn5').addEventListener('click',()=>{
+    running=false; initSim();
+  });
+
+  ['qSlider5','rSlider5','p0Slider'].forEach(id=>{
+    document.getElementById(id).addEventListener('input',function(){
+      const labels={qSlider5:'qVal',rSlider5:'rVal',p0Slider:'p0Val'};
+      document.getElementById(labels[id]).textContent=parseFloat(this.value).toFixed(id==='p0Slider'?0:2);
+    });
+  });
+
+  initSim();
+})();
+};
+
+/* ===== Chapter 06 ===== */
+window.init_ch06 = function() {
+(function(){
+  function mat(r,c){return Array.from({length:r},()=>new Array(c).fill(0));}
+  function matMul(A,B){const m=A.length,n=B[0].length,p=B.length,C=mat(m,n);for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];return C;}
+  function matAdd(A,B){return A.map((r,i)=>r.map((v,j)=>v+B[i][j]));}
+  function matSub(A,B){return A.map((r,i)=>r.map((v,j)=>v-B[i][j]));}
+  function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+  function eye(n){const I=mat(n,n);for(let i=0;i<n;i++)I[i][i]=1;return I;}
+  function diagMat(n,v){const M=mat(n,n);for(let i=0;i<n;i++)M[i][i]=v;return M;}
+  function inv2x2(M){const d=M[0][0]*M[1][1]-M[0][1]*M[1][0],id=1/d;return[[M[1][1]*id,-M[0][1]*id],[-M[1][0]*id,M[0][0]*id]];}
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+  function angleWrap(a){while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a;}
+
+  const dt=0.02,n=4,gpsInterval=10;
+
+  function buildQ(dt,q){
+    const d3=dt*dt*dt/3,d2=dt*dt/2,d1=dt;
+    return[[q*d3,0,q*d2,0],[0,q*d3,0,q*d2],[q*d2,0,q*d1,0],[0,q*d2,0,q*d1]];
+  }
+
+  let animId,running=false,step,data;
+
+  function initSim(){
+    if(animId){cancelAnimationFrame(animId);animId=null;}
+    running=false; step=0;
+    const radius=parseFloat(document.getElementById('ch06_radiusSlider').value);
+    const q=parseFloat(document.getElementById('ch06_qSlider6').value);
+
+    const F=[[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]];
+    const B=[[.5*dt*dt,0],[0,.5*dt*dt],[dt,0],[0,dt]];
+    const Q=buildQ(dt,q);
+    const HLin=[[1,0,0,0],[0,1,0,0]];
+
+    data={
+      radius, omega:0.3, t:0,
+      F, B, Q, HLin,
+      kfX:[radius,0,0,radius*0.3*0.7], kfP:diagMat(4,50),
+      ekfX:[radius,0,0,radius*0.3*0.7], ekfP:diagMat(4,50),
+      trueX:[], trueY:[], kfEstX:[], kfEstY:[], ekfEstX:[], ekfEstY:[],
+      measX:[], measY:[],
+      kfErr:[], ekfErr:[]
+    };
+    updatePlots();
+  }
+
+  function simStep(){
+    const d=data;
+    const sigR=parseFloat(document.getElementById('ch06_sigRSlider').value);
+    const sigT=parseFloat(document.getElementById('ch06_sigTSlider').value)*Math.PI/180;
+    const q=parseFloat(document.getElementById('ch06_qSlider6').value);
+    d.Q=buildQ(dt,q);
+
+    d.t+=dt;
+    const trueX=d.radius*Math.cos(d.omega*d.t);
+    const trueY=d.radius*0.7*Math.sin(d.omega*d.t);
+    const trueAx=-d.radius*d.omega*d.omega*Math.cos(d.omega*d.t);
+    const trueAy=-d.radius*0.7*d.omega*d.omega*Math.sin(d.omega*d.t);
+    const imuAx=trueAx+0.5*gauss();
+    const imuAy=trueAy+0.5*gauss();
+
+    d.trueX.push(trueX); d.trueY.push(trueY);
+
+    /* Predict both filters identically */
+    function doPredict(x,P){
+      const nx=[
+        x[0]+x[2]*dt+.5*imuAx*dt*dt,
+        x[1]+x[3]*dt+.5*imuAy*dt*dt,
+        x[2]+imuAx*dt,
+        x[3]+imuAy*dt
+      ];
+      const nP=matAdd(matMul(matMul(d.F,P),transpose(d.F)),d.Q);
+      return{x:nx,P:nP};
+    }
+
+    let kfR=doPredict(d.kfX,d.kfP);
+    d.kfX=kfR.x; d.kfP=kfR.P;
+    let ekfR=doPredict(d.ekfX,d.ekfP);
+    d.ekfX=ekfR.x; d.ekfP=ekfR.P;
+
+    /* Measurement update */
+    if(step%gpsInterval===0){
+      const trueR=Math.sqrt(trueX*trueX+trueY*trueY);
+      const trueTheta=Math.atan2(trueY,trueX);
+      const measR=trueR+sigR*gauss();
+      const measTheta=trueTheta+sigT*gauss();
+
+      /* Convert to XY for display and naive KF */
+      const measXY_x=measR*Math.cos(measTheta);
+      const measXY_y=measR*Math.sin(measTheta);
+      d.measX.push(measXY_x); d.measY.push(measXY_y);
+
+      /* --- Naive Linear KF: update with converted (x,y) --- */
+      const RLin=[[sigR*sigR+trueR*trueR*sigT*sigT,0],[0,sigR*sigR+trueR*trueR*sigT*sigT]];
+      const PHt_kf=matMul(d.kfP,transpose(d.HLin));
+      const S_kf=matAdd(matMul(d.HLin,PHt_kf),RLin);
+      const Si_kf=inv2x2(S_kf);
+      const K_kf=matMul(PHt_kf,Si_kf);
+      const inn_kf=[measXY_x-d.kfX[0],measXY_y-d.kfX[1]];
+      for(let i=0;i<4;i++) d.kfX[i]+=K_kf[i][0]*inn_kf[0]+K_kf[i][1]*inn_kf[1];
+      d.kfP=matMul(matSub(eye(4),matMul(K_kf,d.HLin)),d.kfP);
+
+      /* --- EKF: update directly in (r, theta) space --- */
+      const ex=d.ekfX[0],ey=d.ekfX[1];
+      const rPred=Math.sqrt(ex*ex+ey*ey)||1e-6;
+      const tPred=Math.atan2(ey,ex);
+      const rSq=rPred*rPred;
+
+      const Hj=[
+        [ex/rPred, ey/rPred, 0, 0],
+        [-ey/rSq, ex/rSq, 0, 0]
+      ];
+      const R_ekf=[[sigR*sigR,0],[0,sigT*sigT]];
+      const PHt_e=matMul(d.ekfP,transpose(Hj));
+      const S_e=matAdd(matMul(Hj,PHt_e),R_ekf);
+      const Si_e=inv2x2(S_e);
+      const K_e=matMul(PHt_e,Si_e);
+      const inn_e=[measR-rPred,angleWrap(measTheta-tPred)];
+      for(let i=0;i<4;i++) d.ekfX[i]+=K_e[i][0]*inn_e[0]+K_e[i][1]*inn_e[1];
+      d.ekfP=matMul(matSub(eye(4),matMul(K_e,Hj)),d.ekfP);
+    }
+
+    d.kfEstX.push(d.kfX[0]); d.kfEstY.push(d.kfX[1]);
+    d.ekfEstX.push(d.ekfX[0]); d.ekfEstY.push(d.ekfX[1]);
+
+    const kfE=Math.sqrt((d.kfX[0]-trueX)**2+(d.kfX[1]-trueY)**2);
+    const ekfE=Math.sqrt((d.ekfX[0]-trueX)**2+(d.ekfX[1]-trueY)**2);
+    d.kfErr.push(kfE); d.ekfErr.push(ekfE);
+
+    step++;
+    document.getElementById('ch06_stepVal6').textContent=step;
+    if(d.kfErr.length>10){
+      const kfRms=Math.sqrt(d.kfErr.reduce((s,e)=>s+e*e,0)/d.kfErr.length);
+      const ekfRms=Math.sqrt(d.ekfErr.reduce((s,e)=>s+e*e,0)/d.ekfErr.length);
+      document.getElementById('ch06_kfRms').textContent=kfRms.toFixed(2);
+      document.getElementById('ch06_ekfRms').textContent=ekfRms.toFixed(2);
+      const adv=((kfRms-ekfRms)/kfRms*100);
+      document.getElementById('ch06_advantage').textContent=(adv>0?'+':'')+adv.toFixed(1)+'%';
+    }
+  }
+
+  function updatePlots(){
+    const d=data;
+    Plotly.react('ch06_ekfPlot',[
+      {x:d.trueX,y:d.trueY,name:'真实轨迹',mode:'lines',line:{color:'#16a34a',width:2}},
+      {x:d.kfEstX,y:d.kfEstY,name:'线性 KF（转换后XY）',mode:'lines',line:{color:'#f59e0b',width:2,dash:'dash'}},
+      {x:d.ekfEstX,y:d.ekfEstY,name:'EKF（极坐标更新）',mode:'lines',line:{color:'#7c3aed',width:2.5}},
+      {x:d.measX,y:d.measY,name:'雷达测量(转换)',mode:'markers',marker:{color:'#dc2626',size:4,opacity:.5}},
+      {x:[0],y:[0],name:'雷达站',mode:'markers',marker:{color:'#0f172a',size:12,symbol:'star'}}
+    ],{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'X (m)',scaleanchor:'y'},
+      yaxis:{title:'Y (m)'},
+      legend:{x:0,y:1.15,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    Plotly.react('ch06_errPlot6',[
+      {y:d.kfErr,name:'KF 误差',line:{color:'#f59e0b',width:1.5}},
+      {y:d.ekfErr,name:'EKF 误差',line:{color:'#7c3aed',width:1.5}}
+    ],{
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'步数'},yaxis:{title:'误差 (m)'},
+      legend:{x:0,y:1.1,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+  }
+
+  function animate(){
+    if(!running)return;
+    for(let i=0;i<3;i++) simStep();
+    if(step%6===0) updatePlots();
+    animId=requestAnimationFrame(animate);
+  }
+
+  document.getElementById('ch06_startBtn6').addEventListener('click',()=>{
+    if(!data.trueX) initSim();
+    running=true;animate();
+  });
+  document.getElementById('ch06_pauseBtn6').addEventListener('click',()=>{running=false;});
+  document.getElementById('ch06_resetBtn6').addEventListener('click',initSim);
+
+  ['radiusSlider','sigRSlider','sigTSlider','qSlider6'].forEach(id=>{
+    document.getElementById(id).addEventListener('input',function(){
+      const map={radiusSlider:'radiusVal',sigRSlider:'sigRVal',sigTSlider:'sigTVal',qSlider6:'qVal6'};
+      document.getElementById(map[id]).textContent=parseFloat(this.value).toFixed(id==='radiusSlider'?0:1);
+    });
+  });
+
+  initSim();
+})();
+};
+
+/* ===== Chapter 07 ===== */
+window.init_ch07 = function() {
+(function(){
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  const faultSelect=document.getElementById('ch07_faultSelect');
+  const qFixSlider=document.getElementById('ch07_qFixSlider');
+  const rFixSlider=document.getElementById('ch07_rFixSlider');
+  const p0FixSlider=document.getElementById('ch07_p0FixSlider');
+
+  const faultPresets={
+    normal:     {q:1,  r:1,  p0:10,  hasAccel:false},
+    q_small:    {q:0.01,r:1,  p0:10,  hasAccel:false},
+    r_big:      {q:1,  r:8,  p0:10,  hasAccel:false},
+    p0_small:   {q:1,  r:1,  p0:0.1, hasAccel:false},
+    model_wrong:{q:1,  r:1,  p0:10,  hasAccel:true}
+  };
+
+  faultSelect.addEventListener('change',function(){
+    const p=faultPresets[this.value];
+    qFixSlider.value=p.q; rFixSlider.value=p.r; p0FixSlider.value=p.p0;
+    document.getElementById('ch07_qFixVal').textContent=p.q.toFixed(2);
+    document.getElementById('ch07_rFixVal').textContent=p.r.toFixed(1);
+    document.getElementById('ch07_p0FixVal').textContent=p.p0.toFixed(1);
+    runDiagnostic();
+  });
+
+  [qFixSlider,rFixSlider,p0FixSlider].forEach(s=>{
+    s.addEventListener('input',function(){
+      const map={qFixSlider:'qFixVal',rFixSlider:'rFixVal',p0FixSlider:'p0FixVal'};
+      document.getElementById(map[s.id]).textContent=parseFloat(this.value).toFixed(s===p0FixSlider?1:2);
+    });
+  });
+
+  function runDiagnostic(){
+    const qMul=parseFloat(qFixSlider.value);
+    const rMul=parseFloat(rFixSlider.value);
+    const p0=parseFloat(p0FixSlider.value);
+    const hasAccel=faultPresets[faultSelect.value].hasAccel;
+
+    const baseQ=0.5, baseR=3.0, dt=0.1;
+    const q=baseQ*qMul, r=baseR*rMul;
+    const steps=200;
+
+    let x=0, v=1.5, kfX=0, kfV=0, P00=p0, P01=0, P10=0, P11=p0;
+    const trueXArr=[],estXArr=[],measArr=[],innovArr=[],nisArr=[],errArr=[];
+
+    for(let k=0;k<steps;k++){
+      const accel=hasAccel?2*Math.sin(k*0.05):0;
+      x+=v*dt+0.5*accel*dt*dt;
+      v+=accel*dt+Math.sqrt(baseQ)*gauss()*0.1;
+
+      /* KF predict (constant velocity model — no accel input) */
+      const px=kfX+kfV*dt;
+      const pv=kfV;
+      const pP00=P00+2*P01*dt+P11*dt*dt+q*dt*dt*dt/3;
+      const pP01=P01+P11*dt+q*dt*dt/2;
+      const pP10=pP01;
+      const pP11=P11+q*dt;
+
+      /* Measurement */
+      if(k%5===0){
+        const z=x+r*gauss();
+        measArr.push({k,z});
+
+        const S=pP00+r*r;
+        const K0=pP00/S, K1=pP01/S;
+        const innov=z-px;
+        kfX=px+K0*innov;
+        kfV=pv+K1*innov;
+        P00=(1-K0)*pP00;
+        P01=(1-K0)*pP01;
+        P10=pP10-K1*pP00;
+        P11=pP11-K1*pP01;
+
+        innovArr.push(innov);
+        nisArr.push(innov*innov/S);
+      }else{
+        kfX=px; kfV=pv;
+        P00=pP00; P01=pP01; P10=pP10; P11=pP11;
+      }
+
+      trueXArr.push(x); estXArr.push(kfX);
+      errArr.push(Math.abs(kfX-x));
+    }
+
+    /* Stats */
+    const iMean=innovArr.reduce((s,v)=>s+v,0)/innovArr.length;
+    const iStd=Math.sqrt(innovArr.reduce((s,v)=>s+(v-iMean)**2,0)/innovArr.length);
+    const nisMean=nisArr.reduce((s,v)=>s+v,0)/nisArr.length;
+
+    document.getElementById('ch07_innovMean').textContent=iMean.toFixed(3);
+    document.getElementById('ch07_innovStd').textContent=iStd.toFixed(3);
+    document.getElementById('ch07_nisVal').textContent=nisMean.toFixed(3);
+
+    let diag='';
+    if(Math.abs(iMean)>iStd*0.5) diag='⚠️ 新息有偏';
+    else if(nisMean>3) diag='⚠️ NIS过大，R太小';
+    else if(nisMean<0.3) diag='⚠️ NIS过小，过度保守';
+    else diag='✅ 健康';
+    document.getElementById('ch07_diagResult').textContent=diag;
+
+    /* Plot 1: state tracking */
+    const tArr=Array.from({length:steps},(_,i)=>i*dt);
+    Plotly.react('ch07_diagPlot',[
+      {x:tArr,y:trueXArr,name:'真实值',line:{color:'#16a34a',width:2}},
+      {x:tArr,y:estXArr,name:'KF 估计',line:{color:'#2563eb',width:2}},
+      {x:measArr.map(m=>m.k*dt),y:measArr.map(m=>m.z),name:'测量',mode:'markers',marker:{color:'#dc2626',size:4,opacity:.5}}
+    ],{
+      margin:{t:20,r:20,b:40,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'位置 (m)'},
+      legend:{x:0,y:1.1,orientation:'h'},
+      plot_bgcolor:'#fafafa',font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    /* Plot 2: innovation sequence */
+    const measT=measArr.map(m=>m.k*dt);
+    Plotly.react('ch07_innovPlot',[
+      {x:measT,y:innovArr,type:'bar',marker:{color:innovArr.map(v=>Math.abs(v)>2*iStd?'#dc2626':'rgba(37,99,235,0.6)')},name:'新息'},
+      {x:[measT[0],measT[measT.length-1]],y:[2*iStd,2*iStd],mode:'lines',line:{color:'#dc2626',dash:'dash',width:1},name:'2σ 上限'},
+      {x:[measT[0],measT[measT.length-1]],y:[-2*iStd,-2*iStd],mode:'lines',line:{color:'#dc2626',dash:'dash',width:1},showlegend:false}
+    ],{
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'新息'},
+      legend:{x:0,y:1.1,orientation:'h'},
+      plot_bgcolor:'#fafafa',font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    /* Plot 3: NIS */
+    Plotly.react('ch07_nisPlot',[
+      {x:measT,y:nisArr,name:'NIS',line:{color:'#7c3aed',width:1.5}},
+      {x:[measT[0],measT[measT.length-1]],y:[1,1],mode:'lines',line:{color:'#16a34a',dash:'dash',width:1.5},name:'期望值 (m=1)'},
+      {x:[measT[0],measT[measT.length-1]],y:[3.84,3.84],mode:'lines',line:{color:'#dc2626',dash:'dot',width:1},name:'95% 门限'}
+    ],{
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'NIS'},
+      legend:{x:0,y:1.1,orientation:'h'},
+      plot_bgcolor:'#fafafa',font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+  }
+
+  document.getElementById('ch07_runDiag').addEventListener('click',runDiagnostic);
+  runDiagnostic();
+})();
+};
+
+/* ===== Chapter 08 ===== */
+window.init_ch08 = function() {
+/* ============================================================
+ * EKF vs UKF comparison
+ * ============================================================ */
+(function(){
+  const muSlider=document.getElementById('ch08_ukfMuSlider');
+  const sigSlider=document.getElementById('ch08_ukfSigSlider');
+
+  function f(x){return x*x+0.2*x*x*x;} // nonlinear transform
+  function df(x){return 2*x+0.6*x*x;}   // derivative for EKF
+
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  function compute(){
+    const mu=parseFloat(muSlider.value), sig=parseFloat(sigSlider.value);
+    document.getElementById('ch08_ukfMuVal').textContent=mu.toFixed(1);
+    document.getElementById('ch08_ukfSigVal').textContent=sig.toFixed(1);
+
+    /* Monte Carlo "truth" */
+    const N=5000,samples=[];
+    for(let i=0;i<N;i++) samples.push(f(mu+sig*gauss()));
+    const mcMean=samples.reduce((s,v)=>s+v,0)/N;
+    const mcVar=samples.reduce((s,v)=>s+(v-mcMean)**2,0)/N;
+
+    /* EKF: linearize at mu */
+    const ekfMean=f(mu);
+    const ekfVar=df(mu)**2*sig*sig;
+
+    /* UKF: 3 sigma points (n=1) */
+    const lambda=2; // kappa=2 for n=1
+    const sp=[mu, mu+Math.sqrt((1+lambda))*sig, mu-Math.sqrt((1+lambda))*sig];
+    const w0=lambda/(1+lambda), w1=1/(2*(1+lambda));
+    const weights=[w0,w1,w1];
+    const transformed=sp.map(f);
+    const ukfMean=weights[0]*transformed[0]+weights[1]*transformed[1]+weights[2]*transformed[2];
+    const ukfVar=weights.reduce((s,w,i)=>s+w*(transformed[i]-ukfMean)**2,0);
+
+    /* Plot output distributions */
+    function gaussian(x,m,s){return Math.exp(-0.5*((x-m)/s)**2)/(s*Math.sqrt(2*Math.PI));}
+    const lo=Math.min(mcMean-3*Math.sqrt(mcVar),ekfMean-3*Math.sqrt(ekfVar));
+    const hi=Math.max(mcMean+3*Math.sqrt(mcVar),ekfMean+3*Math.sqrt(ekfVar));
+    const xArr=[],yMC=[],yEKF=[],yUKF=[];
+    for(let i=0;i<=300;i++){
+      const x=lo+(hi-lo)*i/300;
+      xArr.push(x);
+      yEKF.push(gaussian(x,ekfMean,Math.sqrt(ekfVar)));
+      yUKF.push(gaussian(x,ukfMean,Math.sqrt(Math.max(0.001,ukfVar))));
+    }
+
+    /* Histogram from MC */
+    Plotly.react('ch08_ukfPlot',[
+      {x:samples,type:'histogram',histnorm:'probability density',name:'蒙特卡洛 (真实)',marker:{color:'rgba(22,163,74,0.3)'},nbinsx:60},
+      {x:xArr,y:yEKF,name:'EKF 估计',line:{color:'#f59e0b',width:2.5}},
+      {x:xArr,y:yUKF,name:'UKF 估计',line:{color:'#7c3aed',width:2.5}}
+    ],{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'输出 y = x² + 0.2x³'},
+      yaxis:{title:'概率密度'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      annotations:[
+        {x:0.02,y:0.98,xref:'paper',yref:'paper',text:`MC: μ=${mcMean.toFixed(2)} σ=${Math.sqrt(mcVar).toFixed(2)}<br>EKF: μ=${ekfMean.toFixed(2)} σ=${Math.sqrt(ekfVar).toFixed(2)}<br>UKF: μ=${ukfMean.toFixed(2)} σ=${Math.sqrt(Math.max(0,ukfVar)).toFixed(2)}`,showarrow:false,font:{size:12,family:'SF Mono,monospace'},bgcolor:'rgba(255,255,255,0.8)',borderpad:6}
+      ]
+    },{responsive:true});
+  }
+
+  document.getElementById('ch08_ukfRunBtn').addEventListener('click',compute);
+  muSlider.addEventListener('input',()=>{document.getElementById('ch08_ukfMuVal').textContent=parseFloat(muSlider.value).toFixed(1);});
+  sigSlider.addEventListener('input',()=>{document.getElementById('ch08_ukfSigVal').textContent=parseFloat(sigSlider.value).toFixed(1);});
+  compute();
+})();
+
+/* ============================================================
+ * Adaptive KF demo
+ * ============================================================ */
+(function(){
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  function runAdaptive(){
+    const W=parseInt(document.getElementById('ch08_adaptWSlider').value);
+    const jump=parseInt(document.getElementById('ch08_jumpSlider').value);
+    document.getElementById('ch08_adaptWVal').textContent=W;
+    document.getElementById('ch08_jumpVal').textContent=jump;
+
+    const dt=0.1, steps=300, baseR=1.0, q=0.5;
+    const jumpStep=100;
+
+    let x=0,v=1;
+    /* Fixed KF */
+    let fkX=0,fkP=10,fkR=baseR*baseR;
+    /* Adaptive KF */
+    let akX=0,akP=10,akR=baseR*baseR;
+    const innovBuf=[];
+
+    const trueArr=[],fkArr=[],akArr=[],measArr=[],tArr=[],rAdaptArr=[];
+
+    for(let k=0;k<steps;k++){
+      x+=v*dt+Math.sqrt(q)*gauss()*dt;
+      v+=0.2*Math.sin(k*0.03)*dt;
+
+      const currentR=k>=jumpStep?baseR*jump:baseR;
+      const z=x+currentR*gauss();
+
+      tArr.push(k*dt);
+      trueArr.push(x);
+      measArr.push(z);
+
+      /* Fixed KF */
+      fkP+=q*dt;
+      let fkS=fkP+baseR*baseR;
+      let fkK=fkP/fkS;
+      fkX+=fkK*(z-fkX);
+      fkP*=(1-fkK);
+      fkArr.push(fkX);
+
+      /* Adaptive KF */
+      akP+=q*dt;
+      const innov=z-akX;
+      innovBuf.push(innov*innov);
+      if(innovBuf.length>W) innovBuf.shift();
+
+      if(innovBuf.length>=W){
+        const empiricalS=innovBuf.reduce((s,v)=>s+v,0)/innovBuf.length;
+        akR=Math.max(0.01,empiricalS-akP);
+      }
+      rAdaptArr.push(Math.sqrt(akR));
+
+      let akS=akP+akR;
+      let akK=akP/akS;
+      akX+=akK*(z-akX);
+      akP*=(1-akK);
+      akArr.push(akX);
+    }
+
+    Plotly.react('ch08_adaptPlot',[
+      {x:tArr,y:trueArr,name:'真实值',line:{color:'#16a34a',width:2}},
+      {x:tArr,y:fkArr,name:'固定 KF',line:{color:'#f59e0b',width:2,dash:'dash'}},
+      {x:tArr,y:akArr,name:'自适应 KF',line:{color:'#7c3aed',width:2.5}},
+      {x:tArr,y:measArr,name:'测量',mode:'markers',marker:{color:'#dc2626',size:3,opacity:.3}}
+    ],{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'位置'},
+      legend:{x:0,y:1.12,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      shapes:[{type:'line',x0:jumpStep*dt,x1:jumpStep*dt,y0:0,y1:1,yref:'paper',line:{color:'#dc2626',dash:'dot',width:2}}],
+      annotations:[{x:jumpStep*dt,y:1.05,yref:'paper',text:'噪声跳变',showarrow:false,font:{color:'#dc2626',size:11}}]
+    },{responsive:true});
+  }
+
+  document.getElementById('ch08_adaptRunBtn').addEventListener('click',runAdaptive);
+  document.getElementById('ch08_adaptWSlider').addEventListener('input',function(){document.getElementById('ch08_adaptWVal').textContent=this.value;});
+  document.getElementById('ch08_jumpSlider').addEventListener('input',function(){document.getElementById('ch08_jumpVal').textContent=this.value;});
+  runAdaptive();
+})();
+};
+
+/* ===== Chapter 09 ===== */
+window.init_ch09 = function() {
+(function(){
+  /* ========== Tab switching ========== */
+  document.querySelectorAll('#ch09 .ch09-tab').forEach(tab=>{
+    tab.addEventListener('click',function(){
+      document.querySelectorAll('#ch09 .ch09-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('#ch09 .ch09-tab-content').forEach(c=>c.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById('ch09_tab-'+this.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ========== Matrix utilities ========== */
+  function parseMat(str){
+    return str.trim().split('\n').map(r=>r.split(',').map(v=>parseFloat(v.trim())));
+  }
+  function matStr(name,M){
+    if(!M||!M.length) return name+' = []';
+    return name+' =\n'+M.map(r=>'  ['+r.map(v=>v.toFixed(4).padStart(9)).join(',')+']').join('\n');
+  }
+  function mat(r,c){return Array.from({length:r},()=>new Array(c).fill(0));}
+  function matMul(A,B){const m=A.length,n=B[0].length,p=B.length,C=mat(m,n);for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let k=0;k<p;k++)C[i][j]+=A[i][k]*B[k][j];return C;}
+  function matAdd(A,B){return A.map((r,i)=>r.map((v,j)=>v+B[i][j]));}
+  function matSub(A,B){return A.map((r,i)=>r.map((v,j)=>v-B[i][j]));}
+  function transpose(A){return A[0].map((_,j)=>A.map(r=>r[j]));}
+  function eye(n){const I=mat(n,n);for(let i=0;i<n;i++)I[i][i]=1;return I;}
+  function diagMat(n,v){const M=mat(n,n);for(let i=0;i<n;i++)M[i][i]=v;return M;}
+  function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  function invMat(M){
+    const n=M.length;
+    const aug=M.map((r,i)=>[...r,...eye(n)[i]]);
+    for(let i=0;i<n;i++){
+      let maxR=i;
+      for(let j=i+1;j<n;j++) if(Math.abs(aug[j][i])>Math.abs(aug[maxR][i])) maxR=j;
+      [aug[i],aug[maxR]]=[aug[maxR],aug[i]];
+      const pivot=aug[i][i];
+      if(Math.abs(pivot)<1e-12) continue;
+      for(let j=0;j<2*n;j++) aug[i][j]/=pivot;
+      for(let j=0;j<n;j++){
+        if(j===i) continue;
+        const f=aug[j][i];
+        for(let k=0;k<2*n;k++) aug[j][k]-=f*aug[i][k];
+      }
+    }
+    return aug.map(r=>r.slice(n));
+  }
+
+  /* ========== Current config ========== */
+  let cfg={
+    n:2, m:1, dt:0.1,
+    F:[[1,0.1],[0,1]],
+    H:[[1,0]],
+    Q:[[0.001,0],[0,0.1]],
+    R:[[4]],
+    x0:[0,0],
+    P0:100
+  };
+  let csvData=null;
+
+  function updateDisplay(){
+    document.getElementById('ch09_dispF').textContent=matStr('F',cfg.F);
+    document.getElementById('ch09_dispH').textContent=matStr('H',cfg.H);
+    document.getElementById('ch09_dispQ').textContent=matStr('Q',cfg.Q);
+    document.getElementById('ch09_dispR').textContent=matStr('R',cfg.R);
+  }
+
+  /* ========== Presets ========== */
+  const presets={
+    pos_vel_1d:{
+      n:2,m:1,dt:0.1,
+      F:[[1,0.1],[0,1]],H:[[1,0]],
+      Q:[[0.0008,0.005],[0.005,0.1]],R:[[4]],
+      x0:[0,0],P0:100
+    },
+    pos_vel_2d:{
+      n:4,m:2,dt:0.1,
+      F:[[1,0,0.1,0],[0,1,0,0.1],[0,0,1,0],[0,0,0,1]],
+      H:[[1,0,0,0],[0,1,0,0]],
+      Q:[[0.0008,0,0.005,0],[0,0.0008,0,0.005],[0.005,0,0.1,0],[0,0.005,0,0.1]],
+      R:[[9,0],[0,9]],
+      x0:[0,0,1,0.5],P0:100
+    },
+    temperature:{
+      n:1,m:1,dt:1,
+      F:[[1]],H:[[1]],Q:[[0.01]],R:[[1]],
+      x0:[20],P0:10
+    },
+    altitude:{
+      n:3,m:1,dt:0.02,
+      F:[[1,0.02,0.0002],[0,1,0.02],[0,0,1]],
+      H:[[1,0,0]],
+      Q:[[0.0001,0,0],[0,0.01,0],[0,0,0.001]],
+      R:[[0.5]],
+      x0:[0,0,0],P0:50
+    }
+  };
+
+  document.getElementById('ch09_loadPreset').addEventListener('click',function(){
+    const key=document.getElementById('ch09_presetSelect').value;
+    cfg={...presets[key]};
+    document.getElementById('ch09_matF').value=cfg.F.map(r=>r.join(', ')).join('\n');
+    document.getElementById('ch09_matH').value=cfg.H.map(r=>r.join(', ')).join('\n');
+    document.getElementById('ch09_matQ').value=cfg.Q.map(r=>r.join(', ')).join('\n');
+    document.getElementById('ch09_matR').value=cfg.R.map(r=>r.join(', ')).join('\n');
+    document.getElementById('ch09_matX0').value=cfg.x0.join(', ');
+    document.getElementById('ch09_customP0').value=cfg.P0;
+    document.getElementById('ch09_dimN').value=cfg.n;
+    document.getElementById('ch09_dimM').value=cfg.m;
+    document.getElementById('ch09_customDt').value=cfg.dt;
+    updateDisplay();
+  });
+
+  /* ========== Read custom matrices ========== */
+  function readCustom(){
+    cfg.n=parseInt(document.getElementById('ch09_dimN').value);
+    cfg.m=parseInt(document.getElementById('ch09_dimM').value);
+    cfg.dt=parseFloat(document.getElementById('ch09_customDt').value);
+    cfg.F=parseMat(document.getElementById('ch09_matF').value);
+    cfg.H=parseMat(document.getElementById('ch09_matH').value);
+    cfg.Q=parseMat(document.getElementById('ch09_matQ').value);
+    cfg.R=parseMat(document.getElementById('ch09_matR').value);
+    cfg.x0=document.getElementById('ch09_matX0').value.split(',').map(v=>parseFloat(v.trim()));
+    cfg.P0=parseFloat(document.getElementById('ch09_customP0').value);
+    updateDisplay();
+  }
+
+  /* ========== CSV loading ========== */
+  document.getElementById('ch09_csvFile').addEventListener('change',function(e){
+    const file=e.target.files[0];
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      const lines=ev.target.result.trim().split('\n');
+      csvData=lines.map(l=>l.split(',').map(v=>parseFloat(v.trim()))).filter(r=>r.every(v=>!isNaN(v)));
+      document.getElementById('ch09_csvPreview').textContent=`已加载 ${csvData.length} 行, ${csvData[0].length} 列 (第一列时间戳, 后续为观测)`;
+    };
+    reader.readAsText(file);
+  });
+
+  /* ========== Generate signal ========== */
+  function generateSignal(steps,type,n){
+    const data=[];
+    for(let k=0;k<steps;k++){
+      const t=k*cfg.dt;
+      let vals;
+      if(n<=2){
+        let pos;
+        if(type==='sine') pos=10*Math.sin(0.5*t);
+        else if(type==='step') pos=t>steps*cfg.dt*0.3?5:0;
+        else if(type==='ramp') pos=0.5*t;
+        else pos=(data.length>0?data[data.length-1].true[0]:0)+0.3*gauss();
+        vals=[pos, n>1?(type==='sine'?5*Math.cos(0.5*t):0.5):undefined].filter(v=>v!==undefined);
+      } else {
+        let px,py;
+        if(type==='sine'){px=15*Math.cos(0.3*t);py=10*Math.sin(0.3*t);}
+        else if(type==='step'){px=t>3?8:0;py=t>5?5:0;}
+        else if(type==='ramp'){px=0.5*t;py=0.3*t;}
+        else{
+          const prev=data.length>0?data[data.length-1].true:[0,0,0,0];
+          px=prev[0]+prev[2]*cfg.dt+gauss()*0.1;
+          py=prev[1]+prev[3]*cfg.dt+gauss()*0.1;
+        }
+        const vx=n>2?(type==='sine'?-4.5*Math.sin(0.3*t):0.5):0;
+        const vy=n>3?(type==='sine'?3*Math.cos(0.3*t):0.3):0;
+        vals=[px,py,vx,vy].slice(0,n);
+      }
+      data.push({t, true:vals});
+    }
+    return data;
+  }
+
+  /* ========== Run KF ========== */
+  document.getElementById('ch09_runBtn').addEventListener('click',function(){
+    readCustom();
+    const steps=parseInt(document.getElementById('ch09_simSteps').value)||200;
+    const sigType=document.getElementById('ch09_signalType').value;
+    const n=cfg.n, m=cfg.m;
+
+    let simData;
+    if(csvData){
+      simData=csvData.map((r,i)=>({t:r[0],true:r.slice(1),meas:r.slice(1)}));
+    } else {
+      simData=generateSignal(steps,sigType,n);
+      simData.forEach(d=>{
+        const z=[];
+        for(let i=0;i<m;i++){
+          const Hrow=cfg.H[i];
+          let hx=0;
+          for(let j=0;j<n;j++) hx+=Hrow[j]*(d.true[j]||0);
+          z.push(hx+Math.sqrt(cfg.R[i][i])*gauss());
+        }
+        d.meas=z;
+      });
+    }
+
+    /* Init KF */
+    let x=cfg.x0.slice();
+    if(x.length<n) x=x.concat(new Array(n-x.length).fill(0));
+    let P=diagMat(n,cfg.P0);
+    const F=cfg.F, H=cfg.H, Q=cfg.Q, R=cfg.R;
+
+    const estHist=[], kNorms=[], errHist=[];
+
+    for(let k=0;k<simData.length;k++){
+      /* Predict */
+      const xVec=x.map(v=>[v]);
+      const xPred=matMul(F,xVec).map(r=>r[0]);
+      let PPred=matAdd(matMul(matMul(F,P),transpose(F)),Q);
+
+      /* Update */
+      const z=simData[k].meas;
+      if(z&&z.length===m){
+        const PHt=matMul(PPred,transpose(H));
+        const S=matAdd(matMul(H,PHt),R);
+        const Si=invMat(S);
+        const K=matMul(PHt,Si);
+
+        const Hx=matMul(H,xPred.map(v=>[v])).map(r=>r[0]);
+        const innov=z.map((zi,i)=>zi-Hx[i]);
+        const correction=matMul(K,innov.map(v=>[v])).map(r=>r[0]);
+        x=xPred.map((v,i)=>v+correction[i]);
+        const IKH=matSub(eye(n),matMul(K,H));
+        P=matMul(IKH,PPred);
+
+        let kn=0;
+        K.forEach(r=>r.forEach(v=>kn+=v*v));
+        kNorms.push(Math.sqrt(kn));
+      } else {
+        x=xPred;
+        P=PPred;
+      }
+
+      estHist.push(x.slice());
+      if(simData[k].true){
+        const e=Math.sqrt(simData[k].true.reduce((s,v,i)=>{
+          const diff=(v||0)-(x[i]||0);
+          return i<m?s+diff*diff:s;
+        },0));
+        errHist.push(e);
+      }
+    }
+
+    /* Stats */
+    const rms=Math.sqrt(errHist.reduce((s,e)=>s+e*e,0)/errHist.length);
+    const maxErr=Math.max(...errHist);
+    const avgK=kNorms.length?kNorms.reduce((s,v)=>s+v,0)/kNorms.length:0;
+    let convStep=errHist.length;
+    const steadyErr=rms*1.5;
+    for(let i=0;i<errHist.length;i++){
+      if(errHist.slice(i,i+10).every(e=>e<steadyErr)){convStep=i;break;}
+    }
+
+    document.getElementById('ch09_rmsResult').textContent=rms.toFixed(4);
+    document.getElementById('ch09_maxErrResult').textContent=maxErr.toFixed(4);
+    document.getElementById('ch09_avgKResult').textContent=avgK.toFixed(4);
+    document.getElementById('ch09_convResult').textContent=convStep;
+    document.getElementById('ch09_resultsSection').style.display='block';
+
+    /* Plots */
+    const tArr=simData.map(d=>d.t);
+    const traces=[];
+
+    const compIdx=0;
+    traces.push({x:tArr,y:simData.map(d=>d.true?d.true[compIdx]:null),name:'真实值 (x₁)',line:{color:'#16a34a',width:2}});
+    traces.push({x:tArr,y:estHist.map(e=>e[compIdx]),name:'KF 估计 (x₁)',line:{color:'#2563eb',width:2.5}});
+    if(m>=1) traces.push({x:tArr,y:simData.map(d=>d.meas?d.meas[0]:null),name:'测量 (z₁)',mode:'markers',marker:{color:'#dc2626',size:3,opacity:.4}});
+
+    if(n>=2 && m>=2){
+      traces.push({x:tArr,y:simData.map(d=>d.true?d.true[1]:null),name:'真实值 (x₂)',line:{color:'#16a34a',width:1.5,dash:'dash'}});
+      traces.push({x:tArr,y:estHist.map(e=>e[1]),name:'KF 估计 (x₂)',line:{color:'#2563eb',width:1.5,dash:'dash'}});
+    }
+
+    Plotly.react('ch09_resultPlot',traces,{
+      margin:{t:20,r:20,b:50,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'状态值'},
+      legend:{x:0,y:1.15,orientation:'h'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'}
+    },{responsive:true});
+
+    Plotly.react('ch09_errorPlot',[{
+      x:tArr,y:errHist,name:'估计误差',
+      line:{color:'#dc2626',width:1.5},fill:'tozeroy',fillcolor:'rgba(220,38,38,0.1)'
+    }],{
+      margin:{t:10,r:20,b:35,l:55},
+      xaxis:{title:'时间 (s)'},yaxis:{title:'误差'},
+      plot_bgcolor:'#fafafa',
+      font:{family:'-apple-system,sans-serif'},
+      showlegend:false
+    },{responsive:true});
+  });
+
+  /* ========== Export C code ========== */
+  document.getElementById('ch09_exportBtn').addEventListener('click',function(){
+    readCustom();
+    const n=cfg.n, m=cfg.m;
+
+    function matToC(name,M,r,c){
+      let s=`    float ${name}[${r}][${c}] = {\n`;
+      s+=M.map(row=>'        {'+row.map(v=>v.toFixed(6)+'f').join(', ')+'}').join(',\n');
+      return s+'\n    };';
+    }
+    function vecToC(name,V){
+      return `    float ${name}[${V.length}] = {${V.map(v=>v.toFixed(6)+'f').join(', ')}};`;
+    }
+
+    const code=`/* ===== 自动生成的卡尔曼滤波器 C 代码 =====
+ * 状态维度 n = ${n}, 观测维度 m = ${m}
+ * dt = ${cfg.dt}
+ * 由卡尔曼滤波交互式教材沙盒生成
+ */
+
+#include <string.h>
+
+#define KF_N ${n}
+#define KF_M ${m}
+
+typedef struct {
+    float x[KF_N];
+    float P[KF_N][KF_N];
+    float F[KF_N][KF_N];
+    float H[KF_M][KF_N];
+    float Q[KF_N][KF_N];
+    float R[KF_M][KF_M];
+    float K[KF_N][KF_M];
+} KF_t;
+
+static void mat_mul_nn(const float A[KF_N][KF_N], const float B[KF_N][KF_N], float C[KF_N][KF_N]) {
+    float tmp[KF_N][KF_N] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            for (int k = 0; k < KF_N; k++)
+                tmp[i][j] += A[i][k] * B[k][j];
+    memcpy(C, tmp, sizeof(tmp));
+}
+
+void kf_init(KF_t *kf) {
+${matToC('F', cfg.F, n, n)}
+    memcpy(kf->F, F, sizeof(F));
+
+${matToC('H', cfg.H, m, n)}
+    memcpy(kf->H, H, sizeof(H));
+
+${matToC('Q', cfg.Q, n, n)}
+    memcpy(kf->Q, Q, sizeof(Q));
+
+${matToC('R', cfg.R, m, m)}
+    memcpy(kf->R, R, sizeof(R));
+
+${vecToC('x0', cfg.x0)}
+    memcpy(kf->x, x0, sizeof(x0));
+
+    memset(kf->P, 0, sizeof(kf->P));
+    for (int i = 0; i < KF_N; i++)
+        kf->P[i][i] = ${cfg.P0.toFixed(1)}f;
+}
+
+void kf_predict(KF_t *kf) {
+    /* x = F * x */
+    float x_new[KF_N] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            x_new[i] += kf->F[i][j] * kf->x[j];
+    memcpy(kf->x, x_new, sizeof(x_new));
+
+    /* P = F * P * F' + Q */
+    float FP[KF_N][KF_N] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            for (int k = 0; k < KF_N; k++)
+                FP[i][j] += kf->F[i][k] * kf->P[k][j];
+
+    float FPFt[KF_N][KF_N] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            for (int k = 0; k < KF_N; k++)
+                FPFt[i][j] += FP[i][k] * kf->F[j][k];
+
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            kf->P[i][j] = FPFt[i][j] + kf->Q[i][j];
+}
+
+void kf_update(KF_t *kf, const float z[KF_M]) {
+    /* S = H * P * H' + R */
+    float PHt[KF_N][KF_M] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_M; j++)
+            for (int k = 0; k < KF_N; k++)
+                PHt[i][j] += kf->P[i][k] * kf->H[j][k];
+
+    float S[KF_M][KF_M] = {0};
+    for (int i = 0; i < KF_M; i++)
+        for (int j = 0; j < KF_M; j++) {
+            for (int k = 0; k < KF_N; k++)
+                S[i][j] += kf->H[i][k] * PHt[k][j];
+            S[i][j] += kf->R[i][j];
+        }
+
+    /* S inverse (for m <= 2, use direct formula) */
+    float Si[KF_M][KF_M];
+${m === 1 ? `    Si[0][0] = 1.0f / S[0][0];` :
+  m === 2 ? `    float det = S[0][0]*S[1][1] - S[0][1]*S[1][0];
+    float inv_det = 1.0f / det;
+    Si[0][0] =  S[1][1] * inv_det;
+    Si[0][1] = -S[0][1] * inv_det;
+    Si[1][0] = -S[1][0] * inv_det;
+    Si[1][1] =  S[0][0] * inv_det;` :
+  `    /* TODO: implement general matrix inverse for m>${m} */`}
+
+    /* K = PHt * Si */
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_M; j++) {
+            kf->K[i][j] = 0;
+            for (int k = 0; k < KF_M; k++)
+                kf->K[i][j] += PHt[i][k] * Si[k][j];
+        }
+
+    /* x = x + K * (z - H*x) */
+    float innov[KF_M];
+    for (int i = 0; i < KF_M; i++) {
+        innov[i] = z[i];
+        for (int j = 0; j < KF_N; j++)
+            innov[i] -= kf->H[i][j] * kf->x[j];
+    }
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_M; j++)
+            kf->x[i] += kf->K[i][j] * innov[j];
+
+    /* P = (I - K*H) * P */
+    float IKH[KF_N][KF_N] = {0};
+    for (int i = 0; i < KF_N; i++) IKH[i][i] = 1.0f;
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            for (int k = 0; k < KF_M; k++)
+                IKH[i][j] -= kf->K[i][k] * kf->H[k][j];
+
+    float P_new[KF_N][KF_N] = {0};
+    for (int i = 0; i < KF_N; i++)
+        for (int j = 0; j < KF_N; j++)
+            for (int k = 0; k < KF_N; k++)
+                P_new[i][j] += IKH[i][k] * kf->P[k][j];
+    memcpy(kf->P, P_new, sizeof(P_new));
+}
+
+/* 用法示例:
+ * KF_t kf;
+ * kf_init(&kf);
+ * while (1) {
+ *     kf_predict(&kf);
+ *     float z[KF_M] = { read_sensor() };
+ *     kf_update(&kf, z);
+ *     float est = kf.x[0];
+ * }
+ */`;
+
+    document.getElementById('ch09_cCodeContent').textContent=code;
+    document.getElementById('ch09_codeSection').style.display='block';
+    document.getElementById('ch09_codeSection').scrollIntoView({behavior:'smooth'});
+  });
+
+  /* Copy button */
+  document.getElementById('ch09_copyBtn').addEventListener('click',function(){
+    navigator.clipboard.writeText(document.getElementById('ch09_cCodeContent').textContent).then(()=>{
+      this.textContent='已复制!';
+      setTimeout(()=>this.textContent='复制',1500);
+    });
+  });
+
+  /* Init display */
+  updateDisplay();
+})();
+};
+
+</script>
+</body>
+</html>
