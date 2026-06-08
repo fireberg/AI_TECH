@@ -62,541 +62,576 @@
 
 ## 2. 架构总览与 draw.io 分层图
 
-### 2.1 架构设计原则
+### 2.1 Classic AUTOSAR 分层模型
 
-1. **层级解耦**：严格遵循 AUTOSAR 分层架构，每层通过标准化接口交互，降低耦合度。
-2. **NuttX 作为 OS 底座**：NuttX 内核位于 MCAL 之上，为所有 BSW 模块提供任务调度、中断管理、内存保护、网络协议栈等 OS 服务。
-3. **跨域融合**：通过 CCU + ZC 架构实现动力、底盘、车身、座舱、ADAS 等多域融合。
-4. **安全贯穿**：功能安全 (ISO 26262) 和信息安全 (ISO 21434) 机制贯穿所有层次。
-5. **DDS 共存**：DDS 作为独立通信中间件，与 SOME/IP 在 BSW 通信服务层共存，通过桥接模块实现协议互通。
+本架构图严格参照 **AUTOSAR Classic Platform Layered Architecture (R22-11)** 标准绘制，采用 Classic 规范中定义的自下而上六层结构，并在两侧补充 OS 栏与通信栈栏：
+
+| 层次 (Classic AUTOSAR) | 英文名称 | 本方案内容 |
+|------------------------|----------|-----------|
+| **L1** | Microcontroller | MCU/SoC、CAN/Ethernet/LIN、Flash、HSM、WDT、MPU 等硬件 |
+| **L2** | Microcontroller Abstraction Layer (MCAL) | Can、Lin、Eth、Spi、Dio、Adc、Pwm、Gpt、Fls、Wdg 等标准 MCAL 驱动 |
+| **L3** | ECU Abstraction Layer | Communication HW Abstraction (CanIf/EthIf/SoAd 等)、Memory HW Abstraction (Fee/Ea)、I/O HW Abstraction (IoHwAb)、Complex Device Drivers (CDD) |
+| **L4** | Services Layer | Communication / Memory / Diagnostic / Crypto / Off-board / System Services |
+| **L5** | Runtime Environment (RTE) | S/R、C/S 通信、E2E Transformer、SecOC 注入、DDS-RTE Bridge |
+| **L6** | Application Layer | 各功能域 SWC (Software Component) |
+
+**Classic 架构附加栏位**：
+
+- **左侧 OS 栏**：AUTOSAR OS API (NuttX Adapter) + NuttX Kernel，贯穿 BSW 各层，提供 Task/ISR/Resource/Alarm/Schedule Table 及 MPU 时间保护。
+- **右侧通信栈栏**：Classic AUTOSAR 标准 PDU 数据流路径 `Com → PduR → CanTp/SoAd → CanIf/EthIf → MCAL`，并扩展 SOME/IP、DDS 及 DDS-Security 分支。
+
+**设计原则**：
+
+1. **Classic 分层合规**：BSW 模块归属严格按 R22-11 规范划分至 Services Layer 或 ECU Abstraction Layer，不跨层调用。
+2. **NuttX 作为 OS 实现**：通过 AUTOSAR OS API Shim 适配 NuttX，NuttX 网络栈映射为 TcpIp 模块，文件系统映射为 Fee/NvM 底层。
+3. **跨域融合**：CCU + ZC 集中式 E/E 架构，多域 SWC 通过 RTE VFB (Virtual Function Bus) 和 DDS Topic 互联。
+4. **安全贯穿**：功能安全 (ISO 26262) 与信息安全 (ISO 21434) 模块在 Classic 各层标注 `[FuSa]` / `[CySec]`。
+5. **DDS 扩展集成**：DDS 作为 Communication Services 层扩展中间件，通过 Bridge 与 Classic PDU 路由及 SOME/IP 共存。
 
 ### 2.2 分层图颜色约定
 
 | 颜色 | 含义 |
 |------|------|
-| 🔴 **红色/深红背景** (`#FFE0E0`) | 功能安全相关模块 |
-| 🔵 **蓝色/深蓝背景** (`#E0E0FF`) | 信息安全相关模块 |
-| 🟢 **绿色/深绿背景** (`#E0FFE0`) | DDS 相关模块 |
-| ⬜ **灰色背景** (`#F5F5F5`) | 标准 BSW 模块 |
-| 🟡 **黄色背景** (`#FFF2CC`) | NuttX 内核相关 |
-| 🟠 **橙色背景** (`#FFE6CC`) | 硬件层 |
+| 🟢 **绿色泳道** (`#E8F5E9`) | Application Layer (SWC) |
+| 🔵 **蓝色泳道** (`#E3F2FD`) | Runtime Environment (RTE) |
+| 🟠 **橙色泳道** (`#FFF3E0`) | BSW Services Layer |
+| 🟣 **紫色泳道** (`#F3E5F5`) | ECU Abstraction Layer |
+| ⬜ **灰色泳道** (`#ECEFF1`) | MCAL |
+| 🟠 **深橙泳道** (`#FFE0B2`) | Microcontroller (Hardware) |
+| 🟡 **黄色 OS 栏** (`#FFF2CC`) | AUTOSAR OS / NuttX Kernel |
+| 🔴 **红色模块** (`#FFE0E0`) | `[FuSa]` 功能安全相关 |
+| 🔵 **蓝色模块** (`#E0E0FF`) | `[CySec]` 信息安全相关 |
+| 🟢 **绿色模块** (`#E0FFE0`) | `[DDS]` DDS 相关 |
 
 ### 2.3 draw.io 架构分层图（mxGraph XML）
 
 > 将以下 XML 内容完整复制，在 draw.io 中选择 **File → Import from → XML** 即可导入。
 
 ```xml
-<mxfile host="app.diagrams.net" modified="2026-06-08T00:00:00.000Z" agent="Architecture Design" version="24.0.0" type="device">
-  <diagram id="nuttx-autosar-arch" name="NuttX+AUTOSAR Classic Architecture">
-    <mxGraphModel dx="2800" dy="3600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="2400" pageHeight="3400" math="0" shadow="0">
+<mxfile host="app.diagrams.net" modified="2026-06-08T12:00:00.000Z" agent="Classic AUTOSAR" version="24.0.0" type="device">
+  <diagram id="classic-autosar-nuttx" name="Classic AUTOSAR Layered Architecture">
+    <mxGraphModel dx="2600" dy="3200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="2800" pageHeight="2600" math="0" shadow="0">
       <root>
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>
 
-        <!-- ============================================================ -->
-        <!-- LAYER 7: APPLICATION LAYER (SWC)                             -->
-        <!-- ============================================================ -->
-        <mxCell id="L7_title" value="&lt;b&gt;应用层 (Application Layer) — SWC&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="40" y="10" width="2320" height="30" as="geometry"/>
+        <!-- ========== TITLE ========== -->
+        <mxCell id="title" value="&lt;b&gt;AUTOSAR Classic Platform Layered Architecture (R22-11)&lt;/b&gt;&lt;br&gt;NuttX RTOS + CCU/ZC 中央计算架构" style="text;html=1;align=center;fontSize=18;fontColor=#1A1A1A;" vertex="1" parent="1">
+          <mxGeometry x="180" y="10" width="2400" height="50" as="geometry"/>
         </mxCell>
 
-        <!-- Application SWC Row -->
-        <mxCell id="swc_powertrain" value="&lt;b&gt;动力域 SWC&lt;/b&gt;&lt;br&gt;Engine/Motor Control&lt;br&gt;Transmission" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="40" y="50" width="280" height="70" as="geometry"/>
+        <!-- ========== LEFT: AUTOSAR OS + NuttX (Classic vertical OS column) ========== -->
+        <mxCell id="os_col_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F9A825;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="20" y="70" width="150" height="1680" as="geometry"/>
         </mxCell>
-        <mxCell id="swc_chassis" value="&lt;b&gt;底盘域 SWC&lt;/b&gt;&lt;br&gt;ESP / EPS / iBooster&lt;br&gt;Air Suspension" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="340" y="50" width="280" height="70" as="geometry"/>
+        <mxCell id="os_col_title" value="&lt;b&gt;AUTOSAR OS&lt;/b&gt;&lt;br&gt;(NuttX Adapter)" style="text;html=1;align=center;fontSize=12;fontColor=#E65100;rotation=-90;" vertex="1" parent="1">
+          <mxGeometry x="35" y="200" width="120" height="40" as="geometry"/>
         </mxCell>
-        <mxCell id="swc_body" value="&lt;b&gt;车身域 SWC&lt;/b&gt;&lt;br&gt;Body Control&lt;br&gt;Lighting / Door / HVAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="640" y="50" width="280" height="70" as="geometry"/>
+        <mxCell id="os_task" value="Task&lt;br&gt;ISR Cat1/2&lt;br&gt;Resource&lt;br&gt;Event" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="90" width="120" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="swc_adas" value="&lt;b&gt;ADAS 域 SWC&lt;/b&gt;&lt;br&gt;Perception / Planning&lt;br&gt;Fusion / Control" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="940" y="50" width="280" height="70" as="geometry"/>
+        <mxCell id="os_alarm" value="Alarm&lt;br&gt;Counter&lt;br&gt;Schedule Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="170" width="120" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="swc_diag" value="&lt;b&gt;诊断应用 SWC&lt;/b&gt;&lt;br&gt;OBD / UDS Session&lt;br&gt;DTC Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1240" y="50" width="280" height="70" as="geometry"/>
+        <mxCell id="os_app" value="OS-Application&lt;br&gt;Trusted /&lt;br&gt;Non-Trusted" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="240" width="120" height="55" as="geometry"/>
         </mxCell>
-        <mxCell id="swc_ota" value="&lt;b&gt;OTA / 车云 SWC&lt;/b&gt;&lt;br&gt;FOTA Manager&lt;br&gt;Vehicle-Cloud Proxy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1540" y="50" width="280" height="70" as="geometry"/>
+        <mxCell id="os_mpu" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;Memory Protection&lt;br&gt;MPU/MMU&lt;br&gt;Time Protection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="1">
+          <mxGeometry x="35" y="305" width="120" height="65" as="geometry"/>
         </mxCell>
-        <mxCell id="swc_safety_app" value="&lt;b&gt;[安全] 安全监控 SWC&lt;/b&gt;&lt;br&gt;Safety Monitor&lt;br&gt;Degradation Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;" vertex="1" parent="1">
-          <mxGeometry x="1840" y="50" width="280" height="70" as="geometry"/>
+        <mxCell id="os_schm" value="SchM&lt;br&gt;(BSW Scheduler)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="380" width="120" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="swc_dds_app" value="&lt;b&gt;[DDS] DDS 应用 SWC&lt;/b&gt;&lt;br&gt;Topic Publisher/Subscriber&lt;br&gt;Sensor Fusion via DDS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=11;fontColor=#006600;" vertex="1" parent="1">
-          <mxGeometry x="2140" y="50" width="220" height="70" as="geometry"/>
+        <mxCell id="nuttx_title" value="&lt;b&gt;NuttX Kernel&lt;/b&gt;" style="text;html=1;align=center;fontSize=11;fontColor=#E65100;rotation=-90;" vertex="1" parent="1">
+          <mxGeometry x="35" y="820" width="120" height="30" as="geometry"/>
         </mxCell>
-
-        <!-- ============================================================ -->
-        <!-- LAYER 6: RTE (Runtime Environment)                           -->
-        <!-- ============================================================ -->
-        <mxCell id="L6_title" value="&lt;b&gt;运行时环境 (RTE — Runtime Environment)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="40" y="140" width="2320" height="30" as="geometry"/>
+        <mxCell id="nuttx_sched" value="Scheduler&lt;br&gt;POSIX Threads" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="440" width="120" height="45" as="geometry"/>
         </mxCell>
-
-        <mxCell id="rte_main" value="&lt;b&gt;RTE (Auto-Generated)&lt;/b&gt;&lt;br&gt;Sender-Receiver / Client-Server Port 映射&lt;br&gt;Runnable → OS Task 映射 &amp; 调度触发" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAEEF3;strokeColor=#0078D4;fontSize=12;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="40" y="175" width="680" height="55" as="geometry"/>
+        <mxCell id="nuttx_irq" value="IRQ / ISR&lt;br&gt;Dispatch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="495" width="120" height="40" as="geometry"/>
         </mxCell>
-        <mxCell id="rte_e2e" value="&lt;b&gt;[功能安全] E2E Protection&lt;/b&gt;&lt;br&gt;E2E Transformer&lt;br&gt;注入点: RTE ↔ COM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="740" y="175" width="320" height="55" as="geometry"/>
+        <mxCell id="nuttx_timer" value="Timer / Tick&lt;br&gt;Tickless" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="545" width="120" height="40" as="geometry"/>
         </mxCell>
-        <mxCell id="rte_secoc_inject" value="&lt;b&gt;[信息安全] SecOC 注入点&lt;/b&gt;&lt;br&gt;Freshness Value Injection&lt;br&gt;MAC 校验触发" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1080" y="175" width="320" height="55" as="geometry"/>
+        <mxCell id="nuttx_ipc" value="Sem / Mutex&lt;br&gt;MQ / Signal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="595" width="120" height="40" as="geometry"/>
         </mxCell>
-        <mxCell id="rte_dds_bridge" value="&lt;b&gt;[DDS] DDS-RTE Bridge&lt;/b&gt;&lt;br&gt;Topic ↔ S/R Port 映射&lt;br&gt;QoS → Runnable Trigger" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=11;fontColor=#006600;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1420" y="175" width="320" height="55" as="geometry"/>
+        <mxCell id="nuttx_net" value="Network Stack&lt;br&gt;BSD Socket" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="645" width="120" height="40" as="geometry"/>
         </mxCell>
-        <mxCell id="rte_mem_partition" value="&lt;b&gt;[功能安全] 内存分区隔离&lt;/b&gt;&lt;br&gt;OS-Application Partition&lt;br&gt;MPU Region 配置" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1760" y="175" width="320" height="55" as="geometry"/>
+        <mxCell id="nuttx_fs" value="VFS / devfs&lt;br&gt;LittleFS / MTD" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="695" width="120" height="40" as="geometry"/>
         </mxCell>
-
-        <!-- ============================================================ -->
-        <!-- LAYER 5: BSW SERVICE LAYER                                   -->
-        <!-- ============================================================ -->
-        <mxCell id="L5_title" value="&lt;b&gt;BSW 服务层 (Services Layer)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="40" y="250" width="2320" height="30" as="geometry"/>
+        <mxCell id="nuttx_smp" value="SMP / AMP&lt;br&gt;OpenAMP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="745" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="nuttx_boot" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;Secure Boot&lt;br&gt;Chain" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="1">
+          <mxGeometry x="35" y="795" width="120" height="50" as="geometry"/>
         </mxCell>
 
-        <!-- Communication Services -->
-        <mxCell id="bsw_com_group" value="&lt;b&gt;通信服务 (Communication Services)&lt;/b&gt;" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#555555;" vertex="1" parent="1">
-          <mxGeometry x="40" y="285" width="400" height="20" as="geometry"/>
+        <!-- ========== LAYER 1: APPLICATION LAYER ========== -->
+        <mxCell id="L_app" value="&lt;b&gt;Application Layer&lt;/b&gt; — Software Components (SWC)" style="swimlane;html=1;startSize=28;fillColor=#E8F5E9;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="70" width="2100" height="110" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_com" value="&lt;b&gt;COM&lt;/b&gt;&lt;br&gt;Signal Gateway&lt;br&gt;I-PDU Group" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="40" y="310" width="160" height="60" as="geometry"/>
+        <mxCell id="swc1" value="Powertrain SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="10" y="35" width="130" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_pdur" value="&lt;b&gt;PduR&lt;/b&gt;&lt;br&gt;PDU Router&lt;br&gt;多路由/扇出" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="210" y="310" width="160" height="60" as="geometry"/>
+        <mxCell id="swc2" value="Chassis SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="150" y="35" width="120" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_ipdum" value="&lt;b&gt;IpduM&lt;/b&gt;&lt;br&gt;I-PDU Multiplexer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="380" y="310" width="140" height="60" as="geometry"/>
+        <mxCell id="swc3" value="Body SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="280" y="35" width="110" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_someip" value="&lt;b&gt;SOME/IP&lt;/b&gt;&lt;br&gt;SD (Service Discovery)&lt;br&gt;Transformer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#0078D4;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="530" y="310" width="170" height="60" as="geometry"/>
+        <mxCell id="swc4" value="ADAS SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="400" y="35" width="110" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_secoc" value="&lt;b&gt;[信息安全] SecOC&lt;/b&gt;&lt;br&gt;Secure Onboard Comm&lt;br&gt;MAC + Freshness Mgmt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;" vertex="1" parent="1">
-          <mxGeometry x="710" y="310" width="200" height="60" as="geometry"/>
+        <mxCell id="swc5" value="Diagnostic SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="520" y="35" width="120" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_e2e_lib" value="&lt;b&gt;[功能安全] E2E Library&lt;/b&gt;&lt;br&gt;Profile 1/2/4/5/6/7&lt;br&gt;CRC + Counter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;" vertex="1" parent="1">
-          <mxGeometry x="920" y="310" width="190" height="60" as="geometry"/>
+        <mxCell id="swc6" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;Safety Monitor SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="L_app">
+          <mxGeometry x="650" y="35" width="140" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_nm" value="&lt;b&gt;NM (Network Mgmt)&lt;/b&gt;&lt;br&gt;CanNm / UdpNm&lt;br&gt;Partial Networking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1120" y="310" width="180" height="60" as="geometry"/>
+        <mxCell id="swc7" value="&lt;b&gt;[DDS]&lt;/b&gt;&lt;br&gt;Topic Pub/Sub SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=10;fontColor=#006600;" vertex="1" parent="L_app">
+          <mxGeometry x="800" y="35" width="130" height="60" as="geometry"/>
         </mxCell>
-
-        <!-- DDS Middleware Block -->
-        <mxCell id="bsw_dds" value="&lt;b&gt;[DDS] DDS 通信中间件&lt;/b&gt;&lt;br&gt;Cyclone DDS Lite / Fast DDS&lt;br&gt;RTPS Protocol | Topic Discovery&lt;br&gt;DDS-SOME/IP Bridge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=11;fontColor=#006600;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1310" y="310" width="260" height="60" as="geometry"/>
-        </mxCell>
-        <mxCell id="bsw_dds_sec" value="&lt;b&gt;[DDS+信息安全]&lt;/b&gt;&lt;br&gt;&lt;b&gt;DDS-Security Plugin&lt;/b&gt;&lt;br&gt;Auth / Access Control&lt;br&gt;Crypto (AES-GCM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D0D0FF;strokeColor=#4400AA;fontSize=10;fontColor=#4400AA;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1580" y="310" width="200" height="60" as="geometry"/>
+        <mxCell id="swc8" value="OTA / Cloud SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="940" y="35" width="120" height="60" as="geometry"/>
         </mxCell>
 
-        <!-- Diagnostic Services -->
-        <mxCell id="bsw_diag_group" value="&lt;b&gt;诊断服务 (Diagnostic Services)&lt;/b&gt;" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#555555;" vertex="1" parent="1">
-          <mxGeometry x="40" y="385" width="400" height="20" as="geometry"/>
+        <!-- ========== LAYER 2: RTE ========== -->
+        <mxCell id="L_rte" value="&lt;b&gt;Runtime Environment (RTE)&lt;/b&gt;" style="swimlane;html=1;startSize=28;fillColor=#E3F2FD;strokeColor=#1565C0;fontColor=#0D47A1;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="190" width="2100" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_dcm" value="&lt;b&gt;Dcm&lt;/b&gt;&lt;br&gt;UDS (ISO 14229)&lt;br&gt;Session / Service Dispatch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="40" y="410" width="200" height="55" as="geometry"/>
+        <mxCell id="rte_sr" value="Sender-Receiver&lt;br&gt;Communication" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=10;" vertex="1" parent="L_rte">
+          <mxGeometry x="10" y="35" width="150" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_dem" value="&lt;b&gt;Dem&lt;/b&gt;&lt;br&gt;DTC Storage&lt;br&gt;Event Debounce" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="250" y="410" width="180" height="55" as="geometry"/>
+        <mxCell id="rte_cs" value="Client-Server&lt;br&gt;Communication" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=10;" vertex="1" parent="L_rte">
+          <mxGeometry x="170" y="35" width="150" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_fim" value="&lt;b&gt;FiM&lt;/b&gt;&lt;br&gt;Function Inhibition&lt;br&gt;Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;" vertex="1" parent="1">
-          <mxGeometry x="440" y="410" width="160" height="55" as="geometry"/>
+        <mxCell id="rte_e2e" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;E2E Transformer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="L_rte">
+          <mxGeometry x="330" y="35" width="130" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_doip" value="&lt;b&gt;DoIP&lt;/b&gt;&lt;br&gt;ISO 13400&lt;br&gt;TCP/TLS Transport" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="610" y="410" width="160" height="55" as="geometry"/>
+        <mxCell id="rte_secoc" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;SecOC Inject" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=10;fontColor=#0000AA;" vertex="1" parent="L_rte">
+          <mxGeometry x="470" y="35" width="120" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_diag_sec" value="&lt;b&gt;[信息安全] 诊断安全访问&lt;/b&gt;&lt;br&gt;0x27 SecurityAccess&lt;br&gt;0x29 Authentication" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;" vertex="1" parent="1">
-          <mxGeometry x="780" y="410" width="220" height="55" as="geometry"/>
+        <mxCell id="rte_dds" value="&lt;b&gt;[DDS]&lt;/b&gt;&lt;br&gt;DDS-RTE Bridge" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=10;fontColor=#006600;" vertex="1" parent="L_rte">
+          <mxGeometry x="600" y="35" width="130" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="rte_part" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;OS-App Partition" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="L_rte">
+          <mxGeometry x="740" y="35" width="130" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="rte_vfb" value="Virtual Function Bus (VFB)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAEEF3;strokeColor=#0078D4;fontSize=10;dashed=1;" vertex="1" parent="L_rte">
+          <mxGeometry x="880" y="35" width="200" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== LAYER 3: BSW SERVICES LAYER ========== -->
+        <mxCell id="L_svc" value="&lt;b&gt;Basic Software — Services Layer&lt;/b&gt;" style="swimlane;html=1;startSize=28;fillColor=#FFF3E0;strokeColor=#E65100;fontColor=#BF360C;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="290" width="2100" height="380" as="geometry"/>
+        </mxCell>
+
+        <!-- Communication Services sub-lane -->
+        <mxCell id="svc_comm_label" value="&lt;b&gt;Communication Services&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="35" width="200" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_com" value="Com" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_pdur" value="PduR" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="85" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_ipdum" value="IpduM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="160" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_comm" value="ComM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="235" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_nm" value="Nm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="310" y="58" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_someip" value="SOME/IP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="375" y="58" width="80" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_secoc" value="&lt;b&gt;[CySec]&lt;/b&gt; SecOC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="460" y="58" width="90" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_e2e" value="&lt;b&gt;[FuSa]&lt;/b&gt; E2E Lib" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_svc">
+          <mxGeometry x="555" y="58" width="90" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_dds" value="&lt;b&gt;[DDS]&lt;/b&gt; DDS Middleware" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="L_svc">
+          <mxGeometry x="650" y="58" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_dds_bridge" value="&lt;b&gt;[DDS]&lt;/b&gt; DDS-SOME/IP Bridge" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="L_svc">
+          <mxGeometry x="775" y="58" width="140" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_dds_sec" value="&lt;b&gt;[DDS+CySec]&lt;/b&gt;&lt;br&gt;DDS-Security" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D0D0FF;strokeColor=#4400AA;fontSize=9;fontColor=#4400AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="920" y="58" width="110" height="35" as="geometry"/>
         </mxCell>
 
         <!-- Memory Services -->
-        <mxCell id="bsw_mem_group" value="&lt;b&gt;存储服务 (Memory Services)&lt;/b&gt;" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#555555;" vertex="1" parent="1">
-          <mxGeometry x="1050" y="385" width="400" height="20" as="geometry"/>
+        <mxCell id="svc_mem_label" value="&lt;b&gt;Memory Services&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="105" width="160" height="20" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_nvm" value="&lt;b&gt;NvM&lt;/b&gt;&lt;br&gt;Block Descriptor&lt;br&gt;Redundant / Resistant" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1050" y="410" width="180" height="55" as="geometry"/>
+        <mxCell id="svc_nvm" value="NvM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="128" width="70" height="35" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_memif" value="&lt;b&gt;MemIf&lt;/b&gt;&lt;br&gt;Memory Abstraction&lt;br&gt;Interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1240" y="410" width="160" height="55" as="geometry"/>
+        <mxCell id="svc_memif" value="MemIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="85" y="128" width="70" height="35" as="geometry"/>
         </mxCell>
 
-        <!-- System Services -->
-        <mxCell id="bsw_sys_group" value="&lt;b&gt;系统服务 (System Services)&lt;/b&gt;" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#555555;" vertex="1" parent="1">
-          <mxGeometry x="1450" y="385" width="400" height="20" as="geometry"/>
+        <!-- Diagnostic Services -->
+        <mxCell id="svc_diag_label" value="&lt;b&gt;Diagnostic Services&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="200" y="105" width="180" height="20" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_ecum" value="&lt;b&gt;EcuM&lt;/b&gt;&lt;br&gt;Startup/Shutdown&lt;br&gt;Sleep/Wakeup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1450" y="410" width="150" height="55" as="geometry"/>
+        <mxCell id="svc_dcm" value="Dcm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="200" y="128" width="60" height="35" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_bswm" value="&lt;b&gt;BswM&lt;/b&gt;&lt;br&gt;Mode Arbitration&lt;br&gt;Rule Engine" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1610" y="410" width="150" height="55" as="geometry"/>
+        <mxCell id="svc_dem" value="Dem" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="265" y="128" width="60" height="35" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_comm" value="&lt;b&gt;ComM&lt;/b&gt;&lt;br&gt;Comm Channel&lt;br&gt;State Machine" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1770" y="410" width="150" height="55" as="geometry"/>
+        <mxCell id="svc_fim" value="&lt;b&gt;[FuSa]&lt;/b&gt; FiM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_svc">
+          <mxGeometry x="330" y="128" width="70" height="35" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_wdgm" value="&lt;b&gt;[功能安全] WdgM&lt;/b&gt;&lt;br&gt;Alive / Deadline / Logic&lt;br&gt;Supervision" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1930" y="410" width="190" height="55" as="geometry"/>
+        <mxCell id="svc_det" value="Det" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="405" y="128" width="55" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Off-board Communication -->
+        <mxCell id="svc_off_label" value="&lt;b&gt;Off-board Communication&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="500" y="105" width="200" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_doip" value="DoIP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="500" y="128" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_diag_sec" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;0x27/0x29 Auth" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="575" y="128" width="100" height="35" as="geometry"/>
         </mxCell>
 
         <!-- Crypto Services -->
-        <mxCell id="bsw_crypto_group" value="&lt;b&gt;加密服务 (Crypto Services)&lt;/b&gt;" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#555555;" vertex="1" parent="1">
-          <mxGeometry x="40" y="480" width="400" height="20" as="geometry"/>
+        <mxCell id="svc_crypto_label" value="&lt;b&gt;Crypto Services&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="700" y="105" width="160" height="20" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_csm" value="&lt;b&gt;[信息安全] Csm&lt;/b&gt;&lt;br&gt;Crypto Service Manager&lt;br&gt;Job Queue / Callback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;" vertex="1" parent="1">
-          <mxGeometry x="40" y="505" width="200" height="55" as="geometry"/>
+        <mxCell id="svc_csm" value="&lt;b&gt;[CySec]&lt;/b&gt; Csm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="700" y="128" width="70" height="35" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_cryif" value="&lt;b&gt;[信息安全] CryIf&lt;/b&gt;&lt;br&gt;Crypto Interface&lt;br&gt;Driver Abstraction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;" vertex="1" parent="1">
-          <mxGeometry x="250" y="505" width="200" height="55" as="geometry"/>
+        <mxCell id="svc_cryif" value="&lt;b&gt;[CySec]&lt;/b&gt; CryIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="775" y="128" width="70" height="35" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_keym" value="&lt;b&gt;[信息安全] KeyM&lt;/b&gt;&lt;br&gt;Key Manager&lt;br&gt;Certificate Mgmt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;" vertex="1" parent="1">
-          <mxGeometry x="460" y="505" width="200" height="55" as="geometry"/>
-        </mxCell>
-        <mxCell id="bsw_ids" value="&lt;b&gt;[信息安全] IdsM&lt;/b&gt;&lt;br&gt;Intrusion Detection&lt;br&gt;Security Event Mgmt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;" vertex="1" parent="1">
-          <mxGeometry x="670" y="505" width="200" height="55" as="geometry"/>
+        <mxCell id="svc_keym" value="&lt;b&gt;[CySec]&lt;/b&gt; KeyM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="850" y="128" width="70" height="35" as="geometry"/>
         </mxCell>
 
-        <!-- Network Firewall -->
-        <mxCell id="bsw_firewall" value="&lt;b&gt;[信息安全] 网络防火墙&lt;/b&gt;&lt;br&gt;Ethernet Firewall&lt;br&gt;VLAN / ACL / Rate Limit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;" vertex="1" parent="1">
-          <mxGeometry x="880" y="505" width="210" height="55" as="geometry"/>
+        <!-- System Services -->
+        <mxCell id="svc_sys_label" value="&lt;b&gt;System Services&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="175" width="160" height="20" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_seclog" value="&lt;b&gt;[信息安全] 安全日志&lt;/b&gt;&lt;br&gt;Security Audit Log&lt;br&gt;Tamper Detection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;" vertex="1" parent="1">
-          <mxGeometry x="1100" y="505" width="200" height="55" as="geometry"/>
+        <mxCell id="svc_ecum" value="EcuM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="198" width="65" height="35" as="geometry"/>
         </mxCell>
-
-        <!-- Safety Shutdown -->
-        <mxCell id="bsw_safe_shutdown" value="&lt;b&gt;[功能安全] 安全关断路径&lt;/b&gt;&lt;br&gt;Safe State Manager&lt;br&gt;Degradation Control" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1350" y="505" width="220" height="55" as="geometry"/>
+        <mxCell id="svc_bswm" value="BswM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="80" y="198" width="65" height="35" as="geometry"/>
         </mxCell>
-        <mxCell id="bsw_flow_monitor" value="&lt;b&gt;[功能安全] 程序流监控&lt;/b&gt;&lt;br&gt;Checkpoint Sequence&lt;br&gt;WdgM Alive Supervision" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1580" y="505" width="230" height="55" as="geometry"/>
+        <mxCell id="svc_wdgm" value="&lt;b&gt;[FuSa]&lt;/b&gt; WdgM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_svc">
+          <mxGeometry x="150" y="198" width="80" height="35" as="geometry"/>
         </mxCell>
-
-        <!-- OS Service (AUTOSAR OS API over NuttX) -->
-        <mxCell id="bsw_os_api" value="&lt;b&gt;AUTOSAR OS API Shim&lt;/b&gt;&lt;br&gt;ActivateTask / GetResource / SetEvent&lt;br&gt;GetAlarm / StartScheduleTableRel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=11;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1850" y="505" width="280" height="55" as="geometry"/>
+        <mxCell id="svc_wdgif" value="WdgIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="235" y="198" width="65" height="35" as="geometry"/>
         </mxCell>
-
-        <!-- ============================================================ -->
-        <!-- LAYER 4: ECU ABSTRACTION LAYER                               -->
-        <!-- ============================================================ -->
-        <mxCell id="L4_title" value="&lt;b&gt;ECU 抽象层 (ECU Abstraction Layer) &amp; 复杂驱动 (CDD)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="40" y="580" width="2320" height="30" as="geometry"/>
+        <mxCell id="svc_stbm" value="StbM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="305" y="198" width="65" height="35" as="geometry"/>
         </mxCell>
-
-        <mxCell id="ecu_canif" value="&lt;b&gt;CanIf&lt;/b&gt;&lt;br&gt;CAN Interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="40" y="620" width="140" height="50" as="geometry"/>
+        <mxCell id="svc_safe" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;Safe State Mgr" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_svc">
+          <mxGeometry x="375" y="198" width="100" height="35" as="geometry"/>
         </mxCell>
-        <mxCell id="ecu_linif" value="&lt;b&gt;LinIf&lt;/b&gt;&lt;br&gt;LIN Interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="190" y="620" width="140" height="50" as="geometry"/>
+        <mxCell id="svc_ids" value="&lt;b&gt;[CySec]&lt;/b&gt; IdsM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="480" y="198" width="75" height="35" as="geometry"/>
         </mxCell>
-        <mxCell id="ecu_ethif" value="&lt;b&gt;EthIf&lt;/b&gt;&lt;br&gt;Ethernet Interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="340" y="620" width="140" height="50" as="geometry"/>
-        </mxCell>
-        <mxCell id="ecu_soad" value="&lt;b&gt;SoAd&lt;/b&gt;&lt;br&gt;Socket Adaptor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="490" y="620" width="140" height="50" as="geometry"/>
-        </mxCell>
-        <mxCell id="ecu_tcpip" value="&lt;b&gt;TcpIp Stack&lt;/b&gt;&lt;br&gt;(NuttX Net Subsystem)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="640" y="620" width="170" height="50" as="geometry"/>
-        </mxCell>
-        <mxCell id="ecu_fee" value="&lt;b&gt;Fee / EA&lt;/b&gt;&lt;br&gt;Flash/EEPROM Emu" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="820" y="620" width="150" height="50" as="geometry"/>
-        </mxCell>
-        <mxCell id="ecu_wdgif" value="&lt;b&gt;WdgIf&lt;/b&gt;&lt;br&gt;Watchdog Interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;" vertex="1" parent="1">
-          <mxGeometry x="980" y="620" width="150" height="50" as="geometry"/>
+        <mxCell id="svc_fw" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;Eth Firewall" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="560" y="198" width="90" height="35" as="geometry"/>
         </mxCell>
 
-        <!-- Complex Drivers -->
-        <mxCell id="cdd_hsm" value="&lt;b&gt;[信息安全] CDD: HSM Driver&lt;/b&gt;&lt;br&gt;Crypto HW Acceleration&lt;br&gt;Secure Key Storage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1150" y="620" width="220" height="50" as="geometry"/>
-        </mxCell>
-        <mxCell id="cdd_sensor" value="&lt;b&gt;CDD: Sensor Fusion&lt;/b&gt;&lt;br&gt;Camera / Radar / Lidar&lt;br&gt;DMA + NuttX devfs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1380" y="620" width="200" height="50" as="geometry"/>
-        </mxCell>
-        <mxCell id="cdd_dds_transport" value="&lt;b&gt;[DDS] CDD: DDS Transport&lt;/b&gt;&lt;br&gt;RTPS over UDP/SHM&lt;br&gt;NuttX Socket Layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=11;fontColor=#006600;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1590" y="620" width="220" height="50" as="geometry"/>
-        </mxCell>
-        <mxCell id="cdd_safe_path" value="&lt;b&gt;[功能安全] CDD: Safety Path&lt;/b&gt;&lt;br&gt;HW Diag / Reset Ctrl&lt;br&gt;Safe State Output" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1820" y="620" width="220" height="50" as="geometry"/>
-        </mxCell>
-        <mxCell id="cdd_crypto_drv" value="&lt;b&gt;[信息安全] Crypto Driver&lt;/b&gt;&lt;br&gt;AES / SHA / RSA&lt;br&gt;HSM Mailbox" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;" vertex="1" parent="1">
-          <mxGeometry x="2050" y="620" width="180" height="50" as="geometry"/>
+        <!-- ========== LAYER 4: ECU ABSTRACTION LAYER ========== -->
+        <mxCell id="L_ecu" value="&lt;b&gt;Basic Software — ECU Abstraction Layer&lt;/b&gt;" style="swimlane;html=1;startSize=28;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontColor=#4A148C;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="680" width="2100" height="200" as="geometry"/>
         </mxCell>
 
-        <!-- ============================================================ -->
-        <!-- LAYER 3: NuttX KERNEL (OS Layer)                             -->
-        <!-- ============================================================ -->
-        <mxCell id="L3_title" value="&lt;b&gt;NuttX 实时内核 (OS 底座 — 位于 MCAL 之上)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontColor=#8B6914;" vertex="1" parent="1">
-          <mxGeometry x="40" y="690" width="2320" height="30" as="geometry"/>
+        <!-- Communication HW Abstraction -->
+        <mxCell id="ecu_comm_label" value="&lt;b&gt;Communication Hardware Abstraction&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_ecu">
+          <mxGeometry x="10" y="35" width="280" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_cantp" value="CanTp" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="10" y="58" width="65" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_canif" value="CanIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="80" y="58" width="65" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_cantrcv" value="CanTrcv" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="150" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_linif" value="LinIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="225" y="58" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_lintp" value="LinTp" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="290" y="58" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_ethif" value="EthIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="355" y="58" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_ethtrcv" value="EthTrcv" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="420" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_soad" value="SoAd" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="495" y="58" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_tcpip" value="TcpIp&lt;br&gt;(NuttX Net)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="L_ecu">
+          <mxGeometry x="560" y="58" width="80" height="35" as="geometry"/>
         </mxCell>
 
-        <mxCell id="nuttx_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;strokeWidth=3;opacity=30;" vertex="1" parent="1">
-          <mxGeometry x="30" y="725" width="2340" height="110" as="geometry"/>
+        <!-- Memory HW Abstraction -->
+        <mxCell id="ecu_mem_label" value="&lt;b&gt;Memory Hardware Abstraction&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_ecu">
+          <mxGeometry x="10" y="105" width="220" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_fee" value="Fee" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="10" y="128" width="55" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_ea" value="Ea" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="70" y="128" width="55" height="35" as="geometry"/>
         </mxCell>
 
-        <mxCell id="nuttx_sched" value="&lt;b&gt;任务调度器&lt;/b&gt;&lt;br&gt;POSIX Threads&lt;br&gt;Priority Preemptive&lt;br&gt;FIFO / RR / Sporadic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=11;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="40" y="730" width="200" height="70" as="geometry"/>
+        <!-- I/O HW Abstraction -->
+        <mxCell id="ecu_io_label" value="&lt;b&gt;I/O Hardware Abstraction&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_ecu">
+          <mxGeometry x="150" y="105" width="200" height="20" as="geometry"/>
         </mxCell>
-        <mxCell id="nuttx_ipc" value="&lt;b&gt;IPC 机制&lt;/b&gt;&lt;br&gt;Semaphore / Mutex&lt;br&gt;MQ / Signal&lt;br&gt;Shared Memory" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=11;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="250" y="730" width="200" height="70" as="geometry"/>
-        </mxCell>
-        <mxCell id="nuttx_mpu" value="&lt;b&gt;[功能安全] MPU/MMU 管理&lt;/b&gt;&lt;br&gt;内存分区&lt;br&gt;Protected / Kernel Build&lt;br&gt;Region Config" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFD0D0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="460" y="730" width="220" height="70" as="geometry"/>
-        </mxCell>
-        <mxCell id="nuttx_timer" value="&lt;b&gt;定时器 &amp; Tick&lt;/b&gt;&lt;br&gt;POSIX Timer&lt;br&gt;Watchdog Timer&lt;br&gt;Tickless Mode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=11;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="690" y="730" width="190" height="70" as="geometry"/>
-        </mxCell>
-        <mxCell id="nuttx_irq" value="&lt;b&gt;中断管理&lt;/b&gt;&lt;br&gt;IRQ Dispatch&lt;br&gt;Nested Interrupt&lt;br&gt;ISR Cat1/Cat2 映射" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=11;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="890" y="730" width="190" height="70" as="geometry"/>
-        </mxCell>
-        <mxCell id="nuttx_net" value="&lt;b&gt;网络子系统&lt;/b&gt;&lt;br&gt;BSD Socket API&lt;br&gt;TCP/UDP/IP&lt;br&gt;Ethernet Driver" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=11;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1090" y="730" width="190" height="70" as="geometry"/>
-        </mxCell>
-        <mxCell id="nuttx_fs" value="&lt;b&gt;文件系统&lt;/b&gt;&lt;br&gt;VFS / devfs&lt;br&gt;LittleFS / FAT&lt;br&gt;MTD Driver" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=11;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1290" y="730" width="180" height="70" as="geometry"/>
-        </mxCell>
-        <mxCell id="nuttx_smp" value="&lt;b&gt;多核支持&lt;/b&gt;&lt;br&gt;SMP Scheduler&lt;br&gt;CPU Affinity&lt;br&gt;Inter-Core IPC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=11;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1480" y="730" width="190" height="70" as="geometry"/>
-        </mxCell>
-        <mxCell id="nuttx_openamp" value="&lt;b&gt;OpenAMP / RPMsg&lt;/b&gt;&lt;br&gt;AMP 核间通信&lt;br&gt;Remoteproc&lt;br&gt;Virtio Transport" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=11;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1680" y="730" width="200" height="70" as="geometry"/>
-        </mxCell>
-        <mxCell id="nuttx_secboot" value="&lt;b&gt;[信息安全] Secure Boot&lt;/b&gt;&lt;br&gt;Bootloader Chain&lt;br&gt;Image Verify (HSM)&lt;br&gt;Anti-Rollback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D0D0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1890" y="730" width="210" height="70" as="geometry"/>
-        </mxCell>
-        <mxCell id="nuttx_time_prot" value="&lt;b&gt;[功能安全] 时间保护&lt;/b&gt;&lt;br&gt;Execution Budget&lt;br&gt;OS Timer + WdgM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFD0D0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="2110" y="730" width="190" height="70" as="geometry"/>
+        <mxCell id="ecu_iohwab" value="IoHwAb" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="150" y="128" width="70" height="35" as="geometry"/>
         </mxCell>
 
-        <!-- ============================================================ -->
-        <!-- LAYER 2: MCAL (Microcontroller Abstraction Layer)            -->
-        <!-- ============================================================ -->
-        <mxCell id="L2_title" value="&lt;b&gt;MCAL — 微控制器抽象层 (Microcontroller Abstraction Layer)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="40" y="850" width="2320" height="30" as="geometry"/>
+        <!-- Complex Device Drivers -->
+        <mxCell id="ecu_cdd_label" value="&lt;b&gt;Complex Device Drivers (CDD)&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_ecu">
+          <mxGeometry x="680" y="35" width="240" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cdd_hsm" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;HSM Driver" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_ecu">
+          <mxGeometry x="680" y="58" width="90" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cdd_crypto" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;Crypto Driver" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_ecu">
+          <mxGeometry x="775" y="58" width="90" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cdd_dds" value="&lt;b&gt;[DDS]&lt;/b&gt;&lt;br&gt;DDS Transport" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="L_ecu">
+          <mxGeometry x="870" y="58" width="90" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cdd_sensor" value="Sensor Fusion&lt;br&gt;CDD" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=9;" vertex="1" parent="L_ecu">
+          <mxGeometry x="965" y="58" width="90" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cdd_safe" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;Safety Path CDD" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_ecu">
+          <mxGeometry x="1060" y="58" width="100" height="40" as="geometry"/>
         </mxCell>
 
-        <mxCell id="mcal_can" value="&lt;b&gt;Can Driver&lt;/b&gt;&lt;br&gt;CAN / CAN FD" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="40" y="890" width="150" height="50" as="geometry"/>
+        <!-- ========== LAYER 5: MCAL ========== -->
+        <mxCell id="L_mcal" value="&lt;b&gt;Basic Software — Microcontroller Abstraction Layer (MCAL)&lt;/b&gt;" style="swimlane;html=1;startSize=28;fillColor=#ECEFF1;strokeColor=#455A64;fontColor=#263238;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="890" width="2100" height="100" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_lin" value="&lt;b&gt;Lin Driver&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="200" y="890" width="120" height="50" as="geometry"/>
+        <mxCell id="mcal_can" value="Can" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="10" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_eth" value="&lt;b&gt;Eth Driver&lt;/b&gt;&lt;br&gt;MAC + PHY" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="330" y="890" width="150" height="50" as="geometry"/>
+        <mxCell id="mcal_lin" value="Lin" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="70" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_spi" value="&lt;b&gt;Spi Driver&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="490" y="890" width="120" height="50" as="geometry"/>
+        <mxCell id="mcal_eth" value="Eth" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="130" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_dio" value="&lt;b&gt;Dio Driver&lt;/b&gt;&lt;br&gt;GPIO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="620" y="890" width="120" height="50" as="geometry"/>
+        <mxCell id="mcal_spi" value="Spi" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="190" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_adc" value="&lt;b&gt;Adc Driver&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="750" y="890" width="110" height="50" as="geometry"/>
+        <mxCell id="mcal_dio" value="Dio" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="250" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_pwm" value="&lt;b&gt;Pwm Driver&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="870" y="890" width="110" height="50" as="geometry"/>
+        <mxCell id="mcal_adc" value="Adc" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="310" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_gpt" value="&lt;b&gt;Gpt Driver&lt;/b&gt;&lt;br&gt;Timer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="990" y="890" width="120" height="50" as="geometry"/>
+        <mxCell id="mcal_pwm" value="Pwm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="370" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_icu" value="&lt;b&gt;Icu Driver&lt;/b&gt;&lt;br&gt;Input Capture" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1120" y="890" width="130" height="50" as="geometry"/>
+        <mxCell id="mcal_gpt" value="Gpt" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="430" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_fls" value="&lt;b&gt;Fls Driver&lt;/b&gt;&lt;br&gt;Flash" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1260" y="890" width="130" height="50" as="geometry"/>
+        <mxCell id="mcal_icu" value="Icu" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="490" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_wdg" value="&lt;b&gt;[功能安全] Wdg Driver&lt;/b&gt;&lt;br&gt;Internal/External WDT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;" vertex="1" parent="1">
-          <mxGeometry x="1400" y="890" width="190" height="50" as="geometry"/>
+        <mxCell id="mcal_fls" value="Fls" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="550" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_mcu" value="&lt;b&gt;Mcu Driver&lt;/b&gt;&lt;br&gt;Clock / Reset / PLL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="890" width="160" height="50" as="geometry"/>
+        <mxCell id="mcal_eep" value="Eep" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="610" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_port" value="&lt;b&gt;Port Driver&lt;/b&gt;&lt;br&gt;Pin Mux" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1770" y="890" width="130" height="50" as="geometry"/>
+        <mxCell id="mcal_mcu" value="Mcu" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="670" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="mcal_hwdiag" value="&lt;b&gt;[功能安全] HW Diag&lt;/b&gt;&lt;br&gt;ECC / Lockstep&lt;br&gt;BIST / Voltage Mon" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1910" y="890" width="200" height="50" as="geometry"/>
+        <mxCell id="mcal_port" value="Port" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="730" y="40" width="55" height="45" as="geometry"/>
         </mxCell>
-
-        <!-- ============================================================ -->
-        <!-- LAYER 1: HARDWARE LAYER                                      -->
-        <!-- ============================================================ -->
-        <mxCell id="L1_title" value="&lt;b&gt;硬件层 (Hardware Layer)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="40" y="960" width="2320" height="30" as="geometry"/>
+        <mxCell id="mcal_wdg" value="&lt;b&gt;[FuSa]&lt;/b&gt; Wdg" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_mcal">
+          <mxGeometry x="790" y="40" width="70" height="45" as="geometry"/>
         </mxCell>
-
-        <mxCell id="hw_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;strokeWidth=3;opacity=30;" vertex="1" parent="1">
-          <mxGeometry x="30" y="995" width="2340" height="80" as="geometry"/>
+        <mxCell id="mcal_hwdiag" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;HW Diag" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_mcal">
+          <mxGeometry x="865" y="40" width="75" height="45" as="geometry"/>
         </mxCell>
 
-        <mxCell id="hw_mcu" value="&lt;b&gt;主控 MCU/SoC&lt;/b&gt;&lt;br&gt;ARM Cortex-R52 / M7&lt;br&gt;Multi-Core (Lockstep)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="40" y="1000" width="250" height="60" as="geometry"/>
+        <!-- ========== LAYER 6: MICROCONTROLLER ========== -->
+        <mxCell id="L_hw" value="&lt;b&gt;Microcontroller (Hardware)&lt;/b&gt;" style="swimlane;html=1;startSize=28;fillColor=#FFE0B2;strokeColor=#E65100;fontColor=#BF360C;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="1000" width="2100" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="hw_can" value="&lt;b&gt;CAN/CAN FD&lt;/b&gt;&lt;br&gt;Transceiver" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="300" y="1000" width="150" height="60" as="geometry"/>
+        <mxCell id="hw_mcu" value="MCU/SoC&lt;br&gt;Cortex-R52/A76" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="10" y="35" width="120" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="hw_eth" value="&lt;b&gt;Ethernet PHY&lt;/b&gt;&lt;br&gt;100BASE-T1&lt;br&gt;1000BASE-T1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="460" y="1000" width="160" height="60" as="geometry"/>
+        <mxCell id="hw_can" value="CAN/CAN FD" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="140" y="35" width="90" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="hw_lin" value="&lt;b&gt;LIN&lt;/b&gt;&lt;br&gt;Transceiver" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="630" y="1000" width="120" height="60" as="geometry"/>
+        <mxCell id="hw_eth" value="Ethernet PHY" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="240" y="35" width="90" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="hw_flash" value="&lt;b&gt;Flash / EEPROM&lt;/b&gt;&lt;br&gt;Internal + External" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="760" y="1000" width="170" height="60" as="geometry"/>
+        <mxCell id="hw_lin" value="LIN" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="340" y="35" width="60" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="hw_hsm" value="&lt;b&gt;[信息安全] HSM&lt;/b&gt;&lt;br&gt;Hardware Security Module&lt;br&gt;Secure Enclave" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D0D0FF;strokeColor=#0000CC;fontSize=11;fontColor=#0000AA;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="940" y="1000" width="220" height="60" as="geometry"/>
+        <mxCell id="hw_flash" value="Flash/EEPROM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="410" y="35" width="100" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="hw_wdt" value="&lt;b&gt;[功能安全] WDT HW&lt;/b&gt;&lt;br&gt;Internal + External&lt;br&gt;Window Watchdog" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFD0D0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1170" y="1000" width="210" height="60" as="geometry"/>
+        <mxCell id="hw_hsm" value="&lt;b&gt;[CySec]&lt;/b&gt; HSM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D0D0FF;strokeColor=#0000CC;fontSize=10;fontColor=#0000AA;" vertex="1" parent="L_hw">
+          <mxGeometry x="520" y="35" width="90" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="hw_mpu" value="&lt;b&gt;[功能安全] MPU/MMU&lt;/b&gt;&lt;br&gt;Memory Protection&lt;br&gt;Hardware Unit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFD0D0;strokeColor=#CC0000;fontSize=11;fontColor=#CC0000;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="1390" y="1000" width="200" height="60" as="geometry"/>
+        <mxCell id="hw_wdt" value="&lt;b&gt;[FuSa]&lt;/b&gt; WDT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFD0D0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="L_hw">
+          <mxGeometry x="620" y="35" width="80" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="hw_switch" value="&lt;b&gt;Ethernet Switch&lt;/b&gt;&lt;br&gt;TSN / VLAN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="1000" width="160" height="60" as="geometry"/>
+        <mxCell id="hw_mpu" value="&lt;b&gt;[FuSa]&lt;/b&gt; MPU" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFD0D0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="L_hw">
+          <mxGeometry x="710" y="35" width="80" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="hw_sensor" value="&lt;b&gt;传感器/执行器&lt;/b&gt;&lt;br&gt;Camera / Radar&lt;br&gt;Motor / Valve" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1770" y="1000" width="190" height="60" as="geometry"/>
+        <mxCell id="hw_switch" value="Eth Switch" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="800" y="35" width="90" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="hw_pmic" value="&lt;b&gt;PMIC / Power&lt;/b&gt;&lt;br&gt;电源管理 IC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1970" y="1000" width="150" height="60" as="geometry"/>
+        <mxCell id="hw_sensor" value="Sensor/Actuator" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="900" y="35" width="110" height="45" as="geometry"/>
         </mxCell>
 
-        <!-- ============================================================ -->
-        <!-- KEY CONNECTION ARROWS                                        -->
-        <!-- ============================================================ -->
+        <!-- ========== RIGHT: Classic Communication Stack Column ========== -->
+        <mxCell id="comm_col_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8EAF6;strokeColor=#3949AB;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="2300" y="70" width="180" height="1020" as="geometry"/>
+        </mxCell>
+        <mxCell id="comm_col_title" value="&lt;b&gt;Communication Stack&lt;/b&gt;&lt;br&gt;(Classic AUTOSAR)" style="text;html=1;align=center;fontSize=11;fontColor=#283593;" vertex="1" parent="1">
+          <mxGeometry x="2310" y="80" width="160" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_com" value="Com" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="130" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_pdur" value="PduR" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="180" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_secoc" value="&lt;b&gt;[CySec]&lt;/b&gt; SecOC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="230" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_e2e" value="&lt;b&gt;[FuSa]&lt;/b&gt; E2E" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="280" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_cantp" value="CanTp" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="340" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_canif" value="CanIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="390" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_can" value="Can (MCAL)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#455A64;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="440" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_div1" value="── Ethernet Path ──" style="text;html=1;align=center;fontSize=9;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="490" width="120" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_someip" value="SOME/IP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="515" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_soad" value="SoAd" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="565" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_tcpip" value="TcpIp (NuttX)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="615" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_ethif" value="EthIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="665" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_eth" value="Eth (MCAL)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#455A64;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="715" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_div2" value="── DDS Path ──" style="text;html=1;align=center;fontSize=9;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="765" width="120" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_dds" value="&lt;b&gt;[DDS]&lt;/b&gt; DDS Middleware" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="790" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_dds_bridge" value="&lt;b&gt;[DDS]&lt;/b&gt; Bridge" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="845" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_dds_sec" value="&lt;b&gt;[DDS+CySec]&lt;/b&gt;&lt;br&gt;DDS-Security" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D0D0FF;strokeColor=#4400AA;fontSize=8;fontColor=#4400AA;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="895" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_dds_cdd" value="&lt;b&gt;[DDS]&lt;/b&gt; CDD Transport" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="950" width="120" height="35" as="geometry"/>
+        </mxCell>
 
-        <!-- SWC -> RTE -->
-        <mxCell id="arr_swc_rte1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="swc_powertrain" target="rte_main">
+        <!-- ========== KEY ARROWS ========== -->
+        <mxCell id="arr_app_rte" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#2E7D32;strokeWidth=+2;endArrow=classic;" edge="1" parent="1" source="L_app" target="L_rte">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="arr_swc_rte2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="swc_adas" target="rte_e2e">
+        <mxCell id="arr_rte_svc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1565C0;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="L_rte" target="L_svc">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="arr_swc_rte3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#008800;" edge="1" parent="1" source="swc_dds_app" target="rte_dds_bridge">
+        <mxCell id="arr_svc_ecu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#E65100;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="L_svc" target="L_ecu">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-
-        <!-- RTE -> BSW Services -->
-        <mxCell id="arr_rte_com" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="rte_main" target="bsw_com">
+        <mxCell id="arr_ecu_mcal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#6A1B9A;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="L_ecu" target="L_mcal">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="arr_rte_e2e_lib" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#CC0000;" edge="1" parent="1" source="rte_e2e" target="bsw_e2e_lib">
+        <mxCell id="arr_mcal_hw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#455A64;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="L_mcal" target="L_hw">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="arr_rte_dds" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#008800;" edge="1" parent="1" source="rte_dds_bridge" target="bsw_dds">
+        <mxCell id="arr_os_svc" value="OS API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#F9A825;dashed=1;endArrow=classic;fontSize=9;" edge="1" parent="1" source="os_schm" target="L_svc">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-
-        <!-- COM -> PduR -> lower -->
-        <mxCell id="arr_com_pdur" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="bsw_com" target="bsw_pdur">
+        <mxCell id="arr_nuttx_mcal" value="HAL / Driver" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#D4A017;dashed=1;endArrow=classic;fontSize=9;" edge="1" parent="1" source="nuttx_fs" target="L_mcal">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="arr_pdur_secoc" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0000CC;" edge="1" parent="1" source="bsw_pdur" target="bsw_secoc">
+        <mxCell id="arr_com_stack" value="Standard PDU Flow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#3949AB;strokeWidth=2;endArrow=classic;fontSize=9;" edge="1" parent="1" source="svc_com" target="cstack_com">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-
-        <!-- DDS -> DDS Security -->
-        <mxCell id="arr_dds_sec" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4400AA;strokeWidth=2;" edge="1" parent="1" source="bsw_dds" target="bsw_dds_sec">
+        <mxCell id="arr_dds_bridge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#008800;dashed=1;endArrow=classic;" edge="1" parent="1" source="svc_dds_bridge" target="cstack_dds">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-
-        <!-- DDS -> SOME/IP Bridge -->
-        <mxCell id="arr_dds_someip" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#008800;strokeWidth=2;dashed=1;" edge="1" parent="1" source="bsw_dds" target="bsw_someip">
+        <mxCell id="arr_wdgm_wdg" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#CC0000;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="svc_wdgm" target="mcal_wdg">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-
-        <!-- WdgM -> WdgIf -->
-        <mxCell id="arr_wdgm_wdgif" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#CC0000;strokeWidth=2;" edge="1" parent="1" source="bsw_wdgm" target="ecu_wdgif">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Crypto chain -->
-        <mxCell id="arr_csm_cryif" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0000CC;" edge="1" parent="1" source="bsw_csm" target="bsw_cryif">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="arr_cryif_hsm" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0000CC;strokeWidth=2;" edge="1" parent="1" source="bsw_cryif" target="cdd_hsm">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- SecOC -> Csm -->
-        <mxCell id="arr_secoc_csm" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0000CC;dashed=1;" edge="1" parent="1" source="bsw_secoc" target="bsw_csm">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- NvM -> MemIf -> Fee -->
-        <mxCell id="arr_nvm_memif" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="bsw_nvm" target="bsw_memif">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="arr_memif_fee" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="bsw_memif" target="ecu_fee">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- ECU Abstraction -> MCAL -->
-        <mxCell id="arr_canif_can" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="ecu_canif" target="mcal_can">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="arr_ethif_eth" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="ecu_ethif" target="mcal_eth">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- NuttX -> MCAL relationship -->
-        <mxCell id="arr_nuttx_mcal" value="NuttX 通过 MCAL 或直接 HAL 访问硬件" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#D4A017;strokeWidth=2;dashed=1;fontSize=10;" edge="1" parent="1" source="nuttx_sched" target="mcal_mcu">
+        <mxCell id="arr_hsm_hw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#0000CC;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="cdd_hsm" target="hw_hsm">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <!-- HSM CDD -> HW HSM -->
-        <mxCell id="arr_hsm_hw" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0000CC;strokeWidth=2;" edge="1" parent="1" source="cdd_hsm" target="hw_hsm">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- DDS Transport -> NuttX Net -->
-        <mxCell id="arr_dds_nuttx" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#008800;strokeWidth=2;" edge="1" parent="1" source="cdd_dds_transport" target="nuttx_net">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Safe Path -> HW WDT -->
-        <mxCell id="arr_safe_wdt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#CC0000;strokeWidth=2;" edge="1" parent="1" source="cdd_safe_path" target="hw_wdt">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- MPU NuttX -> HW MPU -->
-        <mxCell id="arr_nuttx_mpu_hw" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#CC0000;strokeWidth=2;" edge="1" parent="1" source="nuttx_mpu" target="hw_mpu">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- ============================================================ -->
-        <!-- LEGEND                                                       -->
-        <!-- ============================================================ -->
+        <!-- ========== LEGEND ========== -->
         <mxCell id="legend_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="40" y="1090" width="900" height="100" as="geometry"/>
+          <mxGeometry x="180" y="1110" width="2300" height="80" as="geometry"/>
         </mxCell>
-        <mxCell id="legend_title" value="&lt;b&gt;图例 (Legend)&lt;/b&gt;" style="text;html=1;align=left;fontSize=13;fontColor=#333333;" vertex="1" parent="1">
-          <mxGeometry x="50" y="1095" width="200" height="20" as="geometry"/>
+        <mxCell id="legend_title" value="&lt;b&gt;Legend — 图例&lt;/b&gt;" style="text;html=1;align=left;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="200" y="1118" width="120" height="20" as="geometry"/>
         </mxCell>
-        <mxCell id="legend_safety" value="功能安全" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="1">
-          <mxGeometry x="50" y="1120" width="90" height="25" as="geometry"/>
+        <mxCell id="leg_fusa" value="[FuSa] Functional Safety" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="1">
+          <mxGeometry x="200" y="1145" width="150" height="30" as="geometry"/>
         </mxCell>
-        <mxCell id="legend_security" value="信息安全" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=10;fontColor=#0000AA;" vertex="1" parent="1">
-          <mxGeometry x="150" y="1120" width="90" height="25" as="geometry"/>
+        <mxCell id="leg_cysec" value="[CySec] Cybersecurity" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="1">
+          <mxGeometry x="360" y="1145" width="150" height="30" as="geometry"/>
         </mxCell>
-        <mxCell id="legend_dds" value="DDS 相关" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=10;fontColor=#006600;" vertex="1" parent="1">
-          <mxGeometry x="250" y="1120" width="90" height="25" as="geometry"/>
+        <mxCell id="leg_dds" value="[DDS] Data Distribution Service" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1145" width="180" height="30" as="geometry"/>
         </mxCell>
-        <mxCell id="legend_nuttx" value="NuttX 内核" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="350" y="1120" width="90" height="25" as="geometry"/>
+        <mxCell id="leg_nuttx" value="NuttX Integration" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="710" y="1145" width="130" height="30" as="geometry"/>
         </mxCell>
-        <mxCell id="legend_hw" value="硬件层" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="450" y="1120" width="90" height="25" as="geometry"/>
+        <mxCell id="leg_std" value="Standard BSW Module" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="850" y="1145" width="150" height="30" as="geometry"/>
         </mxCell>
-        <mxCell id="legend_std" value="标准 BSW" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="550" y="1120" width="90" height="25" as="geometry"/>
-        </mxCell>
-        <mxCell id="legend_dds_sec" value="DDS+信息安全" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D0D0FF;strokeColor=#4400AA;fontSize=10;fontColor=#4400AA;" vertex="1" parent="1">
-          <mxGeometry x="650" y="1120" width="100" height="25" as="geometry"/>
-        </mxCell>
-        <mxCell id="legend_note" value="虚线箭头 = 桥接/安全路径  |  实线箭头 = 数据流/调用" style="text;html=1;align=left;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="50" y="1155" width="500" height="20" as="geometry"/>
+        <mxCell id="leg_note" value="Layout per AUTOSAR Classic Layered Architecture (R22-11): Application → RTE → BSW Services → ECU Abstraction → MCAL → Microcontroller | OS column (left) | Communication Stack (right)" style="text;html=1;align=left;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="1145" width="800" height="30" as="geometry"/>
         </mxCell>
 
       </root>

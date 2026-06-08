@@ -1,0 +1,530 @@
+<mxfile host="app.diagrams.net" modified="2026-06-08T12:00:00.000Z" agent="Classic AUTOSAR" version="24.0.0" type="device">
+  <diagram id="classic-autosar-nuttx" name="Classic AUTOSAR Layered Architecture">
+    <mxGraphModel dx="2600" dy="3200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="2800" pageHeight="2600" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- ========== TITLE ========== -->
+        <mxCell id="title" value="&lt;b&gt;AUTOSAR Classic Platform Layered Architecture (R22-11)&lt;/b&gt;&lt;br&gt;NuttX RTOS + CCU/ZC 中央计算架构" style="text;html=1;align=center;fontSize=18;fontColor=#1A1A1A;" vertex="1" parent="1">
+          <mxGeometry x="180" y="10" width="2400" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== LEFT: AUTOSAR OS + NuttX (Classic vertical OS column) ========== -->
+        <mxCell id="os_col_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F9A825;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="20" y="70" width="150" height="1680" as="geometry"/>
+        </mxCell>
+        <mxCell id="os_col_title" value="&lt;b&gt;AUTOSAR OS&lt;/b&gt;&lt;br&gt;(NuttX Adapter)" style="text;html=1;align=center;fontSize=12;fontColor=#E65100;rotation=-90;" vertex="1" parent="1">
+          <mxGeometry x="35" y="200" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="os_task" value="Task&lt;br&gt;ISR Cat1/2&lt;br&gt;Resource&lt;br&gt;Event" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="90" width="120" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="os_alarm" value="Alarm&lt;br&gt;Counter&lt;br&gt;Schedule Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="170" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="os_app" value="OS-Application&lt;br&gt;Trusted /&lt;br&gt;Non-Trusted" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="240" width="120" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="os_mpu" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;Memory Protection&lt;br&gt;MPU/MMU&lt;br&gt;Time Protection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="1">
+          <mxGeometry x="35" y="305" width="120" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="os_schm" value="SchM&lt;br&gt;(BSW Scheduler)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="380" width="120" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="nuttx_title" value="&lt;b&gt;NuttX Kernel&lt;/b&gt;" style="text;html=1;align=center;fontSize=11;fontColor=#E65100;rotation=-90;" vertex="1" parent="1">
+          <mxGeometry x="35" y="820" width="120" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="nuttx_sched" value="Scheduler&lt;br&gt;POSIX Threads" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="440" width="120" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="nuttx_irq" value="IRQ / ISR&lt;br&gt;Dispatch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="495" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="nuttx_timer" value="Timer / Tick&lt;br&gt;Tickless" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="545" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="nuttx_ipc" value="Sem / Mutex&lt;br&gt;MQ / Signal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="595" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="nuttx_net" value="Network Stack&lt;br&gt;BSD Socket" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="645" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="nuttx_fs" value="VFS / devfs&lt;br&gt;LittleFS / MTD" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="695" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="nuttx_smp" value="SMP / AMP&lt;br&gt;OpenAMP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="35" y="745" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="nuttx_boot" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;Secure Boot&lt;br&gt;Chain" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="1">
+          <mxGeometry x="35" y="795" width="120" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== LAYER 1: APPLICATION LAYER ========== -->
+        <mxCell id="L_app" value="&lt;b&gt;Application Layer&lt;/b&gt; — Software Components (SWC)" style="swimlane;html=1;startSize=28;fillColor=#E8F5E9;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="70" width="2100" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="swc1" value="Powertrain SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="10" y="35" width="130" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="swc2" value="Chassis SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="150" y="35" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="swc3" value="Body SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="280" y="35" width="110" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="swc4" value="ADAS SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="400" y="35" width="110" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="swc5" value="Diagnostic SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="520" y="35" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="swc6" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;Safety Monitor SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="L_app">
+          <mxGeometry x="650" y="35" width="140" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="swc7" value="&lt;b&gt;[DDS]&lt;/b&gt;&lt;br&gt;Topic Pub/Sub SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=10;fontColor=#006600;" vertex="1" parent="L_app">
+          <mxGeometry x="800" y="35" width="130" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="swc8" value="OTA / Cloud SWC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_app">
+          <mxGeometry x="940" y="35" width="120" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== LAYER 2: RTE ========== -->
+        <mxCell id="L_rte" value="&lt;b&gt;Runtime Environment (RTE)&lt;/b&gt;" style="swimlane;html=1;startSize=28;fillColor=#E3F2FD;strokeColor=#1565C0;fontColor=#0D47A1;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="190" width="2100" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="rte_sr" value="Sender-Receiver&lt;br&gt;Communication" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=10;" vertex="1" parent="L_rte">
+          <mxGeometry x="10" y="35" width="150" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="rte_cs" value="Client-Server&lt;br&gt;Communication" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=10;" vertex="1" parent="L_rte">
+          <mxGeometry x="170" y="35" width="150" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="rte_e2e" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;E2E Transformer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="L_rte">
+          <mxGeometry x="330" y="35" width="130" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="rte_secoc" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;SecOC Inject" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=10;fontColor=#0000AA;" vertex="1" parent="L_rte">
+          <mxGeometry x="470" y="35" width="120" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="rte_dds" value="&lt;b&gt;[DDS]&lt;/b&gt;&lt;br&gt;DDS-RTE Bridge" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=10;fontColor=#006600;" vertex="1" parent="L_rte">
+          <mxGeometry x="600" y="35" width="130" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="rte_part" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;OS-App Partition" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="L_rte">
+          <mxGeometry x="740" y="35" width="130" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="rte_vfb" value="Virtual Function Bus (VFB)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAEEF3;strokeColor=#0078D4;fontSize=10;dashed=1;" vertex="1" parent="L_rte">
+          <mxGeometry x="880" y="35" width="200" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== LAYER 3: BSW SERVICES LAYER ========== -->
+        <mxCell id="L_svc" value="&lt;b&gt;Basic Software — Services Layer&lt;/b&gt;" style="swimlane;html=1;startSize=28;fillColor=#FFF3E0;strokeColor=#E65100;fontColor=#BF360C;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="290" width="2100" height="380" as="geometry"/>
+        </mxCell>
+
+        <!-- Communication Services sub-lane -->
+        <mxCell id="svc_comm_label" value="&lt;b&gt;Communication Services&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="35" width="200" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_com" value="Com" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_pdur" value="PduR" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="85" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_ipdum" value="IpduM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="160" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_comm" value="ComM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="235" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_nm" value="Nm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="310" y="58" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_someip" value="SOME/IP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="375" y="58" width="80" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_secoc" value="&lt;b&gt;[CySec]&lt;/b&gt; SecOC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="460" y="58" width="90" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_e2e" value="&lt;b&gt;[FuSa]&lt;/b&gt; E2E Lib" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_svc">
+          <mxGeometry x="555" y="58" width="90" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_dds" value="&lt;b&gt;[DDS]&lt;/b&gt; DDS Middleware" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="L_svc">
+          <mxGeometry x="650" y="58" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_dds_bridge" value="&lt;b&gt;[DDS]&lt;/b&gt; DDS-SOME/IP Bridge" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="L_svc">
+          <mxGeometry x="775" y="58" width="140" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_dds_sec" value="&lt;b&gt;[DDS+CySec]&lt;/b&gt;&lt;br&gt;DDS-Security" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D0D0FF;strokeColor=#4400AA;fontSize=9;fontColor=#4400AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="920" y="58" width="110" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Memory Services -->
+        <mxCell id="svc_mem_label" value="&lt;b&gt;Memory Services&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="105" width="160" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_nvm" value="NvM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="128" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_memif" value="MemIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="85" y="128" width="70" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Diagnostic Services -->
+        <mxCell id="svc_diag_label" value="&lt;b&gt;Diagnostic Services&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="200" y="105" width="180" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_dcm" value="Dcm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="200" y="128" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_dem" value="Dem" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="265" y="128" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_fim" value="&lt;b&gt;[FuSa]&lt;/b&gt; FiM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_svc">
+          <mxGeometry x="330" y="128" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_det" value="Det" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="405" y="128" width="55" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Off-board Communication -->
+        <mxCell id="svc_off_label" value="&lt;b&gt;Off-board Communication&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="500" y="105" width="200" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_doip" value="DoIP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="500" y="128" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_diag_sec" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;0x27/0x29 Auth" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="575" y="128" width="100" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Crypto Services -->
+        <mxCell id="svc_crypto_label" value="&lt;b&gt;Crypto Services&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="700" y="105" width="160" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_csm" value="&lt;b&gt;[CySec]&lt;/b&gt; Csm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="700" y="128" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_cryif" value="&lt;b&gt;[CySec]&lt;/b&gt; CryIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="775" y="128" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_keym" value="&lt;b&gt;[CySec]&lt;/b&gt; KeyM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="850" y="128" width="70" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- System Services -->
+        <mxCell id="svc_sys_label" value="&lt;b&gt;System Services&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="175" width="160" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_ecum" value="EcuM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="10" y="198" width="65" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_bswm" value="BswM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="80" y="198" width="65" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_wdgm" value="&lt;b&gt;[FuSa]&lt;/b&gt; WdgM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_svc">
+          <mxGeometry x="150" y="198" width="80" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_wdgif" value="WdgIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="235" y="198" width="65" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_stbm" value="StbM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_svc">
+          <mxGeometry x="305" y="198" width="65" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_safe" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;Safe State Mgr" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_svc">
+          <mxGeometry x="375" y="198" width="100" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_ids" value="&lt;b&gt;[CySec]&lt;/b&gt; IdsM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="480" y="198" width="75" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc_fw" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;Eth Firewall" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_svc">
+          <mxGeometry x="560" y="198" width="90" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== LAYER 4: ECU ABSTRACTION LAYER ========== -->
+        <mxCell id="L_ecu" value="&lt;b&gt;Basic Software — ECU Abstraction Layer&lt;/b&gt;" style="swimlane;html=1;startSize=28;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontColor=#4A148C;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="680" width="2100" height="200" as="geometry"/>
+        </mxCell>
+
+        <!-- Communication HW Abstraction -->
+        <mxCell id="ecu_comm_label" value="&lt;b&gt;Communication Hardware Abstraction&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_ecu">
+          <mxGeometry x="10" y="35" width="280" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_cantp" value="CanTp" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="10" y="58" width="65" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_canif" value="CanIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="80" y="58" width="65" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_cantrcv" value="CanTrcv" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="150" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_linif" value="LinIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="225" y="58" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_lintp" value="LinTp" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="290" y="58" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_ethif" value="EthIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="355" y="58" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_ethtrcv" value="EthTrcv" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="420" y="58" width="70" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_soad" value="SoAd" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="495" y="58" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_tcpip" value="TcpIp&lt;br&gt;(NuttX Net)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="L_ecu">
+          <mxGeometry x="560" y="58" width="80" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Memory HW Abstraction -->
+        <mxCell id="ecu_mem_label" value="&lt;b&gt;Memory Hardware Abstraction&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_ecu">
+          <mxGeometry x="10" y="105" width="220" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_fee" value="Fee" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="10" y="128" width="55" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_ea" value="Ea" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="70" y="128" width="55" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- I/O HW Abstraction -->
+        <mxCell id="ecu_io_label" value="&lt;b&gt;I/O Hardware Abstraction&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_ecu">
+          <mxGeometry x="150" y="105" width="200" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="ecu_iohwab" value="IoHwAb" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_ecu">
+          <mxGeometry x="150" y="128" width="70" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Complex Device Drivers -->
+        <mxCell id="ecu_cdd_label" value="&lt;b&gt;Complex Device Drivers (CDD)&lt;/b&gt;" style="text;html=1;align=left;fontSize=11;fontColor=#555555;" vertex="1" parent="L_ecu">
+          <mxGeometry x="680" y="35" width="240" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cdd_hsm" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;HSM Driver" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_ecu">
+          <mxGeometry x="680" y="58" width="90" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cdd_crypto" value="&lt;b&gt;[CySec]&lt;/b&gt;&lt;br&gt;Crypto Driver" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="L_ecu">
+          <mxGeometry x="775" y="58" width="90" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cdd_dds" value="&lt;b&gt;[DDS]&lt;/b&gt;&lt;br&gt;DDS Transport" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="L_ecu">
+          <mxGeometry x="870" y="58" width="90" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cdd_sensor" value="Sensor Fusion&lt;br&gt;CDD" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=9;" vertex="1" parent="L_ecu">
+          <mxGeometry x="965" y="58" width="90" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cdd_safe" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;Safety Path CDD" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_ecu">
+          <mxGeometry x="1060" y="58" width="100" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== LAYER 5: MCAL ========== -->
+        <mxCell id="L_mcal" value="&lt;b&gt;Basic Software — Microcontroller Abstraction Layer (MCAL)&lt;/b&gt;" style="swimlane;html=1;startSize=28;fillColor=#ECEFF1;strokeColor=#455A64;fontColor=#263238;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="890" width="2100" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_can" value="Can" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="10" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_lin" value="Lin" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="70" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_eth" value="Eth" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="130" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_spi" value="Spi" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="190" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_dio" value="Dio" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="250" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_adc" value="Adc" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="310" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_pwm" value="Pwm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="370" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_gpt" value="Gpt" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="430" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_icu" value="Icu" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="490" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_fls" value="Fls" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="550" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_eep" value="Eep" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="610" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_mcu" value="Mcu" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="670" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_port" value="Port" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=10;" vertex="1" parent="L_mcal">
+          <mxGeometry x="730" y="40" width="55" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_wdg" value="&lt;b&gt;[FuSa]&lt;/b&gt; Wdg" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_mcal">
+          <mxGeometry x="790" y="40" width="70" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcal_hwdiag" value="&lt;b&gt;[FuSa]&lt;/b&gt;&lt;br&gt;HW Diag" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="L_mcal">
+          <mxGeometry x="865" y="40" width="75" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== LAYER 6: MICROCONTROLLER ========== -->
+        <mxCell id="L_hw" value="&lt;b&gt;Microcontroller (Hardware)&lt;/b&gt;" style="swimlane;html=1;startSize=28;fillColor=#FFE0B2;strokeColor=#E65100;fontColor=#BF360C;fontSize=13;horizontal=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="1000" width="2100" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="hw_mcu" value="MCU/SoC&lt;br&gt;Cortex-R52/A76" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="10" y="35" width="120" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="hw_can" value="CAN/CAN FD" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="140" y="35" width="90" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="hw_eth" value="Ethernet PHY" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="240" y="35" width="90" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="hw_lin" value="LIN" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="340" y="35" width="60" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="hw_flash" value="Flash/EEPROM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="410" y="35" width="100" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="hw_hsm" value="&lt;b&gt;[CySec]&lt;/b&gt; HSM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D0D0FF;strokeColor=#0000CC;fontSize=10;fontColor=#0000AA;" vertex="1" parent="L_hw">
+          <mxGeometry x="520" y="35" width="90" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="hw_wdt" value="&lt;b&gt;[FuSa]&lt;/b&gt; WDT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFD0D0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="L_hw">
+          <mxGeometry x="620" y="35" width="80" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="hw_mpu" value="&lt;b&gt;[FuSa]&lt;/b&gt; MPU" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFD0D0;strokeColor=#CC0000;fontSize=10;fontColor=#CC0000;" vertex="1" parent="L_hw">
+          <mxGeometry x="710" y="35" width="80" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="hw_switch" value="Eth Switch" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="800" y="35" width="90" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="hw_sensor" value="Sensor/Actuator" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=10;" vertex="1" parent="L_hw">
+          <mxGeometry x="900" y="35" width="110" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== RIGHT: Classic Communication Stack Column ========== -->
+        <mxCell id="comm_col_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8EAF6;strokeColor=#3949AB;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="2300" y="70" width="180" height="1020" as="geometry"/>
+        </mxCell>
+        <mxCell id="comm_col_title" value="&lt;b&gt;Communication Stack&lt;/b&gt;&lt;br&gt;(Classic AUTOSAR)" style="text;html=1;align=center;fontSize=11;fontColor=#283593;" vertex="1" parent="1">
+          <mxGeometry x="2310" y="80" width="160" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_com" value="Com" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="130" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_pdur" value="PduR" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="180" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_secoc" value="&lt;b&gt;[CySec]&lt;/b&gt; SecOC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="230" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_e2e" value="&lt;b&gt;[FuSa]&lt;/b&gt; E2E" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="280" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_cantp" value="CanTp" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="340" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_canif" value="CanIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="390" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_can" value="Can (MCAL)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#455A64;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="440" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_div1" value="── Ethernet Path ──" style="text;html=1;align=center;fontSize=9;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="490" width="120" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_someip" value="SOME/IP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="515" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_soad" value="SoAd" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="565" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_tcpip" value="TcpIp (NuttX)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="615" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_ethif" value="EthIf" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3949AB;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="665" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_eth" value="Eth (MCAL)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#455A64;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="715" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_div2" value="── DDS Path ──" style="text;html=1;align=center;fontSize=9;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="765" width="120" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_dds" value="&lt;b&gt;[DDS]&lt;/b&gt; DDS Middleware" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="790" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_dds_bridge" value="&lt;b&gt;[DDS]&lt;/b&gt; Bridge" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="845" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_dds_sec" value="&lt;b&gt;[DDS+CySec]&lt;/b&gt;&lt;br&gt;DDS-Security" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D0D0FF;strokeColor=#4400AA;fontSize=8;fontColor=#4400AA;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="895" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cstack_dds_cdd" value="&lt;b&gt;[DDS]&lt;/b&gt; CDD Transport" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="1">
+          <mxGeometry x="2330" y="950" width="120" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== KEY ARROWS ========== -->
+        <mxCell id="arr_app_rte" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#2E7D32;strokeWidth=+2;endArrow=classic;" edge="1" parent="1" source="L_app" target="L_rte">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arr_rte_svc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1565C0;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="L_rte" target="L_svc">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arr_svc_ecu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#E65100;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="L_svc" target="L_ecu">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arr_ecu_mcal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#6A1B9A;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="L_ecu" target="L_mcal">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arr_mcal_hw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#455A64;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="L_mcal" target="L_hw">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arr_os_svc" value="OS API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#F9A825;dashed=1;endArrow=classic;fontSize=9;" edge="1" parent="1" source="os_schm" target="L_svc">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arr_nuttx_mcal" value="HAL / Driver" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#D4A017;dashed=1;endArrow=classic;fontSize=9;" edge="1" parent="1" source="nuttx_fs" target="L_mcal">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arr_com_stack" value="Standard PDU Flow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#3949AB;strokeWidth=2;endArrow=classic;fontSize=9;" edge="1" parent="1" source="svc_com" target="cstack_com">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arr_dds_bridge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#008800;dashed=1;endArrow=classic;" edge="1" parent="1" source="svc_dds_bridge" target="cstack_dds">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arr_wdgm_wdg" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#CC0000;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="svc_wdgm" target="mcal_wdg">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="arr_hsm_hw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#0000CC;strokeWidth=2;endArrow=classic;" edge="1" parent="1" source="cdd_hsm" target="hw_hsm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ========== LEGEND ========== -->
+        <mxCell id="legend_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="180" y="1110" width="2300" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend_title" value="&lt;b&gt;Legend — 图例&lt;/b&gt;" style="text;html=1;align=left;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="200" y="1118" width="120" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg_fusa" value="[FuSa] Functional Safety" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#CC0000;fontSize=9;fontColor=#CC0000;" vertex="1" parent="1">
+          <mxGeometry x="200" y="1145" width="150" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg_cysec" value="[CySec] Cybersecurity" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0E0FF;strokeColor=#0000CC;fontSize=9;fontColor=#0000AA;" vertex="1" parent="1">
+          <mxGeometry x="360" y="1145" width="150" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg_dds" value="[DDS] Data Distribution Service" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E0FFE0;strokeColor=#008800;fontSize=9;fontColor=#006600;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1145" width="180" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg_nuttx" value="NuttX Integration" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D4A017;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="710" y="1145" width="130" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg_std" value="Standard BSW Module" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="850" y="1145" width="150" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg_note" value="Layout per AUTOSAR Classic Layered Architecture (R22-11): Application → RTE → BSW Services → ECU Abstraction → MCAL → Microcontroller | OS column (left) | Communication Stack (right)" style="text;html=1;align=left;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="1145" width="800" height="30" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
