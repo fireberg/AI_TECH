@@ -105,7 +105,9 @@
 
 ### 2.3 draw.io 架构分层图（mxGraph XML）
 
-> 将以下 XML 内容完整复制，在 draw.io 中选择 **File → Import from → XML** 即可导入。
+> 为避免 draw.io 把 Markdown 文字一起当 XML 解析导致错误（如“Unescaped '<'”），建议优先使用仓库中的独立文件 **`diagram-classic-autosar.xml`** 直接导入：  
+> **draw.io → File → Import from → Device/Local file → 选择 `diagram-classic-autosar.xml`**。  
+> 若要通过粘贴导入，则只复制本节代码块中 ` ```xml ` 与 ` ``` ` 之间的内容。
 
 ```xml
 <mxfile host="app.diagrams.net" modified="2026-06-08T12:00:00.000Z" agent="Classic AUTOSAR" version="24.0.0" type="device">
