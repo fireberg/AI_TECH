@@ -1800,6 +1800,27 @@ graph LR
       </li>
       <li class="tree-item">
         <button class="tree-toggle" onclick="toggleTree(this)">
+          <span class="arrow">▶</span>时间同步动画演示
+        </button>
+        <div class="tree-content">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+            下方动画展示了 gPTP 时间同步的完整过程：Grandmaster 周期性发送 Sync 消息逐跳传播，每个节点测量链路延迟并校准本地时钟。
+            观察各设备的时钟从初始偏差逐步收敛到同步状态。
+          </p>
+          <div style="text-align:center;margin-bottom:12px;">
+            <button onclick="startPtpSync()" id="ptpStartBtn" style="padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">开始同步</button>
+            <button onclick="resetPtpSync()" style="padding:8px 20px;background:var(--be-gray);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;margin-left:8px;">重置</button>
+          </div>
+          <div class="gcl-canvas-wrap">
+            <canvas id="ptpCanvas" width="760" height="420" style="cursor:default;"></canvas>
+          </div>
+          <div id="ptpLog" style="margin-top:12px;font-size:13px;color:var(--text-secondary);min-height:30px;">
+            点击"开始同步"观看 gPTP 同步过程：Grandmaster 发出 Sync → 交换机测量 Peer Delay → 逐跳传递时间 → 终端校准时钟。
+          </div>
+        </div>
+      </li>
+      <li class="tree-item">
+        <button class="tree-toggle" onclick="toggleTree(this)">
           <span class="arrow">▶</span>精度影响因素与最佳实践
         </button>
         <div class="tree-content">
@@ -2240,6 +2261,8 @@ document.addEventListener('DOMContentLoaded', function() {
   initSidebarScroll();
   drawGCLMini();
   drawCBSCredit();
+  initPtpNodes();
+  drawPtp();
   
   // Initialize Mermaid
   if (typeof mermaid !== 'undefined') {
@@ -3441,6 +3464,356 @@ function drawCBSCredit() {
   ctx.fillStyle = '#94a3b8';
   ctx.fillText('credit ≥ 0: 允许发送', ml + pw - 160, mt + 14);
   ctx.fillText('credit < 0: 等待恢复', ml + pw - 160, mt + 28);
+}
+
+// ========================================
+// PTP Time Sync Animation
+// ========================================
+const ptpState = {
+  running: false,
+  phase: 0,
+  tick: 0,
+  nodes: [],
+  messages: [],
+  syncRound: 0
+};
+
+function initPtpNodes() {
+  ptpState.nodes = [
+    { id: 'gm',  x: 340, y: 30,  w: 80, h: 36, label: 'Grandmaster', color: '#1a73e8',
+      clock: 1000000, drift: 0, offset: 0, synced: true, tier: 0 },
+    { id: 'sw1', x: 140, y: 130, w: 80, h: 34, label: 'TSN SW1', color: '#2e7d32',
+      clock: 999700, drift: 0.12, offset: -300, synced: false, tier: 1, peerDelay: 342 },
+    { id: 'sw2', x: 520, y: 130, w: 80, h: 34, label: 'TSN SW2', color: '#2e7d32',
+      clock: 1000500, drift: -0.08, offset: 500, synced: false, tier: 1, peerDelay: 289 },
+    { id: 'ep1', x: 40,  y: 250, w: 72, h: 32, label: 'PLC-A', color: '#ff6d00',
+      clock: 999400, drift: 0.20, offset: -600, synced: false, tier: 2, peerDelay: 126, parent: 'sw1' },
+    { id: 'ep2', x: 200, y: 250, w: 72, h: 32, label: 'Sensor-1', color: '#ff6d00',
+      clock: 1000200, drift: -0.15, offset: 200, synced: false, tier: 2, peerDelay: 118, parent: 'sw1' },
+    { id: 'ep3', x: 440, y: 250, w: 72, h: 32, label: 'PLC-B', color: '#ff6d00',
+      clock: 1000800, drift: 0.10, offset: 800, synced: false, tier: 2, peerDelay: 131, parent: 'sw2' },
+    { id: 'ep4', x: 620, y: 250, w: 72, h: 32, label: 'Camera', color: '#ff6d00',
+      clock: 999100, drift: -0.25, offset: -900, synced: false, tier: 2, peerDelay: 142, parent: 'sw2' }
+  ];
+  ptpState.links = [
+    { from: 'gm', to: 'sw1' }, { from: 'gm', to: 'sw2' },
+    { from: 'sw1', to: 'ep1' }, { from: 'sw1', to: 'ep2' },
+    { from: 'sw2', to: 'ep3' }, { from: 'sw2', to: 'ep4' }
+  ];
+  ptpState.messages = [];
+  ptpState.syncRound = 0;
+  ptpState.phase = 0;
+  ptpState.tick = 0;
+}
+
+function drawPtp() {
+  const canvas = document.getElementById('ptpCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw links
+  ptpState.links.forEach(link => {
+    const from = ptpState.nodes.find(n => n.id === link.from);
+    const to = ptpState.nodes.find(n => n.id === link.to);
+    ctx.beginPath();
+    ctx.moveTo(from.x + from.w / 2, from.y + from.h);
+    ctx.lineTo(to.x + to.w / 2, to.y);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+
+  // Draw nodes
+  ptpState.nodes.forEach(node => {
+    // Node box
+    const synced = node.synced;
+    ctx.fillStyle = synced ? node.color : '#f1f5f9';
+    ctx.strokeStyle = node.color;
+    ctx.lineWidth = synced ? 2.5 : 1.5;
+    roundRect(ctx, node.x, node.y, node.w, node.h, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Label
+    ctx.font = 'bold 10px -apple-system, sans-serif';
+    ctx.fillStyle = synced ? '#fff' : node.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(node.label, node.x + node.w / 2, node.y + node.h / 2 + 4);
+    ctx.textAlign = 'left';
+
+    // Clock display below node
+    const clockStr = (node.clock / 1000000).toFixed(6) + 's';
+    const offsetStr = node.offset >= 0 ? '+' + node.offset + 'ns' : node.offset + 'ns';
+    
+    const clockY = node.tier === 2 ? node.y + node.h + 14 : node.y + node.h + 14;
+    ctx.font = '10px monospace';
+    ctx.fillStyle = '#334155';
+    ctx.textAlign = 'center';
+    ctx.fillText(clockStr, node.x + node.w / 2, clockY);
+    
+    if (node.id !== 'gm') {
+      ctx.font = 'bold 10px monospace';
+      const absOff = Math.abs(node.offset);
+      ctx.fillStyle = absOff < 50 ? '#2e7d32' : (absOff < 200 ? '#f59e0b' : '#d32f2f');
+      ctx.fillText(offsetStr, node.x + node.w / 2, clockY + 13);
+      
+      // Sync indicator
+      if (synced) {
+        ctx.font = '9px sans-serif';
+        ctx.fillStyle = '#2e7d32';
+        ctx.fillText('✓ 已同步', node.x + node.w / 2, clockY + 26);
+      }
+    } else {
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillStyle = '#1a73e8';
+      ctx.fillText('基准时钟', node.x + node.w / 2, clockY + 13);
+    }
+    ctx.textAlign = 'left';
+
+    // PeerDelay label on link
+    if (node.peerDelay && node.tier === 1) {
+      const gm = ptpState.nodes[0];
+      const mx = (gm.x + gm.w / 2 + node.x + node.w / 2) / 2;
+      const my = (gm.y + gm.h + node.y) / 2;
+      ctx.font = '9px sans-serif';
+      ctx.fillStyle = '#d32f2f';
+      ctx.textAlign = 'center';
+      ctx.fillText('PD=' + node.peerDelay + 'ns', mx, my - 2);
+      ctx.textAlign = 'left';
+    }
+    if (node.peerDelay && node.tier === 2) {
+      const parent = ptpState.nodes.find(n => n.id === node.parent);
+      if (parent) {
+        const mx = (parent.x + parent.w / 2 + node.x + node.w / 2) / 2;
+        const my = (parent.y + parent.h + node.y) / 2;
+        ctx.font = '9px sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.textAlign = 'center';
+        ctx.fillText('PD=' + node.peerDelay + 'ns', mx, my - 2);
+        ctx.textAlign = 'left';
+      }
+    }
+  });
+
+  // Draw sync messages in flight
+  ptpState.messages.forEach(msg => {
+    const from = ptpState.nodes.find(n => n.id === msg.from);
+    const to = ptpState.nodes.find(n => n.id === msg.to);
+    const fx = from.x + from.w / 2, fy = from.y + from.h;
+    const tx = to.x + to.w / 2, ty = to.y;
+    const px = fx + (tx - fx) * msg.progress;
+    const py = fy + (ty - fy) * msg.progress;
+
+    // Trail
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(px, py);
+    ctx.strokeStyle = msg.type === 'sync' ? '#1a73e8' : '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.4;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Dot
+    ctx.beginPath();
+    ctx.arc(px, py, 7, 0, Math.PI * 2);
+    ctx.fillStyle = msg.type === 'sync' ? '#1a73e8' : '#f59e0b';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Label
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText(msg.type === 'sync' ? 'Sy' : 'PD', px, py + 3);
+    ctx.textAlign = 'left';
+  });
+
+  // Legend bar at bottom
+  const ly = 370;
+  ctx.fillStyle = '#f8fafc';
+  roundRect(ctx, 20, ly, W - 40, 42, 6);
+  ctx.fill();
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.stroke();
+  
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#334155';
+  const items = [
+    { c: '#1a73e8', l: 'Sync/Follow_Up 消息' },
+    { c: '#f59e0b', l: 'Peer Delay 测量' },
+    { c: '#2e7d32', l: '偏差 < 50ns (已同步)' },
+    { c: '#d32f2f', l: '偏差 > 200ns (未同步)' }
+  ];
+  let lx = 40;
+  items.forEach(item => {
+    ctx.beginPath();
+    ctx.arc(lx + 5, ly + 21, 5, 0, Math.PI * 2);
+    ctx.fillStyle = item.c;
+    ctx.fill();
+    ctx.fillStyle = '#334155';
+    ctx.fillText(item.l, lx + 14, ly + 25);
+    lx += ctx.measureText(item.l).width + 30;
+  });
+
+  // Round counter
+  if (ptpState.syncRound > 0) {
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'right';
+    ctx.fillText('同步轮次: ' + ptpState.syncRound + ' / 5', W - 30, 20);
+    ctx.textAlign = 'left';
+  }
+}
+
+function startPtpSync() {
+  if (ptpState.running) return;
+  ptpState.running = true;
+  initPtpNodes();
+  drawPtp();
+
+  const log = document.getElementById('ptpLog');
+  const btn = document.getElementById('ptpStartBtn');
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+
+  const totalRounds = 5;
+  let round = 0;
+
+  function doRound() {
+    round++;
+    ptpState.syncRound = round;
+    
+    // Phase 1: Peer Delay measurement (show PD messages on tier-1 links)
+    log.innerHTML = '<span style="color:#f59e0b;font-weight:600;">轮次 ' + round + '/' + totalRounds + ' — 步骤 1:</span> Peer Delay 测量中 (Pdelay_Req ↔ Pdelay_Resp)...';
+    
+    const pdMessages = [];
+    ptpState.nodes.filter(n => n.tier === 1).forEach(sw => {
+      pdMessages.push({ from: 'gm', to: sw.id, progress: 0, type: 'pdelay' });
+    });
+    if (round <= 2) {
+      ptpState.nodes.filter(n => n.tier === 2).forEach(ep => {
+        pdMessages.push({ from: ep.parent, to: ep.id, progress: 0, type: 'pdelay' });
+      });
+    }
+    ptpState.messages = pdMessages;
+    
+    animateMessages(0.012, function() {
+      // Phase 2: Sync from GM to tier-1
+      log.innerHTML = '<span style="color:#1a73e8;font-weight:600;">轮次 ' + round + '/' + totalRounds + ' — 步骤 2:</span> Grandmaster 发送 Sync + Follow_Up → 交换机...';
+      
+      const syncT1 = [];
+      ptpState.nodes.filter(n => n.tier === 1).forEach(sw => {
+        syncT1.push({ from: 'gm', to: sw.id, progress: 0, type: 'sync' });
+      });
+      ptpState.messages = syncT1;
+      
+      animateMessages(0.010, function() {
+        // Adjust tier-1 clocks
+        ptpState.nodes.filter(n => n.tier === 1).forEach(sw => {
+          const correction = -sw.offset * (round <= 2 ? 0.6 : 0.85);
+          sw.offset = Math.round(sw.offset + correction);
+          sw.clock = 1000000 + sw.offset;
+          if (Math.abs(sw.offset) < 50) sw.synced = true;
+        });
+        drawPtp();
+        
+        // Phase 3: Sync from tier-1 to tier-2
+        setTimeout(function() {
+          log.innerHTML = '<span style="color:#1a73e8;font-weight:600;">轮次 ' + round + '/' + totalRounds + ' — 步骤 3:</span> 交换机转发 Sync (补偿驻留时间 + 链路延迟) → 终端设备...';
+          
+          const syncT2 = [];
+          ptpState.nodes.filter(n => n.tier === 2).forEach(ep => {
+            syncT2.push({ from: ep.parent, to: ep.id, progress: 0, type: 'sync' });
+          });
+          ptpState.messages = syncT2;
+          
+          animateMessages(0.010, function() {
+            // Adjust tier-2 clocks
+            ptpState.nodes.filter(n => n.tier === 2).forEach(ep => {
+              const parentNode = ptpState.nodes.find(n => n.id === ep.parent);
+              const targetOffset = parentNode.offset;
+              const diff = targetOffset - ep.offset;
+              const correction = diff * (round <= 2 ? 0.5 : 0.8);
+              ep.offset = Math.round(ep.offset + correction);
+              ep.clock = 1000000 + ep.offset;
+              if (Math.abs(ep.offset) < 50) ep.synced = true;
+            });
+            drawPtp();
+            
+            // Apply drift to simulate continuous drift between rounds
+            ptpState.nodes.filter(n => n.id !== 'gm').forEach(nd => {
+              nd.offset += Math.round(nd.drift * 30);
+              nd.clock = 1000000 + nd.offset;
+              if (Math.abs(nd.offset) >= 50) nd.synced = false;
+            });
+            
+            if (round < totalRounds) {
+              setTimeout(doRound, 600);
+            } else {
+              // Final convergence — one last adjustment without drift
+              ptpState.nodes.filter(n => n.id !== 'gm').forEach(nd => {
+                nd.offset = Math.round(nd.offset * 0.1);
+                nd.clock = 1000000 + nd.offset;
+                nd.synced = Math.abs(nd.offset) < 50;
+              });
+              drawPtp();
+              
+              const allSynced = ptpState.nodes.every(n => n.synced);
+              const maxErr = Math.max(...ptpState.nodes.filter(n => n.id !== 'gm').map(n => Math.abs(n.offset)));
+              log.innerHTML = '<span style="color:var(--success);font-weight:600;">✓ 同步完成！</span> 经过 ' + totalRounds + ' 轮 Sync 消息交换，所有设备时钟已收敛。' +
+                '<br>最大残余偏差: <strong>' + maxErr + ' ns</strong>' +
+                (allSynced ? ' — <span style="color:var(--success);">满足 ±50ns 精度要求</span>' : '') +
+                '<br><span style="color:#64748b;">实际网络中 Sync 间隔为 125ms，持续运行以补偿振荡器漂移。</span>';
+              
+              ptpState.running = false;
+              btn.disabled = false;
+              btn.style.opacity = '1';
+            }
+          });
+        }, 300);
+      });
+    });
+  }
+  
+  // Start first round after a short delay
+  setTimeout(doRound, 300);
+}
+
+function animateMessages(speed, callback) {
+  function step() {
+    let allDone = true;
+    ptpState.messages.forEach(m => {
+      if (m.progress < 1) {
+        m.progress = Math.min(m.progress + speed, 1);
+        allDone = false;
+      }
+    });
+    drawPtp();
+    if (allDone) {
+      ptpState.messages = [];
+      drawPtp();
+      setTimeout(callback, 200);
+    } else {
+      requestAnimationFrame(step);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function resetPtpSync() {
+  ptpState.running = false;
+  ptpState.messages = [];
+  initPtpNodes();
+  drawPtp();
+  const btn = document.getElementById('ptpStartBtn');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  document.getElementById('ptpLog').innerHTML = '点击"开始同步"观看 gPTP 同步过程：Grandmaster 发出 Sync → 交换机测量 Peer Delay → 逐跳传递时间 → 终端校准时钟。';
 }
 
 // ========================================
